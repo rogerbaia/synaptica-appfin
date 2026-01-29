@@ -106,7 +106,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[var(--dark-color)] flex flex-col items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-[var(--dark-color)] flex flex-col items-center justify-center p-4 relative overflow-y-auto pb-32">
             <div className="absolute inset-0 z-0">
                 <div className="absolute top-10 left-10 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
                 <div className="absolute top-10 right-10 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -117,7 +117,7 @@ export default function LoginPage() {
 
                 <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] text-white/50">
                     {/* <Sparkles size={10} className="text-blue-400" /> */}
-                    <img src="/logo.png" alt="S" className="w-3 h-3 object-contain opacity-80" />
+                    <img src="/logo-aurea-fusion.png" alt="S" className="w-4 h-4 object-contain opacity-80" />
                     <span className="font-semibold tracking-wider uppercase">by Synaptica</span>
                 </div>
 
@@ -149,10 +149,11 @@ export default function LoginPage() {
                 ) : (
                     <>
                         <div className="mb-6 mt-[13px] flex justify-center">
-                            {/* Placeholder for Aurea Logo */}
-                            <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-2xl flex items-center justify-center text-white font-serif font-bold text-5xl shadow-2xl border-2 border-white/20">
-                                A
-                            </div>
+                            <img
+                                src="/logo-aurea-fusion.png"
+                                alt="Aurea Logo"
+                                className="w-24 h-24 rounded-2xl shadow-2xl border-2 border-white/20 object-contain bg-black/20 backdrop-blur-sm p-2"
+                            />
                         </div>
 
                         <h1 className="text-4xl font-bold text-white mb-1 font-serif tracking-wide">Aurea</h1>
