@@ -117,9 +117,7 @@ export default function LoginPage() {
             <div className="relative z-10 bg-white/10 backdrop-blur-lg border border-white/20 px-6 py-4 rounded-2xl shadow-2xl w-full max-w-[340px] text-center">
 
                 <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] text-white/50">
-                    {/* <Sparkles size={10} className="text-blue-400" /> */}
-                    {/* <Sparkles size={10} className="text-blue-400" /> */}
-                    <div className="opacity-80"><AureaLogo className="w-4 h-4" /></div>
+                    <img src="/logo-synaptica-original.png" alt="Synaptica" className="w-4 h-4 object-contain opacity-80" />
                     <span className="font-semibold tracking-wider uppercase">by Synaptica</span>
                 </div>
 
@@ -157,8 +155,11 @@ export default function LoginPage() {
                         </div>
 
                         <h1 className="text-4xl font-bold text-white mb-1 font-serif tracking-wide">Aurea</h1>
-                        <p className="text-amber-200/80 mb-8 font-medium tracking-wide text-sm flex items-center justify-center gap-2">
-                            <Sparkles size={12} /> Powered by Gabi AI
+                        <p className="mb-8 font-medium tracking-wide text-sm flex items-center justify-center gap-2">
+                            <Sparkles size={14} className="text-fuchsia-400" />
+                            <span className="bg-gradient-to-r from-violet-400 via-fuchsia-300 to-indigo-300 text-transparent bg-clip-text font-bold">
+                                Powered by Gabi AI
+                            </span>
                         </p>
                     </>
                 )}
