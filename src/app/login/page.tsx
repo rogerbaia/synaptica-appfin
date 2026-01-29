@@ -117,7 +117,7 @@ export default function LoginPage() {
 
                 <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] text-white/50">
                     {/* <Sparkles size={10} className="text-blue-400" /> */}
-                    <img src="/logo-aurea-fusion.png" alt="S" className="w-4 h-4 object-contain opacity-80" />
+                    <img src="/logo-aurea-v2.png" alt="S" className="w-4 h-4 object-contain opacity-80" />
                     <span className="font-semibold tracking-wider uppercase">by Synaptica</span>
                 </div>
 
