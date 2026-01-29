@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import React, { Suspense } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Archive, Lock, Info } from 'lucide-react';
