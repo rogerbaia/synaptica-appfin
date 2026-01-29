@@ -1,12 +1,12 @@
 "use client";
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useLanguage } from '@/context/LanguageContext';
 import { Archive, Lock, Info } from 'lucide-react';
 import ProGuard from '@/components/auth/ProGuard';
 import { useSubscription } from '@/context/SubscriptionContext';
 
-export default function ArchivePage() {
+function ArchiveContent() {
     const { t } = useLanguage();
     const { features, tier } = useSubscription();
 
@@ -90,5 +90,13 @@ export default function ArchivePage() {
                 </div>
             </div>
         </ProGuard>
+    );
+}
+
+export default function ArchivePage() {
+    return (
+        <Suspense fallback={<div className="p-8">Cargando...</div>}>
+            <ArchiveContent />
+        </Suspense>
     );
 }
