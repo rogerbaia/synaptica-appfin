@@ -151,11 +151,9 @@ export default function LoginPage() {
                 ) : (
                     <>
                         <div className="mb-6 mt-[13px] flex justify-center">
-                            <img
-                                src="/logo-aurea-final.webp"
-                                alt="Aurea Logo"
-                                className="w-24 h-24 rounded-2xl shadow-2xl border-2 border-white/20 object-contain bg-black/20 backdrop-blur-sm p-2"
-                            />
+                            <div className="w-24 h-24 rounded-2xl shadow-2xl border-2 border-white/20 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4">
+                                <AureaLogo className="w-full h-full" />
+                            </div>
                         </div>
 
                         <h1 className="text-4xl font-bold text-white mb-1 font-serif tracking-wide">Aurea</h1>
