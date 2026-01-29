@@ -6,6 +6,7 @@ import { Fingerprint, Sparkles } from 'lucide-react';
 import { NativeBiometric } from '@capgo/capacitor-native-biometric';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import AureaLogo from '@/components/Layout/AureaLogo';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -117,7 +118,8 @@ export default function LoginPage() {
 
                 <div className="absolute top-3 right-3 flex items-center gap-1 text-[10px] text-white/50">
                     {/* <Sparkles size={10} className="text-blue-400" /> */}
-                    <img src="/logo-aurea-final.webp" alt="S" className="w-4 h-4 object-contain opacity-80" />
+                    {/* <Sparkles size={10} className="text-blue-400" /> */}
+                    <div className="opacity-80"><AureaLogo className="w-4 h-4" /></div>
                     <span className="font-semibold tracking-wider uppercase">by Synaptica</span>
                 </div>
 
