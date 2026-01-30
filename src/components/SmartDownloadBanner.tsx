@@ -10,6 +10,13 @@ export default function SmartDownloadBanner() {
     useEffect(() => {
         const userAgent = window.navigator.userAgent.toLowerCase();
 
+        // [NEW] Detect Electron to hide banner automatically
+        if (userAgent.includes('electron')) {
+            setIsVisible(false);
+            setOs('unknown'); // Ensure it doesn't trigger other logic
+            return;
+        }
+
         if (userAgent.includes('win')) setOs('windows');
         else if (userAgent.includes('android')) setOs('android');
         else if (userAgent.includes('iphone') || userAgent.includes('ipad')) setOs('ios');
