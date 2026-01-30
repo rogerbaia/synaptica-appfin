@@ -1,0 +1,900 @@
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { supabaseService } from '@/services/supabaseService';
+
+// Add SpeechRecognition types
+interface IWindow extends Window {
+    webkitSpeechRecognition: any;
+    SpeechRecognition: any;
+}
+
+export type GabiState = 'idle' | 'listening' | 'processing' | 'speaking';
+
+export const useGabi = () => {
+    const [state, setState] = useState<GabiState>('idle');
+    const [transcript, setTranscript] = useState('');
+    const [response, setResponse] = useState('');
+    const [clientName, setClientName] = useState<string | null>(null);
+
+    // --- CONVERSATION STATE (Voice Wizard) ---
+    type ConversationMode = 'CFDI_WIZARD' | null;
+    type CFDIStep = 'ASK_CLIENT' | 'CONFIRM_DATA' | 'ASK_AMOUNT' | 'ASK_CONCEPT' | 'FINAL_CONFIRM' | 'RETRY_CHECK';
+
+    const [conversation, setConversation] = useState<{
+        mode: ConversationMode;
+        step: CFDIStep;
+        data: {
+            clientName?: string;
+            amount?: number;
+            concept?: string;
+            lastInvoice?: any;
+            previousStep?: CFDIStep; // For retry logic
+        };
+    }>({ mode: null, step: 'ASK_CLIENT', data: {} });
+
+    // Ref to access state inside stale closures (SpeechRecognition callbacks)
+    const conversationRef = useRef(conversation);
+
+    useEffect(() => {
+        conversationRef.current = conversation;
+    }, [conversation]);
+
+    // Track if we are expecting a response to auto-restart mic
+    const expectingResponse = useRef(false);
+
+    // Load Nickname on Mount
+    useEffect(() => {
+        supabaseService.getUserMetadata().then(meta => {
+            if (meta?.nickname) setClientName(meta.nickname);
+        });
+        console.log("Gabi Hook v4.3 Loaded - State Ref Fixed");
+    }, []);
+
+    const recognitionRef = useRef<any>(null);
+    const synthesisRef = useRef<SpeechSynthesis | null>(null);
+    const transcriptRef = useRef('');
+    const silenceTimer = useRef<NodeJS.Timeout | null>(null);
+
+    // Ref to hold the latest version of processCommand to avoid stale closures
+    const processCommandRef = useRef<(cmd: string) => Promise<void>>(async () => { });
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const { webkitSpeechRecognition, SpeechRecognition } = window as unknown as IWindow;
+            const SpeechRecognitionConstructor = SpeechRecognition || webkitSpeechRecognition;
+
+            if (SpeechRecognitionConstructor) {
+                const recognition = new SpeechRecognitionConstructor();
+                recognition.continuous = false;
+                recognition.lang = 'es-MX';
+                recognition.interimResults = true;
+
+                recognition.onstart = () => {
+                    setState('listening');
+                    transcriptRef.current = '';
+                };
+
+                recognition.onresult = (event: any) => {
+                    const current = event.resultIndex;
+                    const transcriptText = event.results[current][0].transcript;
+
+                    setTranscript(transcriptText);
+                    transcriptRef.current = transcriptText;
+
+                    // Silence Detection: Reset timer
+                    if (silenceTimer.current) clearTimeout(silenceTimer.current);
+                    silenceTimer.current = setTimeout(() => {
+                        recognition.stop();
+                    }, 1500); // 1.5 seconds silence to stop
+                };
+
+                recognition.onend = () => {
+                    if (silenceTimer.current) clearTimeout(silenceTimer.current);
+
+                    // If we have text, process it using the LATEST function version
+                    if (transcriptRef.current.trim()) {
+                        processCommandRef.current(transcriptRef.current);
+                    } else {
+                        // Silence / No Input Logic
+                        if (expectingResponse.current) {
+                            // Smart Retry Logic
+                            expectingResponse.current = false; // Prevent infinite loop immediately
+                            setState('idle');
+
+                            // Ask to retry
+                            const ctx = conversationRef.current; // Capture current state context
+                            if (ctx.mode === 'CFDI_WIZARD') {
+                                speak("No escuché ninguna respuesta. ¿Quieres volver a intentar ahora?");
+                                // We need to move state to a temporary RETRY_CHECK
+                                setConversation(prev => ({
+                                    ...prev,
+                                    step: 'RETRY_CHECK',
+                                    data: { ...prev.data, previousStep: prev.step }
+                                }));
+                                // Auto-listen for the YES/NO to retry
+                                expectingResponse.current = true;
+                            }
+                        } else {
+                            setState('idle');
+                        }
+                    }
+                };
+
+                recognitionRef.current = recognition;
+            }
+
+            synthesisRef.current = window.speechSynthesis;
+        }
+    }, [clientName]);
+
+    const speak = useCallback((text: string) => {
+        if (!synthesisRef.current) return;
+
+        // Cancel any pending speech
+        synthesisRef.current.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'es-MX';
+
+        // Try to find a female Mexican voice or fallback
+        const voices = synthesisRef.current.getVoices();
+        const mexicanVoice = voices.find(v => v.lang === 'es-MX' && v.name.includes('Sabina')); // Common Chrome voice
+        if (mexicanVoice) utterance.voice = mexicanVoice;
+
+        setState('speaking');
+        setResponse(text);
+
+        utterance.onend = () => {
+            setState('idle');
+            // Auto-Listen Logic with small delay to prevent "already started" errors
+            if (expectingResponse.current) {
+                setTimeout(() => {
+                    startListening();
+                }, 300);
+            }
+        };
+
+        synthesisRef.current.speak(utterance);
+    }, []);
+
+    // Enhanced Speak with Auto-Listen Option
+    const speakWithAutoListen = useCallback((text: string, shouldListen: boolean = false) => {
+        expectingResponse.current = shouldListen;
+        speak(text);
+    }, [speak]);
+
+    const matchIntent = (text: string, patterns: RegExp[]): boolean => {
+        return patterns.some(pattern => pattern.test(text));
+    };
+
+    // --- CFDI WIZARD LOGIC ---
+    const handleCFDIFlow = async (command: string) => {
+        const { step, data } = conversationRef.current;
+        const lower = command.toLowerCase();
+
+        // Universal Cancel
+        if (lower.includes('cancelar') || lower.includes('olvídalo') || lower.includes('salir')) {
+            setConversation({ mode: null, step: 'ASK_CLIENT', data: {} });
+            speakWithAutoListen("Cancelado. ¿En qué más puedo ayudarte?", false);
+            return;
+        }
+
+        // --- RETRY CHECK LOGIC ---
+        if (step === 'RETRY_CHECK') {
+            if (lower.includes('sí') || lower.includes('si') || lower.includes('claro') || lower.includes('por favor')) {
+                // Restore previous step and listen again
+                const prevStep = data.previousStep || 'ASK_CLIENT';
+
+                // Re-prompt based on step (simplified re-prompt)
+                let prompt = "Te escucho...";
+                if (prevStep === 'ASK_CLIENT') prompt = "¿A nombre de quién titulo la factura?";
+                if (prevStep === 'ASK_AMOUNT') prompt = "¿Cuál es el monto?";
+                if (prevStep === 'ASK_CONCEPT') prompt = "¿Cuál es el concepto?";
+
+                speakWithAutoListen(prompt, true);
+                setConversation({ ...conversation, step: prevStep });
+            } else {
+                // User said NO
+                setConversation({ mode: null, step: 'ASK_CLIENT', data: {} });
+                speakWithAutoListen("Entendido. Estaré aquí si necesitas algo más.", false);
+            }
+            return;
+        }
+
+        if (step === 'ASK_CLIENT') {
+            // User answers with Client Name
+            let name = command.replace(/a nombre de|para|del cliente|cliente/gi, '').trim();
+            // Capitalize
+            name = name.charAt(0).toUpperCase() + name.slice(1);
+
+            // Search existing history
+            speakWithAutoListen("Buscando historial...", false);
+            let lastInvoice = null;
+            try {
+                lastInvoice = await supabaseService.getLastInvoice(name);
+            } catch (err) {
+                console.error("Error fetching invoice history:", err);
+                // Continue as if new client
+            }
+
+            if (lastInvoice) {
+                // Found history -> Prompt Quick Confirmation
+                const desc = lastInvoice.description || "un concepto previo";
+                const amt = lastInvoice.amount;
+
+                speakWithAutoListen(`La última vez registraste un ingreso de $${amt} por ${desc}. ¿Son los mismos datos?`, true);
+                setConversation({
+                    mode: 'CFDI_WIZARD',
+                    step: 'CONFIRM_DATA',
+                    data: { ...data, clientName: name, lastInvoice }
+                });
+            } else {
+                // No history -> Ask for Amount
+                speakWithAutoListen(`Entendido, ${name}. ¿De cuánto es el monto a facturar?`, true);
+                setConversation({
+                    mode: 'CFDI_WIZARD',
+                    step: 'ASK_AMOUNT',
+                    data: { ...data, clientName: name }
+                });
+            }
+            return;
+        }
+
+        if (step === 'CONFIRM_DATA') {
+            // Expecting YES or NO
+            if (lower.includes('sí') || lower.includes('si') || lower.includes('correcto') || lower.includes('mismo')) {
+                // Reuse Data
+                const { lastInvoice } = data;
+                setConversation({
+                    mode: 'CFDI_WIZARD',
+                    step: 'FINAL_CONFIRM',
+                    data: {
+                        ...data,
+                        amount: lastInvoice.amount,
+                        concept: lastInvoice.description.split('-')[1]?.trim() || lastInvoice.description // Try to extract concept
+                    }
+                });
+                speakWithAutoListen(`Perfecto. ¿Deseas timbrar esta factura por $${lastInvoice.amount}?`, true);
+            } else {
+                // No -> Manual Flow
+                speakWithAutoListen("De acuerdo. ¿Cuál es el monto de esta nueva factura?", true);
+                setConversation({
+                    mode: 'CFDI_WIZARD',
+                    step: 'ASK_AMOUNT',
+                    data: { ...data }
+                });
+            }
+            return;
+        }
+
+        if (step === 'ASK_AMOUNT') {
+            // Parse Amount
+            const nums = lower.match(/\d+/);
+            if (nums) {
+                const amount = parseFloat(nums[0]);
+                speakWithAutoListen(`$${amount}. ¿Cuál es el concepto o descripción del servicio?`, true);
+                setConversation({
+                    mode: 'CFDI_WIZARD',
+                    step: 'ASK_CONCEPT',
+                    data: { ...data, amount }
+                });
+            } else {
+                speakWithAutoListen("No entendí el monto. Por favor dime solo el número, por ejemplo: 500.", true);
+            }
+            return;
+        }
+
+        if (step === 'ASK_CONCEPT') {
+            // Take whole phrase as concept
+            const concept = command.charAt(0).toUpperCase() + command.slice(1);
+            speakWithAutoListen(`Todo listo. Resumen: Factura a ${data.clientName} por $${data.amount} concepto ${concept}. ¿Deseas timbrarla?`, true);
+            setConversation({
+                mode: 'CFDI_WIZARD',
+                step: 'FINAL_CONFIRM',
+                data: { ...data, concept }
+            });
+            return;
+        }
+
+        if (step === 'FINAL_CONFIRM') {
+            if (lower.includes('sí') || lower.includes('si') || lower.includes('timbra') || lower.includes('dale')) {
+                // EXECUTE STAMPING (Mock or Service)
+                await supabaseService.savePreCFDI({
+                    clientName: data.clientName!,
+                    amount: data.amount!,
+                    concept: data.concept!
+                });
+
+                // TODO: Here call actual Stamping Service if integrated
+                speakWithAutoListen("¡Timbrado exitoso! He enviado la factura y el XML al cliente.", false);
+            } else {
+                // Save as PRE-COMPROBANTE
+                await supabaseService.savePreCFDI({
+                    clientName: data.clientName!,
+                    amount: data.amount!,
+                    concept: data.concept!
+                });
+                speakWithAutoListen("Entendido. La he guardado como Pre-Comprobante para que la revises después.", false);
+            }
+            // Reset
+            setConversation({ mode: null, step: 'ASK_CLIENT', data: {} });
+            return;
+        }
+    };
+
+    const processCommand = async (command: string) => {
+        setState('processing');
+        let lowerCmd = command.toLowerCase()
+            .replace(/^(borah|gaby|gabi|gary|davi|david|hola|oye|dime|por favor)/g, '')
+            .replace(/gaby|gabi|gary/g, '')
+            .trim();
+
+        // Intelligent Suffixing: If we find "quién es" or "qué es", take from there
+        const questionMatch = lowerCmd.match(/(qui[eé]n es|qu[eé] es|c[oó]mo se|cu[aá]l es).*/);
+        if (questionMatch) {
+            lowerCmd = questionMatch[0];
+        }
+
+        console.log("Procesando comando:", lowerCmd);
+
+        // --- PRIORITY: ACTIVE CONVERSATION ---
+        if (conversationRef.current.mode === 'CFDI_WIZARD') {
+            await handleCFDIFlow(command); // Pass original case for names
+            return;
+        }
+
+        // --- TRIGGER: START CFDI FLOW ---
+        // Enhanced regex to be more permissive
+        const cfdiPattern = /(generar|crear|hacer|enviar|emitir|timbrar|regálame|quiero|necesito|nueva|iniciar).*(cfdi|factura|ingreso)/i;
+        if (cfdiPattern.test(lowerCmd) && !lowerCmd.includes('gasto')) { // Avoid "Factura de gasto"
+            speakWithAutoListen("Claro. ¿A nombre de quién debo generar la factura?", true);
+            setConversation({ mode: 'CFDI_WIZARD', step: 'ASK_CLIENT', data: {} });
+            return;
+        }
+
+        // --- AGGRESSIVE FALLBACK TRIGGER ---
+        // If strict regex failed but "factura" is mentioned, assume intent to invoice to avoid API calls.
+        if ((lowerCmd.includes('factura') || lowerCmd.includes('cfdi')) && !lowerCmd.includes('gasto') && !lowerCmd.includes('buscar')) {
+            console.log("Triggering CFDI Wizard via Keyword Fallback");
+            speakWithAutoListen("Entendido. ¿A nombre de quién debo generar la factura?", true);
+            setConversation({ mode: 'CFDI_WIZARD', step: 'ASK_CLIENT', data: {} });
+            return;
+        }
+
+        try {
+            // --- INTENT: CHANGE NAME (Llámame X) ---
+
+            const namePattern = /(ll[aá]mame|dime|mi nombre es|cambia mi nombre a) (.+)/i;
+            const nameMatch = command.match(namePattern); // Use original command to capture name case
+
+            if (nameMatch && nameMatch[2]) {
+                const newName = nameMatch[2].replace(/[.,!]/g, '').trim();
+                // Clean name
+                const cleanName = newName.charAt(0).toUpperCase() + newName.slice(1);
+
+                await supabaseService.updateUserMetadata({ nickname: cleanName });
+                setClientName(cleanName);
+                speak(`Entendido. De ahora en adelante te llamaré ${cleanName}.`);
+                return;
+            }
+
+            // --- INTENT: REGISTER TRANSACTION ---
+            // Pattern: "Registra/Nuevo [gasto/ingreso] de [monto] (en/para [descripcion])"
+            const registerPattern = /(registrar|registra|nuevo|agrega).*(gasto|ingreso).*(\d+)/i;
+
+            if (registerPattern.test(lowerCmd)) {
+
+                // Extract Type
+                const type = lowerCmd.includes('ingreso') ? 'income' : 'expense';
+
+                // Extract Amount
+                const amountMatch = lowerCmd.match(/(\d+)/);
+                const amount = amountMatch ? parseFloat(amountMatch[0]) : 0;
+
+                // Extract Description (everything after amount or keywords)
+                // Simple heuristic cleaning
+                let description = lowerCmd
+                    .replace(/(registrar|registra|nuevo|agrega)/g, '')
+                    .replace(/(gasto|ingreso)/g, '')
+                    .replace(/(de|por|en|para)/g, '')
+                    .replace(/\d+/, '') // Remove first number (amount)
+                    .replace(/(pesos|dolares|mxn|usd)/g, '')
+                    .trim();
+
+                if (!description) description = type === 'expense' ? "Gasto por voz" : "Ingreso por voz";
+                description = description.charAt(0).toUpperCase() + description.slice(1);
+
+                if (amount > 0) {
+                    await supabaseService.addTransaction({
+                        amount,
+                        type,
+                        category: type === 'expense' ? 'Otros' : 'Salario',
+                        date: new Date().toISOString(),
+                        description,
+                        recurring: false
+                    });
+
+                    const typeText = type === 'income' ? 'ingreso' : 'gasto';
+                    speak(`Listo. Registré un ${typeText} de ${amount} pesos para ${description}.`);
+                } else {
+                    speak("Entendí que quieres registrar algo, pero no escuché el monto.");
+                }
+                return;
+            }
+
+            // --- INTENT: CHECK EXPENSES (Today) ---
+            const expensePatterns = [
+                /pagar.*hoy/, /vence.*hoy/, /debo.*hoy/,
+                /gastos.*hoy/, /gastado.*hoy/,
+                /tengo.*pagar/, /hay.*pagar/
+            ];
+
+            if (matchIntent(lowerCmd, expensePatterns)) {
+                const today = new Date();
+                const txs = await supabaseService.getTransactions();
+
+                const todayExpenses = txs.filter(t =>
+                    t.type === 'expense' &&
+                    new Date(t.date).toDateString() === today.toDateString()
+                );
+
+                const total = todayExpenses.reduce((sum, t) => sum + t.amount, 0);
+
+                if (total > 0) {
+                    speak(`Hoy llevas registrados gastos por un total de ${total} pesos.`);
+                } else {
+                    speak("No veo gastos registrados para hoy. ¡Vas bien!");
+                }
+                return;
+            }
+
+            // --- INTENT: CHECK PENDING INCOME ---
+            const incomePatterns = [
+                /recibir/, /cobrar/, /ingreso.*pendiente/,
+                /pagar.*mi/, /deben/, /falta.*entrar/
+            ];
+
+            if (matchIntent(lowerCmd, incomePatterns)) {
+                const txs = await supabaseService.getTransactions();
+                const pending = txs.filter(t => t.type === 'income' && t.payment_received === false);
+                const total = pending.reduce((sum, t) => sum + t.amount, 0);
+
+                if (pending.length > 0) {
+                    speak(`Tienes ${pending.length} pagos pendientes por recibir. El total es de ${total} pesos.`);
+                } else {
+                    speak("No tienes ningún pago pendiente por recibir en este momento.");
+                }
+                return;
+            }
+
+            // --- INTENT: FINANCIAL ADVICE ---
+            const advicePatterns = [
+                /mejorar.*finanzas/, /consejo/, /analiza.*gastos/,
+                /como.*voy/, /recomendacion/
+            ];
+
+            if (matchIntent(lowerCmd, advicePatterns)) {
+                const now = new Date();
+                const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                const txs = await supabaseService.getTransactions();
+
+                // Filter current month expenses
+                const monthlyExpenses = txs.filter(t =>
+                    t.type === 'expense' &&
+                    new Date(t.date) >= startOfMonth
+                );
+
+                if (monthlyExpenses.length === 0) {
+                    speak("Este mes aún no tienes gastos registrados. ¡Vas perfecto!");
+                    return;
+                }
+
+                // Group by Category
+                const categoryTotals: Record<string, number> = {};
+                monthlyExpenses.forEach(t => {
+                    const cat = t.category || 'Otros';
+                    categoryTotals[cat] = (categoryTotals[cat] || 0) + t.amount;
+                });
+
+                // Find highest category
+                let maxCat = '';
+                let maxAmount = 0;
+
+                Object.entries(categoryTotals).forEach(([cat, amount]) => {
+                    if (amount > maxAmount) {
+                        maxAmount = amount;
+                        maxCat = cat;
+                    }
+                });
+
+                // Generate Advice
+                speak(`He revisado tus movimientos. Este mes has gastado $${maxAmount} en ${maxCat}. Podrías intentar reducir un poco los gastos en esa categoría para mejorar tu balance.`);
+                return;
+            }
+
+            // --- SKILL: WEATHER (Real-time) ---
+            const weatherPatterns = [
+                /clima/, /tiempo/, /temperatura/, /llover/
+            ];
+
+            if (matchIntent(lowerCmd, weatherPatterns)) {
+                // Check permissions (we need to inject useSettings into the hook or pass it)
+                // Since this is a hook, we can't easily access context if not wrapped or passed.
+                // WE WILL ASSUME global access or try to read from localStorage for now as a quick hack
+                // or just try to get position if allowed.
+
+                if (!navigator.geolocation) {
+                    speak("No puedo acceder a tu ubicación para ver el clima.");
+                    return;
+                }
+
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    try {
+                        const { latitude, longitude } = pos.coords;
+                        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&lang=es`);
+                        const data = await res.json();
+
+                        const temp = data.current.temperature_2m;
+                        const code = data.current.weather_code; // WMO code
+
+                        // Simple WMO code map
+                        let condition = "despejado";
+                        if (code > 0 && code < 3) condition = "nublado";
+                        if (code >= 3 && code < 50) condition = "con neblina";
+                        if (code >= 50 && code < 80) condition = "lluvioso";
+                        if (code >= 80) condition = "con tormenta";
+
+                        speak(`La temperatura actual es de ${temp} grados centígrados y está ${condition}.`);
+                    } catch (e) {
+                        console.error(e);
+                        speak("No pude conectar con el servicio meteorológico.");
+                    }
+                }, () => {
+                    speak("Necesito permiso de ubicación para decirte el clima. Actívalo en Configuración.");
+                });
+                return;
+            }
+
+            // --- INTENT: TEACHING MODE ---
+            // "Aprende que [frase] es/significa [accion]"
+            // Simple version: "Aprende que 'pagar netflix' es gasto de 200 en entretenimiento"
+            if (lowerCmd.startsWith("aprende que")) {
+                const parts = lowerCmd.replace("aprende que", "").split(/ es | significa /);
+                if (parts.length >= 2) {
+                    const trigger = parts[0].trim();
+                    const definition = parts[1].trim();
+
+                    // Parse definition to see if it's a transaction
+                    // "gasto de 200 en entretenimiento" -> { amount: 200, category: 'Entretenimiento', type: 'expense' }
+                    let actionData: any = { text: definition };
+                    let actionType = 'response';
+
+                    const isTransaction = /(gasto|ingreso)/.test(definition);
+                    if (isTransaction) {
+                        const type = definition.includes('ingreso') ? 'income' : 'expense';
+                        const amountMatch = definition.match(/(\d+)/);
+                        const amount = amountMatch ? parseFloat(amountMatch[0]) : 0;
+                        // Try to extract category? For now generic
+                        actionType = 'transaction';
+                        actionData = { type, amount, description: trigger, category: 'Otros' };
+                    }
+
+                    await supabaseService.addLearnedCommand(trigger, actionType, actionData);
+                    speak(`Entendido. He aprendido que cuando digas "${trigger}", debo registrar eso.`);
+                    return;
+                }
+            }
+
+            // --- CHECK LEARNED COMMANDS (Fallback) ---
+            try {
+                const learnedCommands = await supabaseService.getLearnedCommands();
+                const match = learnedCommands.find(cmd => lowerCmd.includes(cmd.trigger_phrase));
+
+                if (match) {
+                    if (match.action_type === 'transaction') {
+                        const { amount, type, category, description } = match.action_data;
+                        await supabaseService.addTransaction({
+                            amount, type, category, description,
+                            date: new Date().toISOString(),
+                            recurring: false
+                        });
+                        speak(`Listo. Ejecuté tu comando personalizado: ${description}.`);
+                    } else {
+                        speak(match.action_data.text || "Comando ejecutado.");
+                    }
+                    return;
+                }
+            } catch (e) {
+                console.error("Error fetching learned commands:", e);
+            }
+
+            // --- SKILL: HELP / ONBOARDING ---
+            const helpPatterns = [/ayuda/, /c[óo]mo.*usa?r/, /qu[ée].*puedes.*hacer/, /instrucciones/, /gu[íi]a/, /qu[ée].*haces/];
+            if (matchIntent(lowerCmd, helpPatterns)) {
+                speak("¡Soy Gabi, tu asistente financiera! Puedes pedirme cosas como: 'Registra un gasto de 200 pesos en comida', '¿Cuánto he gastado hoy?', 'Analiza mis finanzas' o 'Dime el clima'.");
+                setResponse(`
+                    <ul class="text-sm space-y-2">
+                        <li>💰 <b>Registrar:</b> "Gasto de 500 en súper"</li>
+                        <li>📊 <b>Consultar:</b> "¿Cuánto gasté hoy?"</li>
+                        <li>💡 <b>Consejos:</b> "Analiza mis finanzas"</li>
+                        <li>🌦️ <b>Clima:</b> "¿Qué tiempo hace?"</li>
+                        <li>🧠 <b>Enseñar:</b> "Aprende que 'Netflix' es gasto de 200"</li>
+                    </ul>
+                `);
+                return;
+            }
+
+            // --- INTENT: GEMINI DIAGNOSTICS ---
+            const diagNorm = lowerCmd.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            if (diagNorm.includes('diagnostico') && (diagNorm.includes('gem') || diagNorm.includes('api')) || diagNorm.includes('prueba api')) {
+                const savedKey = localStorage.getItem('synaptica_gemini_key');
+                if (!savedKey) {
+                    speak("No tienes una clave de API configurada.");
+                    return;
+                }
+
+                setResponse("🔍 Ejecutando diagnóstico de Gemini...");
+                try {
+                    // Step 1: List Models
+                    let log = "<b>Paso 1: Listar Modelos</b><br/>";
+                    const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${savedKey}`;
+                    const listResp = await fetch(listUrl);
+                    log += `Status: ${listResp.status} ${listResp.statusText}<br/>`;
+
+                    let modelToUse = 'gemini-1.5-flash';
+
+                    if (listResp.ok) {
+                        const listData = await listResp.json();
+                        // Filter models that support 'generateContent'
+                        const allModels = listData.models || [];
+                        const validModels = allModels.filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'));
+
+                        const modelNames = validModels.map((m: any) => m.name.replace('models/', ''));
+                        log += `Modelos válidos: ${modelNames.slice(0, 3).join(', ')}...<br/>`;
+
+                        // Select model logic
+                        const flash = modelNames.find((n: string) => n.toLowerCase().includes('flash') && n.toLowerCase().includes('gemini'));
+                        const pro = modelNames.find((n: string) => n.toLowerCase().includes('pro') && n.toLowerCase().includes('gemini'));
+
+                        if (flash) modelToUse = flash;
+                        else if (pro) modelToUse = pro;
+                        else if (modelNames.length > 0) modelToUse = modelNames[0];
+                    } else {
+                        const errText = await listResp.text();
+                        log += `Error Listando: ${errText}<br/>`;
+                    }
+
+                    log += `<b>Paso 2: Usar Modelo ${modelToUse}</b><br/>`;
+
+                    // Step 2: Generate Content
+                    const genUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${savedKey}`;
+                    const payload = { contents: [{ parts: [{ text: "Hola" }] }] };
+
+                    const genResp = await fetch(genUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    log += `Status Gen: ${genResp.status}<br/>`;
+
+                    if (genResp.ok) {
+                        const genData = await genResp.json();
+                        const text = genData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                        log += `Respuesta: "${text}"<br/><b style="color:green">¡ÉXITO!</b>`;
+                        speak("La prueba fue exitosa. Gemini está funcionando.");
+                    } else {
+                        const errText = await genResp.text();
+                        log += `Error Gen: ${errText}<br/><b style="color:red">FALLÓ</b>`;
+                        speak("Hubo un error probando la generación.");
+                    }
+
+                    setResponse(`<div class="text-xs font-mono bg-gray-100 p-2 rounded">${log}</div>`);
+
+                } catch (e: any) {
+                    setResponse(`<div class="text-xs text-red-500">Error Crítico: ${e.message}</div>`);
+                    speak("Ocurrió una excepción durante el diagnóstico.");
+                }
+                return;
+            }
+
+            // --- LLM INTEGRATION: GEMINI API ---
+            const savedKey = localStorage.getItem('synaptica_gemini_key');
+            console.log("Gemini Debug: Key exists?", !!savedKey);
+
+            if (savedKey) {
+                try {
+                    // DYNAMIC DISCOVERY: List models to find a valid one
+                    let modelToUse = 'gemini-1.5-flash'; // Default fallback
+
+                    try {
+                        const listModelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${savedKey}`;
+                        const listResp = await fetch(listModelsUrl);
+                        if (listResp.ok) {
+                            const listData = await listResp.json();
+                            const models = listData.models || [];
+                            const validModels = models.filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'));
+
+                            // Suggest 1.5-flash as priority to avoid experimental/beta limits
+                            const flash15 = validModels.find((m: any) => m.name.includes('gemini-1.5-flash'));
+                            const flash = validModels.find((m: any) => m.name.toLowerCase().includes('flash') && m.name.toLowerCase().includes('gemini'));
+                            const pro = validModels.find((m: any) => m.name.toLowerCase().includes('pro') && m.name.toLowerCase().includes('gemini'));
+
+                            if (flash15) modelToUse = flash15.name.replace('models/', '');
+                            else if (flash) modelToUse = flash.name.replace('models/', '');
+                            else if (pro) modelToUse = pro.name.replace('models/', '');
+                            else if (validModels.length > 0) modelToUse = validModels[0].name.replace('models/', '');
+
+                            console.log("Gemini Debug: Selected Model:", modelToUse);
+                        } else {
+                            console.warn("Gemini Debug: Failed to list models", listResp.status);
+                        }
+                    } catch (e) {
+                        console.warn("Gemini Debug: List models exception", e);
+                    }
+
+                    // Use v1beta as it supports more models usually
+                    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${savedKey}`;
+                    const currentDate = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    const payload = {
+                        contents: [{
+                            parts: [{
+                                text: `
+                                Eres Gabi, una asistente financiera personal.
+                                Fecha actual: ${currentDate}.
+                                ${clientName ? `Nombre del usuario: ${clientName}. Úsalo ocasionalmente para sonar personal.` : ''}
+                                Tono: Profesional, amable y conciso (max 2 oraciones).
+                                Contexto: Estás en una app de finanzas llamada Synaptica.
+                                
+                                IMPORTANTE: Tu conocimiento general tiene una fecha de corte. Si te preguntan por hechos recientes (política, noticias) o información que desconoces, NO inventes. En su lugar, responde ÚNICAMENTE con el siguiente formato, poniendo la búsqueda óptima dentro:
+                                [[SEARCH: términos de búsqueda]]
+                                
+                                Ejemplo:
+                                User: "¿Quién ganó el Super Bowl 2025?"
+                                Gabi: [[SEARCH: ganador super bowl 2025]]
+                                
+                                Pregunta del usuario: ${command}
+                            `.trim()
+                            }]
+                        }]
+                    };
+
+                    // Retry logic for 429 errors (Rate Limiting)
+                    let response;
+                    let attempts = 0;
+                    const maxAttempts = 3;
+
+                    while (attempts < maxAttempts) {
+                        try {
+                            response = await fetch(geminiUrl, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+
+                            if (response.status === 429) {
+                                attempts++;
+                                console.warn(`Gemini 429 hit. Retrying (${attempts}/${maxAttempts})...`);
+                                if (attempts === maxAttempts) {
+                                    // FINAL FALLBACK: Local Keyword Match before giving up
+                                    if (lowerCmd.includes('factura') || lowerCmd.includes('cfdi')) {
+                                        speak("Tuve un problema de conexión, pero puedo ayudarte con eso localmente. ¿A nombre de quién la factura?");
+                                        setConversation({ mode: 'CFDI_WIZARD', step: 'ASK_CLIENT', data: {} });
+                                        return;
+                                    }
+
+                                    speak("Mis servicios cognitivos están saturados momentáneamente. Por favor intenta de nuevo en un minuto.");
+                                    setResponse("⚠️ Tráfico alto en Gabi AI. Reintentar pronto.");
+                                    return;
+                                }
+                                // Exponential backoff: 1s, 2s, 4s...
+                                await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempts - 1)));
+                                continue;
+                            }
+
+                            // If successful or other error, break loop
+                            break;
+                        } catch (e) {
+                            // If network error, maybe retry? For now only 429 logic requested.
+                            console.error("Fetch error during retry loop", e);
+                            throw e;
+                        }
+                    }
+
+                    if (!response) return; // Should not happen
+
+                    console.log("Gemini Debug: Response Status", response.status);
+
+                    if (!response.ok) {
+                        const errData = await response.text();
+                        console.error("Gemini Debug: API Error Body", errData);
+                        throw new Error(`Gemini API Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const answer = data.candidates[0].content.parts[0].text.trim();
+
+                        // Check for SEARCH protocol
+                        if (answer.startsWith('[[SEARCH:') && answer.endsWith(']]')) {
+                            const query = answer.replace('[[SEARCH:', '').replace(']]', '').trim();
+                            const gUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+
+                            speak(`No tengo ese dato reciente, pero te lo busco en Google.`);
+                            setResponse(`Buscando: <b>${query}</b>...`);
+
+                            setTimeout(() => {
+                                const newWindow = window.open(gUrl, '_blank');
+                                if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                                    speak("El navegador bloqueó la ventana. Revisa los permisos.");
+                                }
+                            }, 1500);
+                            return;
+                        }
+
+                        speak(answer);
+                        return;
+                    } else {
+                        console.warn("Gemini Debug: No content in response", data);
+                    }
+                } catch (e) {
+                    console.error("Gemini Critical Error", e);
+                    // Fallback to Wiki/Google if Gemini fails
+                }
+            }
+
+
+            // --- FINAL FALLBACK: GOOGLE SEARCH (Wiki Disabled) ---
+            const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(lowerCmd)}`;
+            speak(`No tengo esa respuesta, pero puedes buscarla en Google.`);
+            setResponse(`No tengo esa respuesta. <a href="${googleUrl}" target="_blank" class="text-blue-400 underline ml-2">[Buscar en Google]</a>`);
+
+            setTimeout(() => {
+                const newWindow = window.open(googleUrl, '_blank');
+                // Popup Blocker Detection
+                if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                    speak("Tu navegador bloqueó la ventana. Por favor, permite las ventanas emergentes para mostrarte la información.");
+                }
+            }, 3000);
+
+        } catch (error) {
+            console.error(error);
+            speak("Tuve un problema al consultar tus datos.");
+        }
+    };
+
+    // Keep processCommandRef updated with the latest function from the current render
+    useEffect(() => {
+        processCommandRef.current = processCommand;
+    }, [processCommand]);
+
+    const startListening = () => {
+        if (recognitionRef.current) {
+            setTranscript('');
+            transcriptRef.current = '';
+            setResponse('');
+            try {
+                recognitionRef.current.start();
+            } catch (e) {
+                console.error("Speech API error usually already started", e);
+            }
+        } else {
+            alert("Tu navegador no soporta comandos de voz.");
+        }
+    };
+
+    const stopListening = () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+    };
+
+    return {
+        state,
+        transcript,
+        response,
+        startListening,
+        stopListening,
+        processCommand,
+        conversation
+    };
+};
