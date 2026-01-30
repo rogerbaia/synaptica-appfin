@@ -108,7 +108,7 @@ export default function Header({ onMenuClick, onProfileClick }: HeaderProps) {
 
     const [isElectron, setIsElectron] = useState(false);
     useEffect(() => {
-        if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('electron')) {
+        if (typeof window !== 'undefined' && window.navigator.userAgent.toLowerCase().includes('synapticadesktop')) {
             setIsElectron(true);
         }
     }, []);
