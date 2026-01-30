@@ -110,7 +110,7 @@ export default function Header({ onMenuClick, onProfileClick }: HeaderProps) {
     const handleDownloadClick = () => {
         const userAgent = window.navigator.userAgent.toLowerCase();
         if (userAgent.includes('win')) {
-            window.open('https://drive.google.com/file/d/1g2pM_6MZ9gwKdlA1yVNsLVK_XIKY779k/view?usp=drive_link', '_blank');
+            window.open('https://drive.google.com/file/d/1-BGzO7FScGY8UWJ6tiedPzmpyVLsdBCK/view?usp=drive_link', '_blank');
         } else if (userAgent.includes('android')) {
             window.location.href = '/downloads/app-release.apk';
         } else if (userAgent.includes('iphone') || userAgent.includes('ipad')) {

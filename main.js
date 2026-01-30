@@ -8,7 +8,7 @@ function createWindow() {
         width: 1200,
         height: 800,
         title: "Aurea Financial",
-        icon: path.join(__dirname, 'public/logo-aurea-fusion.png'),
+        icon: path.join(__dirname, 'public/icon.ico'),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,

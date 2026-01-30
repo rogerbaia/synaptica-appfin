@@ -60,7 +60,7 @@ export default function SmartDownloadBanner() {
                         onClick={() => {
                             // Logic to trigger download
                             // Using hypothetical paths for now
-                            if (os === 'windows') window.open('https://drive.google.com/file/d/1g2pM_6MZ9gwKdlA1yVNsLVK_XIKY779k/view?usp=drive_link', '_blank');
+                            if (os === 'windows') window.open('https://drive.google.com/file/d/1-BGzO7FScGY8UWJ6tiedPzmpyVLsdBCK/view?usp=drive_link', '_blank');
                             if (os === 'android') window.location.href = '/downloads/app-release.apk';
                             if (os === 'ios') alert("En iOS: Pulsa el botón 'Compartir' y elige 'Agregar a Inicio'");
                         }}
