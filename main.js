@@ -22,7 +22,10 @@ function createWindow() {
         ? 'http://localhost:3000'
         : 'https://synaptica-appfin.vercel.app'; // Fixed: Point to Vercel Prod
 
-    mainWindow.loadURL(appUrl);
+    // [CRITICAL] Inject custom UA for detection in React
+    mainWindow.loadURL(appUrl, {
+        userAgent: mainWindow.webContents.getUserAgent() + ' SynapticaDesktop'
+    });
 
     if (isDev) {
         // mainWindow.webContents.openDevTools();

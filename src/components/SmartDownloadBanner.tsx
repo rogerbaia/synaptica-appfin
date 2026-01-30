@@ -10,8 +10,8 @@ export default function SmartDownloadBanner() {
     useEffect(() => {
         const userAgent = window.navigator.userAgent.toLowerCase();
 
-        // [NEW] Detect Electron to hide banner automatically
-        if (userAgent.includes('electron')) {
+        // [NEW] Detect Electron (Custom UA) to hide banner automatically
+        if (userAgent.includes('synapticadesktop')) {
             setIsVisible(false);
             setOs('unknown'); // Ensure it doesn't trigger other logic
             return;
