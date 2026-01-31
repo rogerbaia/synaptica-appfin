@@ -35,7 +35,9 @@ export default function FiscalClients() {
         setLoading(true);
         try {
             console.log("Fetching clients...");
-            const response = await fetch(`/api/sat/clients?q=${searchTerm || ''}`);
+            console.log("Fetching clients...");
+            // Force cache bust with timestamp
+            const response = await fetch(`/api/sat/clients?q=${searchTerm || ''}&_t=${Date.now()}`);
             const dataWrapper = await response.json();
 
             console.log("Clients Data Received:", dataWrapper);
