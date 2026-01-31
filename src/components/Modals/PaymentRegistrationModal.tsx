@@ -24,8 +24,17 @@ export default function PaymentRegistrationModal({ isOpen, onClose, onSuccess, p
         return () => setMounted(false);
     }, []);
 
+    // Helper for Local Date (YYYY-MM-DD)
+    const getLocalDate = () => {
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+
     // Form States
-    const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
+    const [paymentDate, setPaymentDate] = useState(getLocalDate());
     const [invoiceNumber, setInvoiceNumber] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('');
     const [observation, setObservation] = useState('');
@@ -34,7 +43,7 @@ export default function PaymentRegistrationModal({ isOpen, onClose, onSuccess, p
         e.preventDefault();
 
         // Future Date Validation
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDate();
         if (paymentDate > today) {
             toast.error("No puedes registrar un pago con una fecha futura.");
             return;
@@ -77,7 +86,7 @@ export default function PaymentRegistrationModal({ isOpen, onClose, onSuccess, p
 
     if (!isOpen || !mounted) return null;
 
-    const maxDate = new Date().toISOString().split('T')[0]; // Current day
+    const maxDate = getLocalDate(); // Current day (Local)
 
     const modalContent = (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
