@@ -401,8 +401,14 @@ function InvoicingContent() {
         });
 
         if (isConfirmed) {
-            setDrafts(prev => prev.filter(d => d.id !== id));
-            toast.success("Borrador eliminado");
+            try {
+                await supabaseService.deleteTransaction(id);
+                setDrafts(prev => prev.filter(d => d.id !== id));
+                toast.success("Borrador eliminado permanentemente");
+            } catch (error) {
+                console.error("Error deleting draft:", error);
+                toast.error("Error al eliminar el borrador");
+            }
         }
     };
 
