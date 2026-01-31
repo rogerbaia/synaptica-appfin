@@ -9,7 +9,13 @@ interface LanguageContextType {
     t: (key: TranslationKey) => string;
 }
 
-const LanguageContext = createContext<LanguageContextType>({} as LanguageContextType);
+const defaultContext: LanguageContextType = {
+    language: 'es-419',
+    setLanguage: () => { },
+    t: (key: TranslationKey) => key
+};
+
+const LanguageContext = createContext<LanguageContextType>(defaultContext);
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
     const [language, setLanguageState] = useState<Language>('es-419');
