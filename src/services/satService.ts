@@ -18,7 +18,13 @@ export interface InvoiceData {
   iva: number;
   retention: number;
   total: number;
+  total: number;
   returnUrl?: string; // For redirect flow
+  // [ADDED] Flags for Payload Construction
+  customer?: string;
+  hasIva?: boolean;
+  hasRetention?: boolean;
+  activityType?: string;
 }
 
 export interface StampedInvoice {
@@ -43,6 +49,51 @@ export const satService = {
 
     if (!token) throw new Error("No hay sesión activa. Por favor inicia sesión nuevamente.");
 
+    // [TRANSFORMATION] Construct Facturapi Payload from Flat Data
+    const RETENTION_RATES: any = {
+      'RESICO': { isr: 0.0125, iva: 0.106667 },
+      'HONORARIOS': { isr: 0.10, iva: 0.106667 },
+      'ARRENDAMIENTO': { isr: 0.10, iva: 0.106667 },
+      'FLETES': { isr: 0.04, iva: 0.04 },
+      'PLATAFORMAS': { isr: 0.01, iva: 0.50 },
+    };
+
+    const taxes = [];
+    if (data.hasIva) {
+      taxes.push({ type: 'IVA', rate: 0.16 });
+    }
+
+    if (data.hasRetention) {
+      // Default to RESICO if not specified or found
+      const rates = RETENTION_RATES[data.activityType || 'RESICO'] || RETENTION_RATES['RESICO'];
+
+      // Add ISR Retention
+      taxes.push({ type: 'ISR', rate: rates.isr, factor: 'Tasa', withholding: true });
+
+      // Add IVA Retention (Only if IVA is also present usually, but let's follow the flag logic)
+      if (data.hasIva) {
+        taxes.push({ type: 'IVA', rate: rates.iva, factor: 'Tasa', withholding: true });
+      }
+    }
+
+    const payload = {
+      customer: data.customer, // From previous fix
+      payment_form: data.paymentForm,
+      payment_method: data.paymentMethod,
+      use: data.cfdiUse,
+      items: [{
+        quantity: data.quantity,
+        product: {
+          description: data.description,
+          product_key: data.satProductKey,
+          price: Number(data.unitValue),
+          unit_key: data.satUnitKey,
+          unit_name: 'Servicio', // Optional but good for valid XML
+          taxes: taxes // The calculated tax array
+        }
+      }]
+    };
+
     // Call local API Route which handles the Secret Key and Real Logic
     const response = await fetch('/api/sat/stamp', {
       method: 'POST',
@@ -50,7 +101,7 @@ export const satService = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
 
     const rawText = await response.text();
