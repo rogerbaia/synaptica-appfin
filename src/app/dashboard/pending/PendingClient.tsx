@@ -38,8 +38,12 @@ export default function PendingPage() {
         setLoading(true);
         try {
             const txs = await supabaseService.getTransactions();
-            // Filter for Income AND Not Received
-            const pending = txs.filter(t => t.type === 'income' && !t.payment_received);
+            // Filter for Income, Not Received, AND Not Cancelled/Hidden
+            const pending = txs.filter(t =>
+                t.type === 'income' &&
+                !t.payment_received &&
+                t.category !== 'Factura Cancelada / Oculto'
+            );
             // We'll store the raw TX objects mixed with UI props if needed, or just raw for simplicity in this view
             // Actually mapDBToUI reduces fields. Let's start storing raw for the modal usage, 
             // but the table expects specific simple structure? 
