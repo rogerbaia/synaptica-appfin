@@ -172,11 +172,11 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 {/* LEFT COLUMN: Client Data (Span 7) */}
                                 <div className="col-span-1 md:col-span-7 flex flex-col">
                                     <div className="bg-slate-50 p-2 font-bold text-slate-800 uppercase tracking-wider text-center border-b border-slate-200">
-                                        Datos del Cliente
+                                        Datos del Receptor
                                     </div>
                                     <div className="p-4 bg-white space-y-2 flex-1">
                                         <div className="flex justify-between border-b border-slate-50 pb-1">
-                                            <span className="font-bold text-slate-600">Receptor:</span>
+                                            <span className="font-bold text-slate-600">Razón Social:</span>
                                             <span className="text-slate-800 uppercase font-semibold">{data.client}</span>
                                         </div>
                                         <div className="flex justify-between border-b border-slate-50 pb-1">
