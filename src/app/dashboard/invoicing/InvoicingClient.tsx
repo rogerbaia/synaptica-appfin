@@ -669,42 +669,10 @@ function InvoicingContent() {
             */
 
 
-    // ... Retrying with actual implementation below ...
+            // ... Retrying with actual implementation below ...
 
-    // ... inside component ...
-    const sendEmail = async (invoice: any) => {
-        // 1. Get Email
-        const email = prompt("Ingrese el correo del cliente:", "cliente@ejemplo.com");
-            if (!email) return;
+            // ... inside component ...
 
-            const toastId = toast.loading("Enviando factura...");
-            try {
-            const res = await fetch('/api/sat/email', {
-                method: 'POST',
-            headers: {'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                invoiceId: invoice.uuid || invoice.id, // Facturapi needs its ID. If we use UUID as ID, great. If not, we need the stored Facturapi ID. 
-            // In 'createInvoice', we store response.id -> details.id?
-            // Let's assume UUID works or use details.id if available.
-            email 
-                }) 
-            });
-
-            if (!res.ok) throw new await res.json();
-
-            toast.success("Enviado correctamente (Cliente + Copia)", {id: toastId });
-
-            // Update State
-            setInvoices(prev => prev.map(inv => inv.id === invoice.id ? {...inv, sent: true } : inv));
-
-            // Persist (Optimistic)
-            supabaseService.updateTransaction(invoice.id, {details: {...invoice.details, sent: true } });
-
-        } catch (error: any) {
-                console.error(error);
-            toast.error(`Error al enviar: ${error.message || 'Desconocido'}`, {id: toastId });
-        }
-    };
 
             // ... In Render ...
             // Pass sendEmail to SuccessModal and InvoicePreview
