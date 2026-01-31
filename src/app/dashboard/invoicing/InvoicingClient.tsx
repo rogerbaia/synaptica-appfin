@@ -667,8 +667,7 @@ function InvoicingContent() {
             /* 
                Better approach: extract email handling to a proper function 
             */
-        } catch (e) { }
-    };
+
 
     // ... Retrying with actual implementation below ...
 
