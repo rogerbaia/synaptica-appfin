@@ -125,19 +125,39 @@ export async function POST(req: NextRequest) {
 
         console.log(`[DEBUG] Step 1 Done. Target Org ID: ${orgId}. LINKING User...`);
 
-        // [CRITICAL] Link User in Supabase IMMEDIATELY
-        const { error: updateError } = await supabase.auth.updateUser({
-            data: {
-                facturapi_org_id: orgId, // CRITICAL LINK
-                facturapi_rfc: targetRFC,
-                facturapi_legal_name: orgLegalName,
-                is_fiscal_ready: true
-            }
-        });
+        // [CRITICAL] Link User in Supabase
+        // Strategy: Try Admin Client (Service Role) first for guaranteed permission.
+        const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        let updateError = null;
+
+        if (SERVICE_ROLE_KEY) {
+            console.log('[DEBUG] Using Service Role Key for Admin Update');
+            const supabaseAdmin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(user.id, {
+                user_metadata: {
+                    facturapi_org_id: orgId, // CRITICAL LINK
+                    facturapi_rfc: targetRFC,
+                    facturapi_legal_name: orgLegalName,
+                    is_fiscal_ready: true
+                }
+            });
+            updateError = error;
+        } else {
+            console.warn('[WARN] No SERVICE_ROLE_KEY found. Falling back to User Context Update.');
+            const { error } = await supabase.auth.updateUser({
+                data: {
+                    facturapi_org_id: orgId, // CRITICAL LINK
+                    facturapi_rfc: targetRFC,
+                    facturapi_legal_name: orgLegalName,
+                    is_fiscal_ready: true
+                }
+            });
+            updateError = error;
+        }
 
         if (updateError) {
             console.error("Supabase Metadata Update Error", updateError);
-            throw new Error("Organización encontrada/creada pero falló la vinculación (Supabase).");
+            throw new Error(`Organización encontrada/creada pero falló la vinculación (Supabase: ${updateError.message}).`);
         }
         console.log(`✅ Organization Linked: ${orgId}`);
 
