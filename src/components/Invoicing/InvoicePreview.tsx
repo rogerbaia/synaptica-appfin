@@ -12,9 +12,6 @@ interface InvoicePreviewProps {
     onAction: (action: 'stamp' | 'edit' | 'print' | 'email' | 'duplicate' | 'download' | 'cancel') => void;
 }
 
-
-
-
 export default function InvoicePreview({ isOpen, onClose, data, onAction }: InvoicePreviewProps) {
     const [mounted, setMounted] = useState(false);
     const { tier } = useSubscription();
@@ -55,12 +52,14 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
     // Helper to get Descriptions
     const getRegimeDesc = (code: string) => {
         if (!code) return '601';
+        if (!FISCAL_REGIMES) return code; // Safety check
         const found = FISCAL_REGIMES.find(r => r.code === code);
         return found ? `${code} - ${found.name}` : code;
     };
 
     const getUseDesc = (code: string) => {
         if (!code) return 'G03';
+        if (!SAT_CFDI_USES) return code; // Safety check
         const found = SAT_CFDI_USES.find(u => u.code === code);
         return found ? `${code} - ${found.name}` : code;
     };
@@ -191,28 +190,28 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     <div className="p-4 bg-white space-y-2 flex-1">
                                         <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
                                             <div className="col-span-4 font-bold text-slate-600">Razón Social:</div>
-                                            <div className="col-span-8 text-slate-800 uppercase font-semibold text-right md:text-left">{data.client}</div>
+                                            <div className="col-span-8 text-slate-800 uppercase font-semibold text-right md:text-left">{data.client || '---'}</div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
                                             <div className="col-span-4 font-bold text-slate-600">RFC:</div>
-                                            <div className="col-span-8 font-mono text-slate-700 text-right md:text-left">{data.rfc}</div>
+                                            <div className="col-span-8 font-mono text-slate-700 text-right md:text-left">{data.rfc || '---'}</div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
                                             <div className="col-span-4 font-bold text-slate-600">Régimen Fiscal:</div>
                                             <div className="col-span-8 text-slate-700 leading-tight text-right md:text-left">
-                                                {getRegimeDesc(details.fiscalRegime || '601')}
+                                                {getRegimeDesc(details?.fiscalRegime || '601')}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
                                             <div className="col-span-4 font-bold text-slate-600">Domicilio:</div>
                                             <div className="col-span-8 text-slate-700 uppercase leading-tight text-right md:text-left">
-                                                {details.address || '25210, SALTILLO, COAHUILA, MEX'}
+                                                {details?.address || '25210, SALTILLO, COAHUILA, MEX'}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2">
                                             <div className="col-span-4 font-bold text-slate-600">Uso del CFDI:</div>
                                             <div className="col-span-8 text-slate-700 leading-tight text-right md:text-left">
-                                                {getUseDesc(details.cfdiUse || 'G03')}
+                                                {getUseDesc(details?.cfdiUse || 'G03')}
                                             </div>
                                         </div>
                                     </div>
@@ -238,7 +237,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="font-bold text-slate-600">Lugar Exp.:</span>
-                                            <span className="text-slate-800">{details.expeditionPlace || '67510'}</span>
+                                            <span className="text-slate-800">{details?.expeditionPlace || '67510'}</span>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="font-bold text-slate-600 whitespace-nowrap">Emisión:</span>
@@ -246,11 +245,11 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="font-bold text-slate-600 whitespace-nowrap">Certificación:</span>
-                                            <span className="text-slate-800">{details.certDate ? new Date(details.certDate).toLocaleString('es-MX') : (data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : '---')}</span>
+                                            <span className="text-slate-800">{details?.certDate ? new Date(details.certDate).toLocaleString('es-MX') : (data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : '---')}</span>
                                         </div>
                                         <div className="flex justify-between flex-col border-t border-slate-100 pt-1 mt-1">
                                             <span className="font-bold text-slate-600 text-[10px]">Serie CSD Emisor:</span>
-                                            <span className="font-mono text-slate-800 text-[10px]">{details.certificateNumber || '30001000000500003421'}</span>
+                                            <span className="font-mono text-slate-800 text-[10px]">{details?.certificateNumber || '30001000000500003421'}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -273,24 +272,24 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 </thead>
                                 <tbody className="text-slate-600">
                                     <tr className="border-b border-slate-100 hover:bg-slate-50 transition">
-                                        <td className="py-4 px-3 align-top font-bold text-center">{details.quantity || 1}</td>
+                                        <td className="py-4 px-3 align-top font-bold text-center">{details?.quantity || 1}</td>
                                         <td className="py-4 px-3 align-top">
                                             <div className="flex flex-col">
-                                                <span className="font-medium text-slate-800">{details.satUnitKey || 'E48'}</span>
+                                                <span className="font-medium text-slate-800">{details?.satUnitKey || 'E48'}</span>
                                                 <span className="text-[9px] text-slate-400 uppercase">Unidad de servicio</span>
                                             </div>
                                         </td>
-                                        <td className="py-4 px-3 align-top font-mono text-slate-500">{details.satProductKey}</td>
+                                        <td className="py-4 px-3 align-top font-mono text-slate-500">{details?.satProductKey || '---'}</td>
                                         <td className="py-4 px-3 align-top">
                                             <p className="font-bold text-slate-800 uppercase mb-1">{data.description}</p>
-                                            {(details.iva > 0 || details.retention > 0) && (
+                                            {(details?.iva > 0 || details?.retention > 0) && (
                                                 <div className="flex gap-3 text-[9px] text-slate-400 bg-slate-50 inline-block px-2 py-1 rounded">
                                                     {details.iva > 0 && <span>Traslado IVA Base: ${details.subtotal?.toLocaleString('es-MX')} Tasa: 0.160000</span>}
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="py-4 px-3 align-top text-right font-mono text-slate-700">${(details.unitValue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                        <td className="py-4 px-3 align-top text-right font-bold font-mono text-slate-900">${(details.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="py-4 px-3 align-top text-right font-mono text-slate-700">${(details?.unitValue || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                        <td className="py-4 px-3 align-top text-right font-bold font-mono text-slate-900">${(details?.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -311,15 +310,15 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>
                                         <p className="font-bold text-slate-500 mb-1">Forma de Pago</p>
-                                        <p className="text-slate-800">{details.paymentForm || '03'} - {details.paymentForm === '01' ? 'Efectivo' : details.paymentForm === '02' ? 'Cheque' : details.paymentForm === '03' ? 'Transferencia' : details.paymentForm === '99' ? 'Por definir' : 'Otros'}</p>
+                                        <p className="text-slate-800">{details?.paymentForm || '03'} - {details?.paymentForm === '01' ? 'Efectivo' : details?.paymentForm === '02' ? 'Cheque' : details?.paymentForm === '03' ? 'Transferencia' : details?.paymentForm === '99' ? 'Por definir' : 'Otros'}</p>
                                     </div>
                                     <div>
                                         <p className="font-bold text-slate-500 mb-1">Método de Pago</p>
-                                        <p className="text-slate-800">{details.paymentMethod || 'PUE'} - {details.paymentMethod === 'PPD' ? 'Parcialidades' : 'Una sola exhibición'}</p>
+                                        <p className="text-slate-800">{details?.paymentMethod || 'PUE'} - {details?.paymentMethod === 'PPD' ? 'Parcialidades' : 'Una sola exhibición'}</p>
                                     </div>
                                     <div className="col-span-2">
                                         <p className="font-bold text-slate-500 mb-1">Uso CFDI</p>
-                                        <p className="text-slate-800">{getUseDesc(details.cfdiUse)}</p>
+                                        <p className="text-slate-800">{getUseDesc(details?.cfdiUse)}</p>
                                     </div>
                                 </div>
 
@@ -330,7 +329,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     </div>
                                     <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1">
                                         <p className="text-[10px] text-slate-500 font-mono break-all leading-tight">
-                                            {details.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                            {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
                                         </p>
                                     </div>
                                 </div>
@@ -341,21 +340,21 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-xs text-slate-500">
                                         <span>Subtotal</span>
-                                        <span className="font-mono">${(details.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        <span className="font-mono">${(details?.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
-                                    {details.iva > 0 && (
+                                    {details?.iva > 0 && (
                                         <div className="flex justify-between text-xs text-slate-500">
                                             <span>(+ 002 IVA)</span>
                                             <span className="font-mono">${details.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                         </div>
                                     )}
-                                    {details.retention > 0 && (
+                                    {details?.retention > 0 && (
                                         <div className="flex justify-between text-xs text-red-500">
                                             <span>(- Ret. ISR)</span>
                                             <span className="font-mono">-${details.retention.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                         </div>
                                     )}
-                                    {details.ivaRetention > 0 && (
+                                    {details?.ivaRetention > 0 && (
                                         <div className="flex justify-between text-xs text-red-500">
                                             <span>(- Ret. IVA)</span>
                                             <span className="font-mono">-${details.ivaRetention.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
