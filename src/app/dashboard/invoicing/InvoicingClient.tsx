@@ -739,7 +739,44 @@ function InvoicingContent() {
                             <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                                 <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-4">Comprobantes emitidos (12 meses)</h3>
                                 <div className="h-64 w-full">
-                                    <ReactECharts option={CHART_OPTION} style={{ height: '100%', width: '100%' }} />
+                                    <ReactECharts
+                                        option={{
+                                            tooltip: { trigger: 'axis' },
+                                            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+                                            xAxis: {
+                                                type: 'category',
+                                                boundaryGap: false,
+                                                data: Array.from({ length: 12 }, (_, i) => {
+                                                    const d = new Date();
+                                                    d.setMonth(d.getMonth() - (11 - i));
+                                                    return d.toLocaleString('es-MX', { month: 'short', year: 'numeric' });
+                                                })
+                                            },
+                                            yAxis: { type: 'value', minInterval: 1 },
+                                            series: [{
+                                                name: 'Facturas',
+                                                type: 'line',
+                                                smooth: true,
+                                                lineStyle: { width: 3, color: '#0284c7' },
+                                                areaStyle: {
+                                                    color: {
+                                                        type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+                                                        colorStops: [{ offset: 0, color: 'rgba(2, 132, 199, 0.3)' }, { offset: 1, color: 'rgba(2, 132, 199, 0.05)' }]
+                                                    }
+                                                },
+                                                data: Array.from({ length: 12 }, (_, i) => {
+                                                    const d = new Date();
+                                                    d.setMonth(d.getMonth() - (11 - i));
+                                                    const monthKey = d.toISOString().slice(0, 7); // YYYY-MM
+                                                    return invoices.filter(inv =>
+                                                        inv.status !== 'cancelled' &&
+                                                        (inv.date?.includes(monthKey) || new Date(inv.date.split('/').reverse().join('-')).toISOString().includes(monthKey))
+                                                    ).length;
+                                                })
+                                            }]
+                                        }}
+                                        style={{ height: '100%', width: '100%' }}
+                                    />
                                 </div>
                             </div>
 
@@ -747,11 +784,25 @@ function InvoicingContent() {
                             <div className="space-y-6">
                                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
                                     <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-4">Folios Disponibles</h3>
-                                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                                        <p className="text-sm text-green-800 dark:text-green-300">
-                                            Actualmente tienes <strong>91 folios</strong> que puedes utilizar hasta el día <strong>19/Nov/2026</strong>.
-                                        </p>
-                                    </div>
+                                    {(() => {
+                                        const currentYear = new Date().getFullYear();
+                                        const annualLimit = tier === 'platinum' ? 50 : 5; // 50 for Platinum, 5 for others/trial
+                                        const usedThisYear = invoices.filter(inv =>
+                                            inv.status !== 'cancelled' &&
+                                            (inv.date.includes(currentYear.toString()) || inv.date.endsWith(currentYear.toString().slice(-2)))
+                                        ).length;
+                                        const remaining = Math.max(0, annualLimit - usedThisYear);
+                                        const renewalDate = `01/Ene/${currentYear + 1}`;
+
+                                        return (
+                                            <div className={`border rounded-lg p-4 ${remaining < 5 ? 'bg-red-50 border-red-200' : 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'}`}>
+                                                <p className={`text-sm ${remaining < 5 ? 'text-red-800' : 'text-green-800 dark:text-green-300'}`}>
+                                                    Tienes <strong>{remaining} folios</strong> disponibles de tu plan anual ({annualLimit}).
+                                                    <br />Se renuevan el <strong>{renewalDate}</strong>.
+                                                </p>
+                                            </div>
+                                        );
+                                    })()}
                                     <button
                                         onClick={() => router.push('/dashboard/settings#folios')}
                                         className="w-full mt-4 py-2 border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-lg text-sm font-semibold transition"
