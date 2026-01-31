@@ -1,4 +1,6 @@
 export const SAT_PRODUCTS = [
+    { code: '84111506', name: 'Servicios de facturación' },
+    { code: '84111500', name: 'Servicios de contabilidad' },
     { code: '85121610', name: 'Servicios de oftalmólogos' },
     { code: '85121600', name: 'Servicios de médicos' },
     { code: '85121500', name: 'Servicios de médicos generales' },
