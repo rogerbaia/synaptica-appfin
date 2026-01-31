@@ -52,7 +52,20 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ ...json, _debug: debugInfo });
     } catch (error: any) {
         console.error('Facturapi Clients Error:', error);
-        return NextResponse.json({ message: error.message }, { status: 500 });
+
+        // RE-CALCULATE DEBUG INFO FOR ERROR RESPONSE
+        const debugInfo = {
+            keyConfigured: !!FACTURAPI_KEY,
+            keyLength: FACTURAPI_KEY ? FACTURAPI_KEY.length : 0,
+            status: 500,
+            error: error.message,
+            stack: error.stack ? error.stack.substring(0, 100) : 'no-stack'
+        };
+
+        return NextResponse.json({
+            message: error.message,
+            _debug: debugInfo
+        }, { status: 500 });
     }
 }
 
