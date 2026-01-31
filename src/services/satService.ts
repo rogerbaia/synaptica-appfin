@@ -37,24 +37,18 @@ export const satService = {
    */
   async stampInvoice(data: InvoiceData): Promise<StampedInvoice> {
     // Call local API Route which handles the Secret Key and Real Logic
-    try {
-      const response = await fetch('/api/sat/stamp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
+    const response = await fetch('/api/sat/stamp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Error timbrando factura');
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.warn("API Stamp Error detected (likely missing key) - Falling back to MOCK", error);
-      // Fallback to Mock for Demo/Dev purposes without API Key
-      return this.stampInvoiceLocalMock(data);
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.message || 'Error timbrando factura');
     }
+
+    return await response.json();
   },
 
   async stampInvoiceLocalMock(data: InvoiceData): Promise<StampedInvoice> {

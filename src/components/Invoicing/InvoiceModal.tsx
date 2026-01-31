@@ -142,8 +142,8 @@ export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: {
         paymentMethod: 'PUE',
         paymentForm: '03',
         cfdiUse: 'G03',
-        satProductKey: '84111506', // Servicios de facturación (default generic) or 85121610
-        satUnitKey: 'E49', // Dia de trabajo (Requested Default)
+        satProductKey: '85121610', // Servicios de oftalmólogos (Requested Default)
+        satUnitKey: 'E48', // Unidad de servicio (More standard for medical services than E49)
         description: '',
         quantity: 1,
         unitValue: 0 as number | string,
