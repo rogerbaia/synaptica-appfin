@@ -8,7 +8,13 @@ const FACTURAPI_KEY = process.env.FACTURAPI_KEY || (KEY_PART_1 + KEY_PART_2);
 const getAuthHeader = () => {
     const cleanKey = FACTURAPI_KEY.trim();
     if (!cleanKey) throw new Error("Missing FACTURAPI_KEY");
-    return `Basic ${Buffer.from(cleanKey + ':').toString('base64')}`;
+
+    // Polyfill for Base64 to avoid Buffer issues on Edge/Vercel
+    const base64 = typeof Buffer !== 'undefined'
+        ? Buffer.from(cleanKey + ':').toString('base64')
+        : (typeof btoa !== 'undefined' ? btoa(cleanKey + ':') : '');
+
+    return `Basic ${base64}`;
 };
 
 export async function GET(req: NextRequest) {
