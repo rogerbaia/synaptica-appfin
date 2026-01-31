@@ -97,11 +97,6 @@ export async function POST(req: NextRequest) {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    legal_name: legalName, // Trying legal_name again as it IS required for creation
-                    // name: name, // Removing name tentatively to strictly follow docs for creation if possible, or keeping both? 
-                    // Actually, if 'legal_name' failed before, maybe it was because it existed? 
-                    // Let's stick to the 'standard' schema now that we check existence first.
-                    // Docs: legal_name, tax_id, tax_system are required.
                     legal_name: legalName,
                     tax_id: targetRFC,
                     tax_system: formData.get('tax_system') as string,
@@ -116,43 +111,62 @@ export async function POST(req: NextRequest) {
             if (!createRes.ok) {
                 console.error("Facturapi Creation Error:", json);
                 const msg = json.message || "Error creando organización (JSON)";
-                // If it still says 'legal_name' not allowed, we are in a very weird state.
-                // But generally this IS the standard way.
                 throw new Error(msg);
             }
             orgId = json.id;
             orgLegalName = json.legal_name || legalName;
         }
 
-        console.log(`[DEBUG] Step 1 Done. Target Org ID: ${orgId}. Step 2: Uploading CSD...`);
+        console.log(`[DEBUG] Step 1 Done. Target Org ID: ${orgId}. LINKING User...`);
 
-        // 2. Step 2: Upload CSD Files (if provided)
+        // [CRITICAL] Link User in Supabase IMMEDIATELY
+        const { error: updateError } = await supabase.auth.updateUser({
+            data: {
+                facturapi_org_id: orgId, // CRITICAL LINK
+                facturapi_rfc: targetRFC,
+                facturapi_legal_name: orgLegalName,
+                is_fiscal_ready: true
+            }
+        });
+
+        if (updateError) {
+            console.error("Supabase Metadata Update Error", updateError);
+            throw new Error("Organización encontrada/creada pero falló la vinculación (Supabase).");
+        }
+        console.log(`✅ Organization Linked: ${orgId}`);
+
+        // 2. Step 2: Upload CSD Files (Non-Fatal)
+        let csdMessage = "CSD subidos correctamente.";
         const cert = formData.get('certificate');
         const key = formData.get('key');
         const pass = formData.get('password');
 
         if (cert && key && pass) {
-            const filesFormData = new FormData();
-            filesFormData.append('certificate', cert);
-            filesFormData.append('key', key);
-            filesFormData.append('password', pass as string);
+            try {
+                const filesFormData = new FormData();
+                filesFormData.append('certificate', cert);
+                filesFormData.append('key', key);
+                filesFormData.append('password', pass as string);
 
-            const uploadRes = await fetch(`https://www.facturapi.io/v2/organizations/${orgId}/legal/csd`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': authHeaderFacturapi,
-                },
-                body: filesFormData
-            });
+                const uploadRes = await fetch(`https://www.facturapi.io/v2/organizations/${orgId}/legal/csd`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': authHeaderFacturapi,
+                    },
+                    body: filesFormData
+                });
 
-            if (!uploadRes.ok) {
-                const uploadJson = await uploadRes.json();
-                console.error("Facturapi CSD Upload Error:", uploadJson);
-                // Non-fatal? Maybe warn user but continue since Org is created.
-                // But user wants to stamp, so it IS fatal for the goal.
-                throw new Error(`Organización vinculada, pero falló la subida de CSD: ${uploadJson.message}`);
+                if (!uploadRes.ok) {
+                    const uploadJson = await uploadRes.json();
+                    console.error("Facturapi CSD Upload Error:", uploadJson);
+                    csdMessage = `Advertencia: Organización guardada, pero hubo un error subiendo los CSD (${uploadJson.message}). Intenta subirlos nuevamente.`;
+                } else {
+                    console.log('[DEBUG] Step 2 Success: CSD Uploaded.');
+                }
+            } catch (err: any) {
+                console.warn("CSD Upload Exception:", err);
+                csdMessage = `Advertencia: Error de conexión al subir CSD.`;
             }
-            console.log('[DEBUG] Step 2 Success: CSD Uploaded.');
         }
 
         // 3. Step 3: Logo Upload (if provided)
@@ -175,7 +189,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({
             id: orgId,
             legal_name: orgLegalName,
-            message: "Organización Fiscal Configurada Correctamente"
+            message: `Organización Guardada. ${csdMessage}`
         });
 
     } catch (error: any) {
