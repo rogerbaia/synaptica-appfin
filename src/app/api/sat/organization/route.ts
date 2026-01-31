@@ -158,39 +158,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const json = await res.json();
-
-        if (!res.ok) {
-            console.error("Facturapi Error:", json);
-            const msg = json.message || "Error creando organización";
-
-            // Common error: Duplicate
-            if (msg.includes('already exists') || msg.includes('duplicate')) {
-                // Should we try to find it? For now, just error.
-                throw new Error("Una organización con este RFC ya existe en tu cuenta.");
-            }
-            throw new Error(msg);
-        }
-
-        const orgId = json.id;
-
-        // 3. Save Org ID to User Metadata
-        const { error: updateError } = await supabase.auth.updateUser({
-            data: {
-                facturapi_org_id: orgId, // CRITICAL: This links the user to their unique fiscal identity
-                facturapi_rfc: formData.get('tax_id'),
-                facturapi_legal_name: json.legal_name,
-                is_fiscal_ready: true
-            }
-        });
-
-        if (updateError) {
-            console.error("Supabase Metadata Update Error", updateError);
-            throw new Error("Organización creada pero falló la vinculación con tu usuario. Contacta soporte.");
-        }
-
-        console.log(`✅ Organization Created & Linked: ${orgId} for User ${user.email}`);
-
+        // Return success response based on the new flow
         return NextResponse.json({
             id: orgId,
             legal_name: json.legal_name,
