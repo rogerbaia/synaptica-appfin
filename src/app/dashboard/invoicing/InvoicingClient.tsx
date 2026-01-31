@@ -217,11 +217,31 @@ function InvoicingContent() {
                     .map((t: any) => ({
                         id: t.id,
                         folio: 'PRE-' + t.id,
-                        date: new Date(t.date).toLocaleDateString('es-MX'),
+                        date: new Date(t.date).toLocaleDateString('es-MX'), // Original format for table
+                        // [NEW] Raw date for preview
+                        rawDate: t.date,
                         client: t.description.split(' - ')[0] || 'Cliente',
                         rfc: t.details?.rfc || 'XAXX010101000',
                         total: t.amount,
-                        description: t.description.split(' - ')[1] || t.description
+                        description: t.description.split(' - ')[1] || t.description,
+                        // [NEW] Full Details for Preview
+                        details: {
+                            ...t.details,
+                            quantity: t.details?.quantity || 1,
+                            unitValue: t.details?.unitValue || (t.amount / (t.details?.hasIva ? 1.16 : 1)),
+                            subtotal: t.details?.subtotal || (t.amount / (t.details?.hasIva ? 1.16 : 1)),
+                            iva: t.details?.iva || (t.details?.hasIva ? t.amount - (t.amount / 1.16) : 0),
+                            retention: t.details?.retention || 0,
+                            ivaRetention: t.details?.ivaRetention || 0,
+                            satProductKey: t.details?.satProductKey || '85121610',
+                            satUnitKey: t.details?.satUnitKey || 'E48',
+                            paymentMethod: t.details?.paymentMethod || 'PUE',
+                            paymentForm: t.details?.paymentForm || '03',
+                            cfdiUse: t.details?.cfdiUse || 'G03',
+                            fiscalRegime: t.details?.fiscalRegime || '626',
+                            originalChain: '|| Simulación de cadena original para pre-visualización ||'
+                        },
+                        status: 'draft' // Helper status
                     }));
                 setDrafts(dbDrafts);
 
@@ -1111,7 +1131,10 @@ function InvoicingContent() {
                                         </tr>
                                     ) : (
                                         drafts.map((draft) => (
-                                            <tr key={draft.id} className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors">
+                                            <tr key={draft.id}
+                                                onClick={() => handlePreview(draft)} // [NEW] Open Preview
+                                                className="hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors cursor-pointer"
+                                            >
                                                 <td className="px-4 py-3 font-mono text-slate-500 dark:text-slate-400">
                                                     {draft.folio}
                                                 </td>
