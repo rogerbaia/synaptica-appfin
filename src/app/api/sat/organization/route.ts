@@ -79,16 +79,84 @@ export async function POST(req: NextRequest) {
         const cleanKey = FACTURAPI_KEY.trim();
         const authHeaderFacturapi = `Basic ${Buffer.from(cleanKey + ':').toString('base64')}`;
 
-        console.log('[DEBUG] Sending to Facturapi with Name:', name);
+        console.log('[DEBUG] Step 1: Creating Org via JSON with Name:', name);
 
-        // 2. Call Facturapi to Create Child Organization
-        const res = await fetch('https://www.facturapi.io/v2/organizations', {
+        // 2. Step 1: Create Organization via JSON (Robust metadata)
+        const createRes = await fetch('https://www.facturapi.io/v2/organizations', {
             method: 'POST',
             headers: {
                 'Authorization': authHeaderFacturapi,
+                'Content-Type': 'application/json'
             },
-            body: outgoingFormData
+            body: JSON.stringify({
+                legal_name: legalName,
+                name: name, // Sending explicit name
+                tax_id: formData.get('tax_id') as string,
+                tax_system: formData.get('tax_system') as string,
+                address: {
+                    zip: formData.get('address[zip]') as string,
+                }
+            })
         });
+
+        const json = await createRes.json();
+
+        if (!createRes.ok) {
+            console.error("Facturapi Creation Error:", json);
+            const msg = json.message || "Error creando organización (JSON)";
+            if (msg.includes('already exists') || msg.includes('duplicate')) {
+                throw new Error(`El RFC ya está registrado: ${msg}`);
+            }
+            throw new Error(msg);
+        }
+
+        const orgId = json.id;
+        console.log(`[DEBUG] Step 1 Success. Org ID: ${orgId}. Step 2: Uploading CSD...`);
+
+        // 2. Step 2: Upload CSD Files (if provided)
+        const cert = formData.get('certificate');
+        const key = formData.get('key');
+        const pass = formData.get('password');
+
+        if (cert && key && pass) {
+            const filesFormData = new FormData();
+            filesFormData.append('certificate', cert);
+            filesFormData.append('key', key);
+            filesFormData.append('password', pass as string);
+
+            const uploadRes = await fetch(`https://www.facturapi.io/v2/organizations/${orgId}/legal/csd`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': authHeaderFacturapi,
+                },
+                body: filesFormData
+            });
+
+            if (!uploadRes.ok) {
+                const uploadJson = await uploadRes.json();
+                console.error("Facturapi CSD Upload Error:", uploadJson);
+                // Non-fatal? Maybe warn user but continue since Org is created.
+                // But user wants to stamp, so it IS fatal for the goal.
+                throw new Error(`Organización creada, pero falló la subida de CSD: ${uploadJson.message}`);
+            }
+            console.log('[DEBUG] Step 2 Success: CSD Uploaded.');
+        }
+
+        // 3. Step 3: Logo Upload (if provided)
+        const logo = formData.get('logo');
+        if (logo) {
+            try {
+                const logoFormData = new FormData();
+                logoFormData.append('logo', logo);
+                await fetch(`https://www.facturapi.io/v2/organizations/${orgId}/logo`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': authHeaderFacturapi },
+                    body: logoFormData
+                });
+            } catch (e) {
+                console.warn("Logo upload failed silently", e);
+            }
+        }
 
         const json = await res.json();
 
