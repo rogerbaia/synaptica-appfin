@@ -282,8 +282,9 @@ function InvoicingContent() {
                             ...t.details,
                             // [FIX] Ensure Original Chain is mapped (Check all possible variants)
                             originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                            certificateNumber: t.details?.certificateNumber || t.details?.certificate_number || '30001000000500003421', // [NEW] Map Certificate
-                            expeditionPlace: t.details?.expeditionPlace || t.details?.expedition_place || '67510', // [NEW] Map Place
+                            certificateNumber: t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
+                            expeditionPlace: t.details?.expedition_place || t.details?.expeditionPlace || '67510',
+                            certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
                             // Ensure description is also in details for table
                             description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                         },
@@ -581,8 +582,9 @@ function InvoicingContent() {
                         ...t.details,
                         // [FIX] Ensure Original Chain is mapped (Check all possible variants)
                         originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                        certificateNumber: t.details?.certificateNumber || t.details?.certificate_number || '30001000000500003421', // [NEW] Map Certificate
-                        expeditionPlace: t.details?.expeditionPlace || t.details?.expedition_place || '67510', // [NEW] Map Place
+                        certificateNumber: t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
+                        expeditionPlace: t.details?.expedition_place || t.details?.expeditionPlace || '67510',
+                        certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
                         // Description Fix
                         description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                     }
@@ -600,8 +602,11 @@ function InvoicingContent() {
                     ...data,
                     ...stamped, // Validation info (sello, chain, etc)
                     originalChain: stamped.originalChain || '|| CADENA NO DISPONIBLE ||',
-                    certificateNumber: stamped.certificateNumber || '30001000000500003421', // [NEW] Map Certificate
-                    expeditionPlace: stamped.expeditionPlace || '67510', // [NEW] Map Place
+                    // [FIX] Map Issuer CSD (Facturapi usually returns it as 'certificate_number' at root, or we check stamp)
+                    certificateNumber: stamped.certificate_number || stamped.certificateNumber || '30001000000500003421',
+                    expeditionPlace: stamped.expedition_place || stamped.expeditionPlace || '67510',
+                    // [FIX] Map Certification Date from Stamp, fallback to Emission Date
+                    certDate: stamped.stamp?.date || stamped.date || new Date().toISOString(),
                     date: stamped.date || new Date().toISOString(),
                     paymentForm: data.paymentForm,
                     paymentMethod: data.paymentMethod,

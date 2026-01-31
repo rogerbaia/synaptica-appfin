@@ -193,7 +193,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="font-bold text-slate-600">Fecha certific.:</span>
-                                    <span className="text-slate-800">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : (data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'))}</span>
+                                    <span className="text-slate-800">{details.certDate ? new Date(details.certDate).toLocaleString('es-MX') : (data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : '---')}</span>
                                 </div>
                                 <div className="flex justify-between col-span-2 border-t border-slate-100 pt-1 mt-1">
                                     <span className="font-bold text-slate-600">Serie del CSD del emisor:</span>
