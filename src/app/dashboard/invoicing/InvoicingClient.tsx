@@ -70,7 +70,9 @@ function InvoicingContent() {
         return 'issued';
     });
     const [invoices, setInvoices] = useState(INITIAL_INVOICES);
+
     const [paymentModalInvoice, setPaymentModalInvoice] = useState<any>(null);
+    const [refreshTrigger, setRefreshTrigger] = useState(0); // [NEW] Refresh Trigger
 
     useEffect(() => {
         // Find the main scrollable container and scroll to top
@@ -201,7 +203,7 @@ function InvoicingContent() {
                 loadMerchantRules();
             }
         }
-    }, [activeTab, ticketTab]);
+    }, [activeTab, ticketTab, refreshTrigger]);
 
     // [NEW] Load Invoices and Drafts from Real DB transactions
     useEffect(() => {
@@ -263,7 +265,7 @@ function InvoicingContent() {
         if (activeTab === 'drafts' || activeTab === 'issued' || activeTab === 'cancelled') {
             loadDocs();
         }
-    }, [activeTab]);
+    }, [activeTab, refreshTrigger]);
 
 
     const handleStamp = async (id: number) => {
@@ -619,10 +621,10 @@ function InvoicingContent() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 initialData={modalData}
-                isTicket={activeTab === 'tickets'} // [NEW] Mode Prop
+                isTicket={activeTab === 'tickets' || activeTab === 'drafts'} // [NEW] Mode Prop
                 onSave={async (data) => {
-                    // If in 'tickets' mode (Pre-Comprobante), skip stamping and just save draft/ticket
-                    if (activeTab === 'tickets') {
+                    // If in 'tickets' or 'drafts' mode (Pre-Comprobante), skip stamping and just save draft/ticket
+                    if (activeTab === 'tickets' || activeTab === 'drafts') {
                         try {
                             // 1. Save as Pre-Computante (Draft Ticket)
                             const { error } = await supabaseService.createTransaction({
@@ -645,6 +647,7 @@ function InvoicingContent() {
 
                             toast.success("Pre-Comprobante guardado correctamente");
                             setIsModalOpen(false);
+                            setRefreshTrigger(prev => prev + 1); // [NEW] Trigger Reload
 
                             // Refresh list
                             // Trigger re-fetch logic for drafts or tickets
