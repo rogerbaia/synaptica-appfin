@@ -15,12 +15,27 @@ const getAuthHeader = () => {
     return `Basic ${base64}`;
 };
 
+export const runtime = 'nodejs'; // FORCE NODE RUNTIME
+
 export async function GET(req: NextRequest) {
+    // DIAGNOSTICS: Inspect the key and header actually being generated
+    const cleanKey = FACTURAPI_KEY ? FACTURAPI_KEY.trim() : '';
+    let authHeaderDebug = 'skipped';
+
+    try {
+        if (cleanKey) {
+            const { Buffer } = require('buffer');
+            authHeaderDebug = `Basic ${Buffer.from(cleanKey + ':').toString('base64').substring(0, 10)}...`;
+        }
+    } catch (e) { authHeaderDebug = 'encoding-error'; }
+
     // Always calculate debug info
     const debugInfo = {
         keyConfigured: !!FACTURAPI_KEY,
-        keyLength: FACTURAPI_KEY ? FACTURAPI_KEY.length : 0,
-        source: process.env.FACTURAPI_KEY ? 'ENV' : 'FALLBACK'
+        keySource: process.env.FACTURAPI_KEY ? 'ENV' : 'FALLBACK',
+        keyPreview: cleanKey ? `${cleanKey.substring(0, 8)}...` : 'none',
+        headerPreview: authHeaderDebug,
+        status: 200 // Default, will update
     };
 
     if (!FACTURAPI_KEY) {
