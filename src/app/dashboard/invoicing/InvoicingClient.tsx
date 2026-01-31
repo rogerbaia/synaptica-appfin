@@ -660,13 +660,7 @@ function InvoicingContent() {
 
 
 
-            // Re-reading my API route: it expects 'email' in body.
-            // I should prompt the user for the email or use a stored one.
-            // Since I don't have client email stored in 'invoices' state clearly (only name/rfc), I'll prompt.
 
-            /* 
-               Better approach: extract email handling to a proper function 
-            */
 
 
             // ... Retrying with actual implementation below ...
