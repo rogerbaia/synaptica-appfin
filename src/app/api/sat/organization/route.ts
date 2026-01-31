@@ -71,8 +71,7 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                legal_name: legalName,
-                name: name, // Sending explicit name
+                name: name, // Using Name as the primary identifier per API requirement
                 tax_id: formData.get('tax_id') as string,
                 tax_system: formData.get('tax_system') as string,
                 address: {
