@@ -132,18 +132,7 @@ export default function FiscalClients() {
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-full relative">
-            {/* DEBUG BANNER - TEMPORARY */}
-            <div className={`p-2 text-xs font-mono border-b ${clients.length === 0 ? 'bg-red-100 text-red-800 border-red-200' : 'bg-green-100 text-green-800 border-green-200'}`}>
-                [DIAGNOSTICO]
-                APP_CLIENTS: {clients.length} |
-                KEY_CONFIGURED: {debugData?.keyConfigured ? 'SI' : 'NO'} |
-                HTTP_STATUS: {debugData?.status || 'N/A'} |
-                FACTURAPI_ITEMS: {debugData?.totalItems ?? '?'} |
-                KEY_SRC: {debugData?.keySource || '?'} |
-                KEY_PREV: {debugData?.keyPreview || '?'} |
-                HDR_PREV: {debugData?.headerPreview || '?'} |
-                ERR: {debugData?.error || 'Ninguno'}
-            </div>
+
 
             {/* Header / Tools */}
             <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-indigo-50 dark:bg-indigo-900/10">

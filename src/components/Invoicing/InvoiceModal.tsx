@@ -159,8 +159,16 @@ export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: {
 
     useEffect(() => {
         setMounted(true);
-        supabaseService.getFiscalClients().then(data => {
-            setClients(data.map((c: any) => ({ code: c.tax_id, name: c.legal_name, regime: c.tax_system })));
+        // Fetch valid clients directly from the now-fixed API
+        fetch('/api/sat/clients').then(res => res.json()).then(json => {
+            if (json.data) {
+                setClients(json.data.map((c: any) => ({
+                    id: c.id, // CRITICAL: Access the Facturapi ID
+                    code: c.tax_id,
+                    name: c.legal_name,
+                    regime: c.tax_system
+                })));
+            }
         });
 
         // Smart Defaults: Load from Last Invoice
@@ -427,6 +435,7 @@ export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: {
                                                     ...prev,
                                                     rfc: found.code,
                                                     client: found.name,
+                                                    customerId: found.id, // SAVE THE ID
                                                     fiscalRegime: found.regime || '626'
                                                 }));
                                             }
@@ -690,7 +699,12 @@ export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: {
                                 paymentMethod: formData.paymentMethod,
                                 paymentForm: formData.paymentForm
                             }));
-                            onSave({ ...formData, ...totals, returnUrl: initialData?.returnUrl });
+                            onSave({
+                                ...formData,
+                                ...totals,
+                                customer: (formData as any).customerId, // PASS TO API
+                                returnUrl: initialData?.returnUrl
+                            });
                         }}
                         className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
                     >
