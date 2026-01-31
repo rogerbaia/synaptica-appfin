@@ -9,11 +9,9 @@ const getAuthHeader = () => {
     const cleanKey = FACTURAPI_KEY.trim();
     if (!cleanKey) throw new Error("Missing FACTURAPI_KEY");
 
-    // Polyfill for Base64 to avoid Buffer issues on Edge/Vercel
-    const base64 = typeof Buffer !== 'undefined'
-        ? Buffer.from(cleanKey + ':').toString('base64')
-        : (typeof btoa !== 'undefined' ? btoa(cleanKey + ':') : '');
-
+    // EXPLICIT Node.js Buffer import to guarantee correct Base64
+    const { Buffer } = require('buffer');
+    const base64 = Buffer.from(cleanKey + ':').toString('base64');
     return `Basic ${base64}`;
 };
 
