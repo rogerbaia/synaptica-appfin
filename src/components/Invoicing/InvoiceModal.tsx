@@ -319,7 +319,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
         let retentionIVA = 0;
 
         if (formData.hasRetention) {
-            const rates = RETENTION_RATES[formData.activityType] || RETENTION_RATES['RESICO'];
+            const rates = RETENTION_RATES[formData.activityType as any] || RETENTION_RATES['RESICO'];
             retentionISR = subtotal * rates.isr; // ISR
 
             // Logic for IVA Retention (usually applies if hasRetention is checked AND hasIva is checked? 
