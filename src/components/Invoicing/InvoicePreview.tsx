@@ -2,6 +2,7 @@ import { createPortal } from 'react-dom';
 import React, { useEffect, useState } from 'react';
 import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
 import { useSubscription } from '@/context/SubscriptionContext';
+import { numberToLetters } from '@/utils/numberToLetters';
 
 interface InvoicePreviewProps {
     isOpen: boolean;
@@ -9,6 +10,9 @@ interface InvoicePreviewProps {
     data: any; // The draft invoice data
     onAction: (action: 'stamp' | 'edit' | 'print' | 'email' | 'duplicate' | 'download' | 'cancel') => void;
 }
+
+
+
 
 export default function InvoicePreview({ isOpen, onClose, data, onAction }: InvoicePreviewProps) {
     const [mounted, setMounted] = useState(false);
@@ -245,10 +249,14 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         {/* Amount in Letters & Layout */}
                         <div className="flex flex-col md:flex-row gap-8 items-start">
                             <div className="flex-1 space-y-4">
+
+
                                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
                                     <p className="text-[10px] text-slate-400 font-bold uppercase mb-1">Importe con Letra</p>
-                                    <p className="text-xs font-medium text-slate-700 uppercase">*** {(data.total).toLocaleString('es-MX')} PESOS 00/100 M.N. *** {isStamped ? '' : '(Simulado)'}</p>
+                                    <p className="text-xs font-medium text-slate-700 uppercase">*** {numberToLetters(data.total)} *** {isStamped ? '' : '(Simulado)'}</p>
                                 </div>
+
+
 
                                 <div className="grid grid-cols-2 gap-4 text-xs">
                                     <div>

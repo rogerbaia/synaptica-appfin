@@ -544,10 +544,28 @@ function InvoicingContent() {
             setInvoices(realInvoices);
 
             setSuccessModalData({
-                folio: stamped.folio,
+                folio: stamped.folio_number || stamped.folio || data.folio,
                 uuid: stamped.uuid,
                 total: data.total,
                 client: data.client,
+                // [FIX] Pass full details for the Preview
+                details: {
+                    ...data,
+                    ...stamped, // Validation info (sello, chain, etc)
+                    originalChain: stamped.original_chain || stamped.originalChain,
+                    date: stamped.date || new Date().toISOString(),
+                    paymentForm: data.paymentForm,
+                    paymentMethod: data.paymentMethod,
+                    cfdiUse: data.cfdiUse,
+                    satProductKey: data.satProductKey,
+                    satUnitKey: data.satUnitKey,
+                    description: data.description,
+                    unitValue: data.unitValue,
+                    subtotal: data.subtotal,
+                    iva: data.iva,
+                    retention: data.retention,
+                    xml: stamped.xml
+                },
                 returnUrl: data.returnUrl
             });
 
@@ -669,7 +687,7 @@ function InvoicingContent() {
             <SuccessModal
                 isOpen={!!successModalData}
                 data={successModalData}
-                onClose={() => { /* ... existing ... */ }}
+                onClose={() => setSuccessModalData(null)}
                 onDownload={() => handlePreview(invoices.find(i => i.uuid === successModalData?.uuid))}
                 onEmail={() => {
                     const inv = invoices.find(i => i.uuid === successModalData?.uuid);
