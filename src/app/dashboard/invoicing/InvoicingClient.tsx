@@ -851,6 +851,27 @@ function InvoicingContent() {
                                                             <button className={`transition ${inv.sent ? 'text-blue-500' : 'text-slate-300 hover:text-blue-500'}`} title={inv.sent ? "Enviado por correo" : "Enviar por correo"}>
                                                                 <Mail size={18} />
                                                             </button>
+                                                            {/* [NEW] Delete Button for Cancelled Invoices */}
+                                                            {inv.status === 'cancelled' && (
+                                                                <>
+                                                                    <span className="text-slate-300">|</span>
+                                                                    <button
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            if (confirm('¿Eliminar este comprobante cancelado de la lista permanentemente?')) {
+                                                                                supabaseService.deleteTransaction(inv.id).then(() => {
+                                                                                    setInvoices(prev => prev.filter(i => i.id !== inv.id));
+                                                                                    toast.success('Comprobante eliminado de la lista.');
+                                                                                });
+                                                                            }
+                                                                        }}
+                                                                        className="text-slate-300 hover:text-red-600 transition"
+                                                                        title="Eliminar de la lista"
+                                                                    >
+                                                                        <Trash2 size={18} />
+                                                                    </button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </td>
                                                 </tr>
