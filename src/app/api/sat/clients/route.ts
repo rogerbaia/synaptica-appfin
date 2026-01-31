@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
         const url = new URL(req.url);
         const search = url.searchParams.get('q') || '';
 
-        const res = await fetch(`https://www.facturapi.io/v2/customers?q=${search}`, {
+        const res = await fetch(`https://www.facturapi.io/v2/customers?q=${search}&limit=100`, {
             headers: { 'Authorization': getAuthHeader() }
         });
 
