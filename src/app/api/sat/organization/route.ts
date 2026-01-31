@@ -20,7 +20,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Missing Authorization Header' }, { status: 401 });
         }
 
-        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
+            global: {
+                headers: {
+                    Authorization: authHeader
+                }
+            }
+        });
         // Verify token
         const token = authHeader.replace('Bearer ', '');
         const { data: { user }, error: authError } = await supabase.auth.getUser(token);
