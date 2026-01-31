@@ -107,8 +107,6 @@ export const translations = {
         btn_close: "Cerrar",
 
         // Transaction Table Keys
-        btn_this_month: "Este Mes",
-        btn_this_year: "Este Año",
         msg_invite_help: "Comparte tu tablero con tu pareja para gestionar gastos juntos.",
         lbl_email: "Correo Electrónico",
 
