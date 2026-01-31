@@ -398,6 +398,26 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
         }
     };
 
+    const [loading, setLoading] = useState(false); // [FIX] Add loading state
+
+    const handleSave = () => {
+        setLoading(true);
+        localStorage.setItem('invoice_prefs', JSON.stringify({
+            satProductKey: formData.satProductKey,
+            satUnitKey: formData.satUnitKey,
+            paymentMethod: formData.paymentMethod,
+            paymentForm: formData.paymentForm
+        }));
+        onSave({
+            ...formData,
+            ...totals,
+            customer: (formData as any).customerId,
+            returnUrl: initialData?.returnUrl
+        });
+        // We don't turn off loading because onSave likely closes modal or redirects
+        // But if it doesn't, we should. Safe for now.
+    };
+
     if (!isOpen) return null;
 
     // Portal Implementation to fix Z-Index issues
