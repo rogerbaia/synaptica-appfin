@@ -129,7 +129,15 @@ const Autocomplete = ({
     );
 };
 
-export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: { isOpen: boolean, onClose: () => void, initialData: any, onSave: (data: any) => void }) {
+interface InvoiceModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (data: any) => void;
+    initialData?: any;
+    isTicket?: boolean; // [NEW]
+}
+
+export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isTicket = false }: InvoiceModalProps) {
     const router = useRouter();
     const [mounted, setMounted] = useState(false);
     const [showExitConfirm, setShowExitConfirm] = useState(false);
@@ -722,10 +730,19 @@ export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: {
                             </p>
                             <div className="flex flex-col gap-3">
                                 <button
-                                    onClick={handleSaveDraft}
-                                    className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg transition shadow-sm"
+                                    onClick={handleSave}
+                                    disabled={loading}
+                                    className="px-6 py-2 bg-[var(--primary-color)] text-white font-bold rounded-lg hover:bg-opacity-90 transition flex items-center gap-2"
                                 >
-                                    Guardar solo Ingreso
+                                    {isTicket ? (
+                                        <>
+                                            <FileText size={18} /> Guardar Pre Comprobante
+                                        </>
+                                    ) : (
+                                        <>
+                                            <FileText size={18} /> Timbrar Factura
+                                        </>
+                                    )}
                                 </button>
                                 <button
                                     onClick={handleDiscard}
