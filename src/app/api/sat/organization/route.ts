@@ -55,25 +55,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Re-construct formData to ensure clean state
-        const outgoingFormData = new FormData();
-        outgoingFormData.append('legal_name', legalName);
-        outgoingFormData.append('name', name);
-        outgoingFormData.append('tax_id', formData.get('tax_id') as string);
-        outgoingFormData.append('tax_system', formData.get('tax_system') as string);
-        const zip = formData.get('address[zip]');
-        if (zip) outgoingFormData.append('address[zip]', zip as string);
 
-        // Files
-        const cert = formData.get('certificate');
-        const key = formData.get('key');
-        const pass = formData.get('password');
-        const logo = formData.get('logo');
-
-        if (cert) outgoingFormData.append('certificate', cert);
-        if (key) outgoingFormData.append('key', key);
-        if (pass) outgoingFormData.append('password', pass as string);
-        if (logo) outgoingFormData.append('logo', logo);
 
 
         const cleanKey = FACTURAPI_KEY.trim();
