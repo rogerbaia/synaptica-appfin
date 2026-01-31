@@ -261,9 +261,13 @@ function InvoicingContent() {
                         id: t.id,
                         folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`,
                         date: formatSafeDate(t.date),
+                        // [NEW] Raw Date for Preview
+                        rawDate: t.date,
                         client: t.description.split(' - ')[0] || t.details?.client || 'Cliente',
                         rfc: t.details?.rfc || '',
                         total: t.amount,
+                        // [FIX] Robust Description Parsing for Invoices
+                        description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)),
                         // If canceled income, show warning status? Or just keep original status but maybe flag it.
                         // User suggestion: "tener una tarja o un mensaje de pendiente cancelar factura"
                         // Or modify status to 'warning'?
@@ -273,7 +277,13 @@ function InvoicingContent() {
                         uuid: t.details?.uuid || '',
                         sent: false,
                         xml: t.details?.xml || '',
-                        details: t.details || {},
+                        details: {
+                            ...t.details,
+                            // [FIX] Ensure Original Chain is mapped (snake_case from DB -> camelCase for UI)
+                            originalChain: t.details?.original_chain || t.details?.originalChain || '|| CADENA NO DISPONIBLE ||',
+                            // Ensure description is also in details for table
+                            description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
+                        },
                         isVoidedIncome: t.type === 'void_income' // Helper flag
                     }));
 

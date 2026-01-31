@@ -160,7 +160,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     <p className="text-red-500 font-bold text-2xl font-mono">{data.folio || '---'}</p>
                                     <div className="h-px bg-indigo-100 my-2"></div>
                                     <p className="text-[10px] text-slate-500">Fecha de Emisión</p>
-                                    <p className="text-xs font-bold text-slate-700">{data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX')}</p>
+                                    <p className="text-xs font-bold text-slate-700">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : (data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'))}</p>
                                 </div>
                             </div>
                         </div>
