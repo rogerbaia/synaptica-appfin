@@ -29,7 +29,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: 'Unauthorized calling API' }, { status: 401 });
         }
 
-        // [LOGIC] Default Logo Injection
+        // [DEBUG] Log received fields
+        console.log('[DEBUG] Received FormData Keys:', Array.from(formData.keys()));
+        const legalName = formData.get('legal_name') as string;
+        const name = formData.get('name') as string || legalName;
+
+        if (!name) {
+            return NextResponse.json({ message: 'Missing name or legal_name' }, { status: 400 });
+        }
+
+        // [LOGIC] Default Logo Injection (Same as before)
         if (!formData.get('logo')) {
             try {
                 const fs = await import('fs');
@@ -40,26 +49,45 @@ export async function POST(req: NextRequest) {
                     const logoBuffer = fs.readFileSync(defaultLogoPath);
                     const logoBlob = new Blob([logoBuffer], { type: 'image/png' });
                     formData.append('logo', logoBlob, 'logo-default.png');
-                    // console.log("Using default Synaptica logo");
-                } else {
-                    console.warn("Default logo not found at:", defaultLogoPath);
                 }
             } catch (err) {
                 console.error("Error injecting default logo:", err);
             }
         }
 
+        // Re-construct formData to ensure clean state
+        const outgoingFormData = new FormData();
+        outgoingFormData.append('legal_name', legalName);
+        outgoingFormData.append('name', name);
+        outgoingFormData.append('tax_id', formData.get('tax_id') as string);
+        outgoingFormData.append('tax_system', formData.get('tax_system') as string);
+        const zip = formData.get('address[zip]');
+        if (zip) outgoingFormData.append('address[zip]', zip as string);
+
+        // Files
+        const cert = formData.get('certificate');
+        const key = formData.get('key');
+        const pass = formData.get('password');
+        const logo = formData.get('logo');
+
+        if (cert) outgoingFormData.append('certificate', cert);
+        if (key) outgoingFormData.append('key', key);
+        if (pass) outgoingFormData.append('password', pass as string);
+        if (logo) outgoingFormData.append('logo', logo);
+
+
         const cleanKey = FACTURAPI_KEY.trim();
         const authHeaderFacturapi = `Basic ${Buffer.from(cleanKey + ':').toString('base64')}`;
+
+        console.log('[DEBUG] Sending to Facturapi with Name:', name);
 
         // 2. Call Facturapi to Create Child Organization
         const res = await fetch('https://www.facturapi.io/v2/organizations', {
             method: 'POST',
             headers: {
                 'Authorization': authHeaderFacturapi,
-                // Content-Type is multipart, fetch handles boundary automatically if we pass formData
             },
-            body: formData
+            body: outgoingFormData
         });
 
         const json = await res.json();
