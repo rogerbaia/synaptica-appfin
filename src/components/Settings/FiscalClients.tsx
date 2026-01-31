@@ -138,7 +138,8 @@ export default function FiscalClients() {
                 APP_CLIENTS: {clients.length} |
                 KEY_CONFIGURED: {debugData?.keyConfigured ? 'SI' : 'NO'} |
                 HTTP_STATUS: {debugData?.status || 'N/A'} |
-                FACTURAPI_ITEMS: {debugData?.totalItems ?? '?'}
+                FACTURAPI_ITEMS: {debugData?.totalItems ?? '?'} |
+                ERR: {debugData?.error || 'Ninguno'}
             </div>
 
             {/* Header / Tools */}
