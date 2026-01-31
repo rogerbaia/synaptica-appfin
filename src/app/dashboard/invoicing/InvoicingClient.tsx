@@ -282,6 +282,8 @@ function InvoicingContent() {
                             ...t.details,
                             // [FIX] Ensure Original Chain is mapped (Check all possible variants)
                             originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
+                            certificateNumber: t.details?.certificateNumber || t.details?.certificate_number || '30001000000500003421', // [NEW] Map Certificate
+                            expeditionPlace: t.details?.expeditionPlace || t.details?.expedition_place || '67510', // [NEW] Map Place
                             // Ensure description is also in details for table
                             description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                         },
@@ -579,6 +581,8 @@ function InvoicingContent() {
                         ...t.details,
                         // [FIX] Ensure Original Chain is mapped (Check all possible variants)
                         originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
+                        certificateNumber: t.details?.certificateNumber || t.details?.certificate_number || '30001000000500003421', // [NEW] Map Certificate
+                        expeditionPlace: t.details?.expeditionPlace || t.details?.expedition_place || '67510', // [NEW] Map Place
                         // Description Fix
                         description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                     }
@@ -596,6 +600,8 @@ function InvoicingContent() {
                     ...data,
                     ...stamped, // Validation info (sello, chain, etc)
                     originalChain: stamped.originalChain || '|| CADENA NO DISPONIBLE ||',
+                    certificateNumber: stamped.certificateNumber || '30001000000500003421', // [NEW] Map Certificate
+                    expeditionPlace: stamped.expeditionPlace || '67510', // [NEW] Map Place
                     date: stamped.date || new Date().toISOString(),
                     paymentForm: data.paymentForm,
                     paymentMethod: data.paymentMethod,

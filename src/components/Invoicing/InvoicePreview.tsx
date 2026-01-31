@@ -168,41 +168,58 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         {/* Client & Fiscal Data Grid */}
                         <div className="rounded-lg border border-slate-200 overflow-hidden mb-8 text-xs">
                             <div className="grid grid-cols-12 bg-slate-50 border-b border-slate-200">
-                                <div className="col-span-8 p-2 border-r border-slate-200 font-bold text-slate-600 uppercase tracking-wider">Datos del Cliente</div>
-                                <div className="col-span-4 p-2 font-bold text-slate-600 uppercase tracking-wider">Datos Fiscales</div>
+                                <div className="col-span-12 p-2 font-bold text-slate-800 uppercase tracking-wider text-center border-b border-slate-100">Datos Fiscales</div>
                             </div>
-                            <div className="grid grid-cols-12 divide-x divide-slate-100">
-                                <div className="col-span-8 p-3 space-y-1">
-                                    <div className="flex">
-                                        <span className="w-24 text-slate-400 font-medium">Receptor:</span>
-                                        <span className="font-bold text-slate-800 uppercase">{data.client}</span>
-                                    </div>
-                                    <div className="flex">
-                                        <span className="w-24 text-slate-400 font-medium">R.F.C.:</span>
-                                        <span className="font-mono text-slate-700">{data.rfc}</span>
-                                    </div>
-                                    <div className="flex">
-                                        <span className="w-24 text-slate-400 font-medium">Uso CFDI:</span>
-                                        <span className="text-slate-700">{details.cfdiUse || 'G03'}</span>
-                                    </div>
-                                    <div className="flex">
-                                        <span className="w-24 text-slate-400 font-medium">Régimen:</span>
-                                        <span className="text-slate-700">{details.fiscalRegime || '601'}</span>
-                                    </div>
+                            <div className="p-4 grid grid-cols-2 gap-y-2 gap-x-8">
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Folio Fiscal:</span>
+                                    <span className="font-mono text-slate-800">{data.uuid || (isStamped ? '---' : 'NO DISPONIBLE (Pre-visualización)')}</span>
                                 </div>
-                                <div className="col-span-4 p-3 space-y-2 bg-slate-50/30">
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold">Tipo de Comprobante</p>
-                                        <p className="font-medium text-slate-700">I - Ingreso</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold">Moneda</p>
-                                        <p className="font-medium text-slate-700">MXN - Peso Mexicano</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-[10px] text-slate-400 uppercase font-bold">Versión</p>
-                                        <p className="font-medium text-slate-700">4.0</p>
-                                    </div>
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Tipo de CFDI:</span>
+                                    <span className="text-slate-800">I - Ingreso</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Versión CFDI:</span>
+                                    <span className="text-slate-800">4.0</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Lugar emisión:</span>
+                                    <span className="text-slate-800">{details.expeditionPlace || '67510'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Fecha emisión:</span>
+                                    <span className="text-slate-800">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : (data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'))}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Fecha certific.:</span>
+                                    <span className="text-slate-800">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : (data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'))}</span>
+                                </div>
+                                <div className="flex justify-between col-span-2 border-t border-slate-100 pt-1 mt-1">
+                                    <span className="font-bold text-slate-600">Serie del CSD del emisor:</span>
+                                    <span className="font-mono text-slate-800">{details.certificateNumber || '30001000000500003421'}</span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-12 bg-slate-50 border-t border-slate-200 border-b border-slate-200 mt-2">
+                                <div className="col-span-12 p-2 font-bold text-slate-800 uppercase tracking-wider text-center">Datos del Cliente</div>
+                            </div>
+                            <div className="p-4 bg-white space-y-2">
+                                <div className="flex justify-between border-b border-slate-50 pb-1">
+                                    <span className="font-bold text-slate-600">Receptor:</span>
+                                    <span className="text-slate-800 uppercase">{data.client}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-slate-50 pb-1">
+                                    <span className="font-bold text-slate-600">R.F.C.:</span>
+                                    <span className="font-mono text-slate-800">{data.rfc}</span>
+                                </div>
+                                <div className="flex justify-between border-b border-slate-50 pb-1">
+                                    <span className="font-bold text-slate-600">Uso CFDI:</span>
+                                    <span className="text-slate-800">{details.cfdiUse || 'G03'} - {details.cfdiUse === 'G03' ? 'Gastos en general' : details.cfdiUse === 'D01' ? 'Honorarios médicos' : 'Otros'}</span>
+                                </div>
+                                <div className="flex justify-between">
+                                    <span className="font-bold text-slate-600">Régimen:</span>
+                                    <span className="text-slate-800">{details.fiscalRegime || '601'}</span>
                                 </div>
                             </div>
                         </div>
