@@ -17,7 +17,8 @@ export default function FiscalClients() {
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState('');
     const [clients, setClients] = useState<Client[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [debugData, setDebugData] = useState<any>(null);
 
     // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -34,8 +35,13 @@ export default function FiscalClients() {
         setLoading(true);
         try {
             console.log("Fetching clients...");
-            const data = await supabaseService.getFiscalClients(searchTerm);
-            console.log("Clients Data Received:", data);
+            const response = await fetch(`/api/sat/clients?q=${searchTerm || ''}`);
+            const dataWrapper = await response.json();
+
+            console.log("Clients Data Received:", dataWrapper);
+            if (dataWrapper._debug) setDebugData(dataWrapper._debug);
+
+            const data = dataWrapper.data || [];
 
             if (!Array.isArray(data)) {
                 console.error("Data is not an array:", data);
@@ -124,8 +130,17 @@ export default function FiscalClients() {
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col h-full relative">
+            {/* DEBUG BANNER - TEMPORARY */}
+            <div className={`p-2 text-xs font-mono border-b ${clients.length === 0 ? 'bg-red-100 text-red-800 border-red-200' : 'bg-green-100 text-green-800 border-green-200'}`}>
+                [DIAGNOSTICO]
+                APP_CLIENTS: {clients.length} |
+                KEY_CONFIGURED: {debugData?.keyConfigured ? 'SI' : 'NO'} |
+                HTTP_STATUS: {debugData?.status || 'N/A'} |
+                FACTURAPI_ITEMS: {debugData?.totalItems ?? '?'}
+            </div>
+
             {/* Header / Tools */}
-            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-4 justify-between items-center bg-white dark:bg-slate-800">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row gap-4 justify-between items-center bg-indigo-50 dark:bg-indigo-900/10">
                 <div className="flex items-center gap-2 w-full md:w-auto">
                     <div className="relative w-full md:w-64">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
