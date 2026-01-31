@@ -259,10 +259,11 @@ function InvoicingContent() {
                     .filter((t: any) => t.has_invoice === true)
                     .map((t: any) => ({
                         id: t.id,
-                        folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`,
-                        date: formatSafeDate(t.date),
-                        // [NEW] Raw Date for Preview (Timezone Safe)
-                        rawDate: t.date.includes('T') ? t.date : `${t.date}T12:00:00`,
+                        folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`, // Preferred Folio Source
+                        // [FIX] Use Emission Date (details.date) if available, otherwise Transaction Date
+                        date: formatSafeDate(t.details?.date || t.date),
+                        // [NEW] Raw Date for Preview (Timezone Safe) - Prioritize Stamp Date
+                        rawDate: t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`),
                         client: t.description.split(' - ')[0] || t.details?.client || 'Cliente',
                         rfc: t.details?.rfc || '',
                         total: t.amount,
@@ -279,8 +280,8 @@ function InvoicingContent() {
                         xml: t.details?.xml || '',
                         details: {
                             ...t.details,
-                            // [FIX] Ensure Original Chain is mapped (snake_case from DB -> camelCase for UI)
-                            originalChain: t.details?.original_chain || t.details?.originalChain || '|| CADENA NO DISPONIBLE ||',
+                            // [FIX] Ensure Original Chain is mapped (Check all possible variants)
+                            originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
                             // Ensure description is also in details for table
                             description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                         },
@@ -561,11 +562,12 @@ function InvoicingContent() {
                 .map((t: any) => ({
                     id: t.id,
                     folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`,
-                    date: new Date(t.date.includes('T') ? t.date : t.date + 'T12:00:00').toLocaleDateString('es-MX', {
+                    // [FIX] Use Emission Date
+                    date: new Date((t.details?.date || (t.date.includes('T') ? t.date : t.date + 'T12:00:00'))).toLocaleDateString('es-MX', {
                         day: '2-digit', month: '2-digit', year: 'numeric'
                     }),
                     // [NEW] Raw Date for Preview (Timezone Safe)
-                    rawDate: t.date.includes('T') ? t.date : `${t.date}T12:00:00`,
+                    rawDate: t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`),
                     client: t.description.split(' - ')[0] || t.details?.client || 'Cliente',
                     rfc: t.details?.rfc || '',
                     total: t.amount,
@@ -575,8 +577,8 @@ function InvoicingContent() {
                     xml: t.details?.xml || '',
                     details: {
                         ...t.details,
-                        // [FIX] Ensure Original Chain is mapped
-                        originalChain: t.details?.original_chain || t.details?.originalChain || '|| CADENA NO DISPONIBLE ||',
+                        // [FIX] Ensure Original Chain is mapped (Check all possible variants)
+                        originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
                         // Description Fix
                         description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                     }
@@ -585,7 +587,7 @@ function InvoicingContent() {
             setInvoices(realInvoices);
 
             setSuccessModalData({
-                folio: stamped.folio_number || stamped.folio || data.folio,
+                folio: stamped.folio || data.folio,
                 uuid: stamped.uuid,
                 total: data.total,
                 client: data.client,
@@ -593,7 +595,7 @@ function InvoicingContent() {
                 details: {
                     ...data,
                     ...stamped, // Validation info (sello, chain, etc)
-                    originalChain: stamped.original_chain || stamped.originalChain,
+                    originalChain: stamped.originalChain || '|| CADENA NO DISPONIBLE ||',
                     date: stamped.date || new Date().toISOString(),
                     paymentForm: data.paymentForm,
                     paymentMethod: data.paymentMethod,
