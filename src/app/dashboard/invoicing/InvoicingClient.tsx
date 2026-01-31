@@ -570,10 +570,11 @@ function InvoicingContent() {
                         day: '2-digit', month: '2-digit', year: 'numeric'
                     }),
                     // [FIX] Raw Date for Preview (Timezone Safe)
-                    rawDate: t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`),
+                    rawDate: typeof t.details?.date === 'object' ? new Date().toISOString() : (t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`)),
                     // [SAFETY] Force String conversion to prevent Object Rendering Crash (Error #31)
                     client: typeof (t.description.split(' - ')[0] || t.details?.client) === 'object' ? 'Nombre Inválido' : (String(t.description.split(' - ')[0] || t.details?.client || 'Cliente')),
                     rfc: typeof t.details?.rfc === 'object' ? 'XAXX010101000' : (String(t.details?.rfc || '')),
+                    folio: typeof (t.invoice_number || t.details?.folio) === 'object' ? 'ERR-OBJ' : (String(t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`)),
 
                     // [SAFETY] Force Number
                     total: typeof t.amount === 'number' ? t.amount : 0,
@@ -581,16 +582,16 @@ function InvoicingContent() {
                     status: t.payment_received ? 'paid' : 'pending',
                     uuid: typeof t.details?.uuid === 'object' ? '' : (String(t.details?.uuid || '')),
                     sent: false,
-                    xml: t.details?.xml || '',
+                    xml: typeof t.details?.xml === 'object' ? '' : (t.details?.xml || ''),
                     details: {
                         ...t.details,
                         // [FIX] Ensure Original Chain is mapped (Check all possible variants)
-                        originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                        certificateNumber: t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
-                        expeditionPlace: t.details?.expedition_place || t.details?.expeditionPlace || '67510',
+                        originalChain: typeof (t.details?.original_chain || t.details?.originalChain || t.details?.original_string) === 'object' ? '|| CADENA NO DISPONIBLE ||' : (t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||'),
+                        certificateNumber: typeof (t.details?.certificate_number || t.details?.certificateNumber) === 'object' ? '30001000000500003421' : (t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421'),
+                        expeditionPlace: typeof (t.details?.expedition_place || t.details?.expeditionPlace) === 'object' ? '67510' : (t.details?.expedition_place || t.details?.expeditionPlace || '67510'),
                         certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
-                        // Description Fix
-                        description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
+                        // Description Fix & Safety
+                        description: typeof (t.details?.description || t.description) === 'object' ? 'Descripción inválida' : (t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)))
                     }
                 }));
 
