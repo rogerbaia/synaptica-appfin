@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { numberToLetters } from '@/utils/numberToLetters';
+import { SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
 
 interface InvoicePreviewProps {
     isOpen: boolean;
@@ -50,6 +51,19 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
     const finalIva = details.iva || 0;
     const finalRetIsr = details.retention || 0;
     const finalTotal = data.total;
+
+    // Helper to get Descriptions
+    const getRegimeDesc = (code: string) => {
+        if (!code) return '601';
+        const found = FISCAL_REGIMES.find(r => r.code === code);
+        return found ? `${code} - ${found.name}` : code;
+    };
+
+    const getUseDesc = (code: string) => {
+        if (!code) return 'G03';
+        const found = SAT_CFDI_USES.find(u => u.code === code);
+        return found ? `${code} - ${found.name}` : code;
+    };
 
     return createPortal(
         <div className="fixed inset-0 z-[9999] flex flex-col bg-slate-100 dark:bg-slate-900 overflow-hidden animate-in fade-in duration-200">
@@ -169,27 +183,37 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         <div className="rounded-lg border border-slate-200 overflow-hidden mb-8 text-xs">
                             <div className="grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-slate-200">
 
-                                {/* LEFT COLUMN: Client Data (Span 7) */}
+                                {/* LEFT COLUMN: Data del Receptor (Span 7) */}
                                 <div className="col-span-1 md:col-span-7 flex flex-col">
                                     <div className="bg-slate-50 p-2 font-bold text-slate-800 uppercase tracking-wider text-center border-b border-slate-200">
                                         Datos del Receptor
                                     </div>
                                     <div className="p-4 bg-white space-y-2 flex-1">
-                                        <div className="flex justify-between border-b border-slate-50 pb-1">
-                                            <span className="font-bold text-slate-600">Razón Social:</span>
-                                            <span className="text-slate-800 uppercase font-semibold">{data.client}</span>
+                                        <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
+                                            <div className="col-span-4 font-bold text-slate-600">Razón Social:</div>
+                                            <div className="col-span-8 text-slate-800 uppercase font-semibold text-right md:text-left">{data.client}</div>
                                         </div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-1">
-                                            <span className="font-bold text-slate-600">R.F.C.:</span>
-                                            <span className="font-mono text-slate-700">{data.rfc}</span>
+                                        <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
+                                            <div className="col-span-4 font-bold text-slate-600">RFC:</div>
+                                            <div className="col-span-8 font-mono text-slate-700 text-right md:text-left">{data.rfc}</div>
                                         </div>
-                                        <div className="flex justify-between border-b border-slate-50 pb-1">
-                                            <span className="font-bold text-slate-600">Uso CFDI:</span>
-                                            <span className="text-slate-700">{details.cfdiUse || 'G03'} - {details.cfdiUse === 'G03' ? 'Gastos en general' : details.cfdiUse === 'D01' ? 'Honorarios médicos' : 'Otros'}</span>
+                                        <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
+                                            <div className="col-span-4 font-bold text-slate-600">Régimen Fiscal:</div>
+                                            <div className="col-span-8 text-slate-700 leading-tight text-right md:text-left">
+                                                {getRegimeDesc(details.fiscalRegime || '601')}
+                                            </div>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="font-bold text-slate-600">Régimen:</span>
-                                            <span className="text-slate-700">{details.fiscalRegime || '601'}</span>
+                                        <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
+                                            <div className="col-span-4 font-bold text-slate-600">Domicilio:</div>
+                                            <div className="col-span-8 text-slate-700 uppercase leading-tight text-right md:text-left">
+                                                {details.address || '25210, SALTILLO, COAHUILA, MEX'}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-12 gap-2">
+                                            <div className="col-span-4 font-bold text-slate-600">Uso del CFDI:</div>
+                                            <div className="col-span-8 text-slate-700 leading-tight text-right md:text-left">
+                                                {getUseDesc(details.cfdiUse || 'G03')}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -295,7 +319,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     </div>
                                     <div className="col-span-2">
                                         <p className="font-bold text-slate-500 mb-1">Uso CFDI</p>
-                                        <p className="text-slate-800">{details.cfdiUse || 'G03'} - {details.cfdiUse === 'G03' ? 'Gastos en general' : details.cfdiUse === 'D01' ? 'Honorarios médicos' : 'Otros'}</p>
+                                        <p className="text-slate-800">{getUseDesc(details.cfdiUse)}</p>
                                     </div>
                                 </div>
 
