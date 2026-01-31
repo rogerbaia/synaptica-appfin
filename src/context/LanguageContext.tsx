@@ -35,7 +35,8 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
     };
 
     const t = (key: TranslationKey): string => {
-        const dict = translations[language];
+        const dict = translations[language] || translations['es-419'];
+        // @ts-ignore - Key mismatch safety
         return dict[key] || translations['es-419'][key] || key;
     };
 

@@ -227,7 +227,9 @@ export const translations = {
         msg_invite_help: "Comparte tu tablero con tu pareja para gestionar gastos juntos.",
         lbl_email: "Correo Electrónico",
         btn_send_invite: "Enviar Invitación",
-        lbl_ai_advisor: "Synaptica AI"
+        lbl_ai_advisor: "Synaptica AI",
+        btn_this_month: "Este Mes",
+        btn_this_year: "Este Año"
     },
     'en': {
         name: "English",
@@ -337,7 +339,9 @@ export const translations = {
         msg_invite_help: "Share your dashboard with your partner to manage expenses together.",
         lbl_email: "Email Address",
         btn_send_invite: "Send Invite",
-        lbl_ai_advisor: "Synaptica AI"
+        lbl_ai_advisor: "Synaptica AI",
+        btn_this_month: "This Month",
+        btn_this_year: "This Year"
     },
     'pt': {
         name: "Português",
@@ -447,7 +451,9 @@ export const translations = {
         msg_invite_help: "Compartilhe seu painel com seu parceiro para gerenciar despesas juntos.",
         lbl_email: "Endereço de E-mail",
         btn_send_invite: "Enviar Convite",
-        lbl_ai_advisor: "Synaptica AI"
+        lbl_ai_advisor: "Synaptica AI",
+        btn_this_month: "Este Mês",
+        btn_this_year: "Este Ano"
     }
 };
 
