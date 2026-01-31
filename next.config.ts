@@ -8,11 +8,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // @ts-ignore
-  // @ts-ignore
+  /*
   eslint: {
     ignoreDuringBuilds: true,
   },
+  */
 };
 
 export default nextConfig;
