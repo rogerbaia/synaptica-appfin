@@ -36,10 +36,19 @@ export const satService = {
    * Stams Invoice via API Route (Real or Mock handled server-side)
    */
   async stampInvoice(data: InvoiceData): Promise<StampedInvoice> {
+    // Get current session token
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) throw new Error("No hay sesión activa. Por favor inicia sesión nuevamente.");
+
     // Call local API Route which handles the Secret Key and Real Logic
     const response = await fetch('/api/sat/stamp', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify(data)
     });
 
