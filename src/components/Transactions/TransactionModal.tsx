@@ -689,7 +689,7 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, initialDa
                                     className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                 />
                                 <label htmlFor="hasInvoice" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                    Emití Factura
+                                    Emitir Factura
                                 </label>
                             </div>
 

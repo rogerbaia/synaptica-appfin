@@ -678,13 +678,8 @@ function InvoicingContent() {
                 }}
             />
 
-            // Note: InvoicePreview already emits 'email' action, we need to handle it in handleAction
-            // but InvoicePreview is rendered via state. 
-            // Actually handlePreview sets 'previewInvoice'.
-            // I need to find where InvoicePreview is used and update its onAction.
             )
 
-            {/* Header matches ArchivePage style */}
             {/* Header matches ArchivePage style */}
             <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
                 <div>
