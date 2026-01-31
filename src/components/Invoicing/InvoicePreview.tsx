@@ -205,7 +205,9 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         <div className="grid grid-cols-12 gap-2 border-b border-slate-50 pb-1">
                                             <div className="col-span-4 font-bold text-slate-600">Domicilio:</div>
                                             <div className="col-span-8 text-slate-700 uppercase leading-tight text-right md:text-left">
-                                                {details?.address || '25210, SALTILLO, COAHUILA, MEX'}
+                                                {typeof details?.address === 'object'
+                                                    ? `${details.address.street || ''} ${details.address.exterior || ''}, ${details.address.colonia || ''}, ${details.address.zip || ''}, ${details.address.city || ''}, ${details.address.state || ''}`.replace(/^ ,/, '').trim() || 'DIRECCIÓN NO DISPONIBLE'
+                                                    : (details?.address || '25210, SALTILLO, COAHUILA, MEX')}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2">
