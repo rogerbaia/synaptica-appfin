@@ -16,35 +16,42 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
     useEffect(() => {
         // Load from localStorage or browser default
-        const saved = localStorage.getItem('synaptica_lang') as Language;
-        if (saved && translations[saved]) {
-            setLanguageState(saved);
-        } else {
-            // Simple detection
-            const browserLang = navigator.language;
-            if (browserLang.startsWith('pt')) setLanguageState('pt');
-            else if (browserLang.startsWith('en')) setLanguageState('en');
-            else if (browserLang === 'es-ES') setLanguageState('es-ES');
-            else setLanguageState('es-419');
+        try {
+            const saved = localStorage.getItem('synaptica_lang') as Language;
+            if (saved && translations[saved]) {
+                setLanguageState(saved);
+                return;
+            }
+        } catch (e) {
+            console.warn("Language persistence unavailable:", e);
         }
+
+        // Fallback logic keeps running if try block fails or returns nothing
+        // Simple detection
+        const browserLang = navigator.language;
+        if (browserLang.startsWith('pt')) setLanguageState('pt');
+        else if (browserLang.startsWith('en')) setLanguageState('en');
+        else if (browserLang === 'es-ES') setLanguageState('es-ES');
+        else setLanguageState('es-419');
+    }
     }, []);
 
-    const setLanguage = (lang: Language) => {
-        setLanguageState(lang);
-        localStorage.setItem('synaptica_lang', lang);
-    };
+const setLanguage = (lang: Language) => {
+    setLanguageState(lang);
+    localStorage.setItem('synaptica_lang', lang);
+};
 
-    const t = (key: TranslationKey): string => {
-        const dict = translations[language] || translations['es-419'];
-        // @ts-ignore - Key mismatch safety
-        return dict[key] || translations['es-419'][key] || key;
-    };
+const t = (key: TranslationKey): string => {
+    const dict = translations[language] || translations['es-419'];
+    // @ts-ignore - Key mismatch safety
+    return dict[key] || translations['es-419'][key] || key;
+};
 
-    return (
-        <LanguageContext.Provider value={{ language, setLanguage, t }}>
-            {children}
-        </LanguageContext.Provider>
-    );
+return (
+    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+        {children}
+    </LanguageContext.Provider>
+);
 };
 
 export const useLanguage = () => useContext(LanguageContext);

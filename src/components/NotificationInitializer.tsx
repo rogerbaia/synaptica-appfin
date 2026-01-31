@@ -10,7 +10,11 @@ export default function NotificationInitializer() {
     useEffect(() => {
         if (user) {
             // Only init if user is logged in
-            notificationService.init();
+            try {
+                notificationService.init().catch(err => console.error("Notification Init Failed:", err));
+            } catch (e) {
+                console.error("Critical Notification Error:", e);
+            }
         }
     }, [user]);
 
