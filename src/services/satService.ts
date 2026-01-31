@@ -43,12 +43,23 @@ export const satService = {
       body: JSON.stringify(data)
     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.message || 'Error timbrando factura');
+    const rawText = await response.text();
+    console.log('[DEBUG] Stamp Response:', response.status, rawText);
+
+    let json;
+    try {
+      json = JSON.parse(rawText);
+    } catch (e) {
+      console.error('[DEBUG] JSON Parse Error:', e);
+      // If it's not JSON, it's likely an HTML error page or empty - show snippet
+      throw new Error(`Error del Servidor (${response.status}): ${rawText.substring(0, 100) || 'Respuesta vacía'}`);
     }
 
-    return await response.json();
+    if (!response.ok) {
+      throw new Error(json.message || `Error timbrando factura (${response.status})`);
+    }
+
+    return json;
   },
 
   async stampInvoiceLocalMock(data: InvoiceData): Promise<StampedInvoice> {
