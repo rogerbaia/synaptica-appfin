@@ -21,30 +21,63 @@ const Autocomplete = ({
     label,
     value,
     onChange,
-    options,
-    placeholder
+    options: initialOptions,
+    placeholder,
+    asyncSearch // URL to fetch from
 }: {
     label: string,
     value: string,
     onChange: (val: string) => void,
     options: { code: string, name: string }[],
-    placeholder: string
+    placeholder: string,
+    asyncSearch?: string
 }) => {
     const [query, setQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
+    const [localOptions, setLocalOptions] = useState(initialOptions);
+    const [loading, setLoading] = useState(false);
 
-    // Initialize query if value exists (simple match)
+    // Initialize query if value exists
     useEffect(() => {
         if (value && !query) {
-            const match = options.find(o => o.code === value);
+            const match = localOptions.find(o => o.code === value);
             if (match) setQuery(`${match.code} - ${match.name}`);
             else setQuery(value);
         }
-    }, [value, options]);
+    }, [value, localOptions]); // Depend on localOptions to update description if found later
+
+    useEffect(() => {
+        if (!asyncSearch || query.length < 3) {
+            setLocalOptions(initialOptions);
+            return;
+        }
+
+        // Debounce search
+        const timeout = setTimeout(async () => {
+            setLoading(true);
+            try {
+                const res = await fetch(`${asyncSearch}?q=${query}`);
+                const json = await res.json();
+                if (json.data) {
+                    // Merge with initial options to keep favorites at top if needed, 
+                    // or just replace. Let's merge unique.
+                    const newOpts = [...initialOptions, ...json.data].filter((v, i, a) => a.findIndex(t => t.code === v.code) === i);
+                    setLocalOptions(newOpts);
+                }
+            } catch (e) {
+                console.error(e);
+            } finally {
+                setLoading(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeout);
+    }, [query, asyncSearch, initialOptions]);
 
     const normalize = (str: string) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    const filtered = options.filter(opt =>
+    // Filter local options (which might now include fetched ones)
+    const filtered = localOptions.filter(opt =>
         normalize(opt.code).includes(normalize(query)) ||
         normalize(opt.name).includes(normalize(query))
     );
@@ -59,19 +92,21 @@ const Autocomplete = ({
                     onChange={e => {
                         setQuery(e.target.value);
                         setIsOpen(true);
-                        // If they clear it, clear the parent value too
                         if (e.target.value === '') onChange('');
                     }}
                     onFocus={(e) => {
                         setIsOpen(true);
                         e.target.select();
                     }}
-                    onBlur={() => setTimeout(() => setIsOpen(false), 200)} // Delay to allow click
+                    onBlur={() => setTimeout(() => setIsOpen(false), 200)}
                     placeholder={placeholder}
                     className="w-full px-3 py-1.5 border rounded text-xs font-mono bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 focus:ring-2 focus:ring-indigo-500"
                 />
+                {loading && (
+                    <div className="absolute right-2 top-1.5 animate-spin w-4 h-4 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
+                )}
                 {query.length > 0 && isOpen && filtered.length > 0 && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md shadow-lg max-h-60 overflow-y-auto">
                         {filtered.map(opt => (
                             <button
                                 key={opt.code}
@@ -490,11 +525,12 @@ export default function InvoiceModal({ isOpen, onClose, initialData, onSave }: {
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <Autocomplete
-                                        label="Clave Prod/Serv"
+                                        label="Clave Prod/Serv (Busca en el SAT)"
                                         value={formData.satProductKey}
                                         onChange={val => setFormData({ ...formData, satProductKey: val })}
                                         options={SAT_PRODUCTS}
-                                        placeholder="Buscar servicio..."
+                                        placeholder="Escribe 3 letras o números..."
+                                        asyncSearch="/api/sat/catalogs/products"
                                     />
                                     <Autocomplete
                                         label="Clave Unidad"
