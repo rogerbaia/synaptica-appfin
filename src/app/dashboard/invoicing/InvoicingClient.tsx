@@ -665,8 +665,7 @@ function InvoicingContent() {
 
 
 
-            return (
-            // ...
+            {/* Header matches ArchivePage style */}
             <SuccessModal
                 isOpen={!!successModalData}
                 data={successModalData}

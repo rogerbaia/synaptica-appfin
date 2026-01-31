@@ -32,18 +32,32 @@ export default function FiscalClients() {
 
     const loadClients = async () => {
         setLoading(true);
-        const data = await supabaseService.getFiscalClients(searchTerm);
-        const mapped = data.map((c: any) => ({
-            id: c.id,
-            name: c.legal_name,
-            rfc: c.tax_id,
-            contact: c.address?.zip || 'Sin CP',
-            email: c.email || '',
-            phone: c.phone || '',
-            tax_system: c.tax_system || '626'
-        }));
-        setClients(mapped);
-        setLoading(false);
+        try {
+            console.log("Fetching clients...");
+            const data = await supabaseService.getFiscalClients(searchTerm);
+            console.log("Clients Data Received:", data);
+
+            if (!Array.isArray(data)) {
+                console.error("Data is not an array:", data);
+                setClients([]);
+                return;
+            }
+
+            const mapped = data.map((c: any) => ({
+                id: c.id,
+                name: c.legal_name,
+                rfc: c.tax_id,
+                contact: c.address?.zip || 'Sin CP',
+                email: c.email || '',
+                phone: c.phone || '',
+                tax_system: c.tax_system || '626'
+            }));
+            setClients(mapped);
+        } catch (err) {
+            console.error("Error loading clients:", err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
