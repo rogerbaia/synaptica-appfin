@@ -49,15 +49,9 @@ const CHART_OPTION = {
 };
 
 // Initial Data
-const INITIAL_DRAFTS = [
-    { id: 1, folio: 'PRE-001', date: '04/01/2026', client: 'PUBLICO EN GENERAL', rfc: 'XAXX010101000', total: 1500.00, description: 'Consulta General' },
-    { id: 2, folio: 'PRE-002', date: '03/01/2026', client: 'JUAN PEREZ', rfc: 'PECJ800101XXX', total: 800.00, description: 'Estudio de Retina' },
-];
-
-const INITIAL_INVOICES = [
-    { id: 101, folio: 'F-2023001', date: '02/01/2026', client: 'ASEGURADORA AXA', rfc: 'AXA...123', total: 3500.00, status: 'paid', uuid: '550e8400-e29b...', sent: true },
-    { id: 102, folio: 'F-2023002', date: '01/01/2026', client: 'PUBLICO EN GENERAL', rfc: 'XAXX010101000', total: 500.00, status: 'pending', uuid: '550e8400-e29b...', sent: false },
-];
+// Initial Data
+const INITIAL_DRAFTS: any[] = [];
+const INITIAL_INVOICES: any[] = [];
 
 function InvoicingContent() {
     const { tier } = useSubscription();
