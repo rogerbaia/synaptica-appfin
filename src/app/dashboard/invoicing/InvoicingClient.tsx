@@ -569,13 +569,17 @@ function InvoicingContent() {
                     date: new Date((t.details?.date || (t.date.includes('T') ? t.date : t.date + 'T12:00:00'))).toLocaleDateString('es-MX', {
                         day: '2-digit', month: '2-digit', year: 'numeric'
                     }),
-                    // [NEW] Raw Date for Preview (Timezone Safe)
+                    // [FIX] Raw Date for Preview (Timezone Safe)
                     rawDate: t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`),
-                    client: t.description.split(' - ')[0] || t.details?.client || 'Cliente',
-                    rfc: t.details?.rfc || '',
-                    total: t.amount,
+                    // [SAFETY] Force String conversion to prevent Object Rendering Crash (Error #31)
+                    client: typeof (t.description.split(' - ')[0] || t.details?.client) === 'object' ? 'Nombre Inválido' : (String(t.description.split(' - ')[0] || t.details?.client || 'Cliente')),
+                    rfc: typeof t.details?.rfc === 'object' ? 'XAXX010101000' : (String(t.details?.rfc || '')),
+
+                    // [SAFETY] Force Number
+                    total: typeof t.amount === 'number' ? t.amount : 0,
+
                     status: t.payment_received ? 'paid' : 'pending',
-                    uuid: t.details?.uuid || '',
+                    uuid: typeof t.details?.uuid === 'object' ? '' : (String(t.details?.uuid || '')),
                     sent: false,
                     xml: t.details?.xml || '',
                     details: {
