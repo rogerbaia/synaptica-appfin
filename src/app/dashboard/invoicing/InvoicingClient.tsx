@@ -564,7 +564,6 @@ function InvoicingContent() {
                 .filter((t: any) => t.has_invoice === true)
                 .map((t: any) => ({
                     id: t.id,
-                    folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`,
                     // [FIX] Use Emission Date
                     date: new Date((t.details?.date || (t.date.includes('T') ? t.date : t.date + 'T12:00:00'))).toLocaleDateString('es-MX', {
                         day: '2-digit', month: '2-digit', year: 'numeric'

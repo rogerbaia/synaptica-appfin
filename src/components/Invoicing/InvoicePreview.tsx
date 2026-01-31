@@ -282,9 +282,9 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         <td className="py-4 px-3 align-top font-mono text-slate-500">{details?.satProductKey || '---'}</td>
                                         <td className="py-4 px-3 align-top">
                                             <p className="font-bold text-slate-800 uppercase mb-1">{data.description}</p>
-                                            {(details?.iva > 0 || details?.retention > 0) && (
+                                            {(Number(details?.iva) > 0 || Number(details?.retention) > 0) && (
                                                 <div className="flex gap-3 text-[9px] text-slate-400 bg-slate-50 inline-block px-2 py-1 rounded">
-                                                    {details.iva > 0 && <span>Traslado IVA Base: ${details.subtotal?.toLocaleString('es-MX')} Tasa: 0.160000</span>}
+                                                    {Number(details?.iva) > 0 && <span>Traslado IVA Base: ${Number(details?.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })} Tasa: 0.160000</span>}
                                                 </div>
                                             )}
                                         </td>
