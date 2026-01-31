@@ -139,6 +139,9 @@ export default function FiscalClients() {
                 KEY_CONFIGURED: {debugData?.keyConfigured ? 'SI' : 'NO'} |
                 HTTP_STATUS: {debugData?.status || 'N/A'} |
                 FACTURAPI_ITEMS: {debugData?.totalItems ?? '?'} |
+                KEY_SRC: {debugData?.keySource || '?'} |
+                KEY_PREV: {debugData?.keyPreview || '?'} |
+                HDR_PREV: {debugData?.headerPreview || '?'} |
                 ERR: {debugData?.error || 'Ninguno'}
             </div>
 
