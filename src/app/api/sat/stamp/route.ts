@@ -8,106 +8,74 @@ const getAuthHeader = () => {
     return `Basic ${Buffer.from(cleanKey + ':').toString('base64')}`;
 };
 
-export async function POST(req: NextRequest) {
-    if (!FACTURAPI_KEY || FACTURAPI_KEY.includes('placeholder')) {
-        return NextResponse.json({ message: 'Missing FACTURAPI_KEY' }, { status: 503 });
-    }
+    } catch (e: any) {
+    console.error('❌ CRITICAL ERROR IN STAMP ROUTE:', e);
+    return NextResponse.json({
+        message: `Server Error: ${e.message}`,
+        details: e.stack
+    }, { status: 500 });
+}
+}
+const data = await req.json();
 
-    // 0. Auth & Client Setup
-    const authHeader = req.headers.get('Authorization');
-    // ... (Verify auth same as Organization route, but we need the USER object)
-    // For brevity in valid implementation, we assume we use the server-side supabase client helper or just standard verify:
-    const { createClient } = await import('@supabase/supabase-js');
-    const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY! // Use Service Role to query Transactions globally for this user
-    );
+// 2. TRIAL LIMIT CHECK (1 Invoice Max)
+// Check if user is in "Trial" (No explicit plan OR 'free' plan AND created < 7 days ago)
+// Note: SubscriptionContext logic effectively grants 'platinum' features but we must restrict THIS specific feature server-side.
+// We check if they are NOT truly 'pro'/'platinum' in the DB profile (ignoring the temporary client-side grant).
 
-    let user;
-    // We can trust the user ID passed from client IF we verify token, OR we just trust the token.
-    // Better: Get User from Token.
-    if (authHeader) {
-        const token = authHeader.replace('Bearer ', '');
-        const { data } = await supabase.auth.getUser(token);
-        user = data.user;
-    }
+const isPaidPlan = metadata.subscription_tier === 'pro' || metadata.subscription_tier === 'platinum' || metadata.is_pro === true;
 
-    if (!user) {
-        return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
+// Calculate Account Age
+const createdDate = new Date(user.created_at);
+const now = new Date();
+const diffDays = Math.ceil(Math.abs(now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+const isTrialPeriod = diffDays <= 7;
 
-    const metadata = user.user_metadata || {};
-    const orgId = metadata.facturapi_org_id;
+// "God Mode" bypass
+const isGod = ['rogerbaia@hotmail.com', 'admin@synaptica.ai'].includes(user.email || '');
 
-    // 1. Enforce Organization (RFC) Registration
-    // This implicitly handles the "One RFC per Account" constraint via Facturapi
-    if (!orgId) {
+if (!isPaidPlan && isTrialPeriod && !isGod) {
+    // Count existing invoices in DB
+    const { count, error } = await supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('has_invoice', true);
+
+    if (error) console.error("Error counting invoices", error);
+
+    const invoiceCount = count || 0;
+
+    if (invoiceCount >= 1) {
         return NextResponse.json({
-            message: 'Configuración Fiscal Incompleta. Ve a Configuración > Fiscal y guarda tus datos primero.'
+            message: `🛑 Límite de Prueba Alcanzado.\n\nDurante los 7 días gratuitos, solo puedes emitir 1 factura real para probar el sistema.\n\nPara facturación ilimitada, actualiza a Platinum.`
         }, { status: 403 });
     }
+}
 
-    try {
-        const data = await req.json();
+// 3. Create Invoice (Using the User's Org ID)
+// We pass 'orgId' to our helper logic to ensure Facturapi assigns it correctly
+const invoice = await createInvoice(orgId, data); // Pass orgId instead of looking up customer manually logic
 
-        // 2. TRIAL LIMIT CHECK (1 Invoice Max)
-        // Check if user is in "Trial" (No explicit plan OR 'free' plan AND created < 7 days ago)
-        // Note: SubscriptionContext logic effectively grants 'platinum' features but we must restrict THIS specific feature server-side.
-        // We check if they are NOT truly 'pro'/'platinum' in the DB profile (ignoring the temporary client-side grant).
-
-        const isPaidPlan = metadata.subscription_tier === 'pro' || metadata.subscription_tier === 'platinum' || metadata.is_pro === true;
-
-        // Calculate Account Age
-        const createdDate = new Date(user.created_at);
-        const now = new Date();
-        const diffDays = Math.ceil(Math.abs(now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
-        const isTrialPeriod = diffDays <= 7;
-
-        // "God Mode" bypass
-        const isGod = ['rogerbaia@hotmail.com', 'admin@synaptica.ai'].includes(user.email || '');
-
-        if (!isPaidPlan && isTrialPeriod && !isGod) {
-            // Count existing invoices in DB
-            const { count, error } = await supabase
-                .from('transactions')
-                .select('*', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-                .eq('has_invoice', true);
-
-            if (error) console.error("Error counting invoices", error);
-
-            const invoiceCount = count || 0;
-
-            if (invoiceCount >= 1) {
-                return NextResponse.json({
-                    message: `🛑 Límite de Prueba Alcanzado.\n\nDurante los 7 días gratuitos, solo puedes emitir 1 factura real para probar el sistema.\n\nPara facturación ilimitada, actualiza a Platinum.`
-                }, { status: 403 });
-            }
-        }
-
-        // 3. Create Invoice (Using the User's Org ID)
-        // We pass 'orgId' to our helper logic to ensure Facturapi assigns it correctly
-        const invoice = await createInvoice(orgId, data); // Pass orgId instead of looking up customer manually logic
-
-        // 4. Map to StampedInvoice Interface
-        return NextResponse.json({
-            uuid: invoice.uuid,
-            folio: invoice.folio_number?.toString() || invoice.id.substring(0, 6).toUpperCase(),
-            date: invoice.created_at,
-            selloSAT: invoice.verification_url ? 'https://verificacfdi.facturaelectronica.sat.gob.mx...' : 'PENDING', // Facturapi simplifies this
-            selloCFDI: invoice.stamp?.signature || 'PENDING',
-            certificateNumber: '30001000000500003421', // Mock or extract from invoice.cert_number
-            originalChain: invoice.original_string || '',
-            xml: invoice.xml_download_url || ''
-        });
+// 4. Map to StampedInvoice Interface
+return NextResponse.json({
+    uuid: invoice.uuid,
+    folio: invoice.folio_number?.toString() || invoice.id.substring(0, 6).toUpperCase(),
+    date: invoice.created_at,
+    selloSAT: invoice.verification_url ? 'https://verificacfdi.facturaelectronica.sat.gob.mx...' : 'PENDING', // Facturapi simplifies this
+    selloCFDI: invoice.stamp?.signature || 'PENDING',
+    certificateNumber: '30001000000500003421', // Mock or extract from invoice.cert_number
+    originalChain: invoice.original_string || '',
+    xml: invoice.xml_download_url || ''
+});
 
     } catch (error: any) {
-        console.error('Facturapi Error:', error);
-        return NextResponse.json({
-            message: error.message || 'Error processing invoice',
-            details: error
-        }, { status: 500 });
-    }
+    console.error('Facturapi Error:', error);
+    return NextResponse.json({
+        message: error.message || 'Error processing invoice',
+        details: error
+    }, { status: 500 });
+}
 }
 
 async function findCustomerByRFC(rfc: string) {
