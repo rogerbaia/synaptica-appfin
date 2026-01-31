@@ -406,7 +406,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                             <FileText size={20} className="text-white" />
                         </div>
                         <div>
-                            <h3 className="text-white font-bold text-lg leading-none">Nueva Factura</h3>
+                            <h3 className="text-white font-bold text-lg leading-none">{isTicket ? 'Nuevo Pre Comprobante' : 'Nueva Factura'}</h3>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] font-medium text-indigo-100 bg-indigo-500/30 px-2 py-0.5 rounded-full border border-indigo-400/30">CFDI 4.0</span>
                             </div>
@@ -716,8 +716,15 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                         }}
                         className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
                     >
-                        <FileText size={18} />
-                        Timbrar Factura
+                        {isTicket ? (
+                            <>
+                                <FileText size={18} /> Guardar Pre Comprobante
+                            </>
+                        ) : (
+                            <>
+                                <FileText size={18} /> Timbrar Factura
+                            </>
+                        )}
                     </button>
                 </div>
                 {/* Exit Confirmation Overlay */}
