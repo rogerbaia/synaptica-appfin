@@ -621,10 +621,10 @@ function InvoicingContent() {
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 initialData={modalData}
-                isTicket={activeTab === 'tickets' || activeTab === 'drafts'} // [NEW] Mode Prop
+                isTicket={activeTab === 'tickets' || activeTab === 'drafts' || modalData?.isDraft} // [NEW] Mode Prop + Explicit Flag
                 onSave={async (data) => {
                     // If in 'tickets' or 'drafts' mode (Pre-Comprobante), skip stamping and just save draft/ticket
-                    if (activeTab === 'tickets' || activeTab === 'drafts') {
+                    if (activeTab === 'tickets' || activeTab === 'drafts' || modalData?.isDraft) {
                         try {
                             // 1. Save as Pre-Computante (Draft Ticket)
                             const { error } = await supabaseService.createTransaction({
@@ -1080,7 +1080,7 @@ function InvoicingContent() {
                             </div>
                             <button
                                 onClick={() => {
-                                    setModalData({});
+                                    setModalData({ isDraft: true }); // [FIX] Explicitly set Draft Mode
                                     setIsModalOpen(true);
                                 }}
                                 className="px-4 py-2 bg-green-600 text-white text-sm font-bold rounded-lg hover:bg-green-700 transition shadow-sm flex items-center gap-2"
