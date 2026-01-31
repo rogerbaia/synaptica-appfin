@@ -658,23 +658,7 @@ function InvoicingContent() {
                 }}
             />
 
-    const handleEmail = async (invoice: any) => {
-        const toastId = toast.loading("Enviando correos...");
-            try {
-            // Call new API
-            const res = await fetch('/api/sat/email', {
-                method: 'POST',
-            headers: {'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                invoiceId: invoice.details?.id || invoice.uuid, // Pass the Facturapi ID (stored in uuid or details.id) - assume UUID is what we have mostly
-            email: 'rogerbaia@hotmail.com' // Actually, we should let API handle the "To" based on client, but for now passing Issuer just in case, or API handles it.
-                    // WAIT: My API route takes 'email' as the CLIENT email. I need to get client email.
-                    // For now, I'll pass a placeholder or if I have client email in invoice object.
-                    // The API route I wrote takes {invoiceId, email}.
-                    // I will assume invoice object has email or I'll prompt, OR I'll update API to fetch it if missing.
-                    // Let's prompt for now or use a default if missing.
-                })
-            });
+
 
             // Re-reading my API route: it expects 'email' in body.
             // I should prompt the user for the email or use a stored one.
