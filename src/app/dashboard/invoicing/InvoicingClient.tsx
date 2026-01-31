@@ -652,10 +652,8 @@ function InvoicingContent() {
                                 toast.error('Error al cancelar.');
                             }
                         }
-                    }
-                }
-                } else if (action === 'email') {
-                await sendEmail(previewInvoice);
+                    } else if (action === 'email') {
+                        await sendEmail(previewInvoice);
                     }
                 }}
             />
