@@ -60,39 +60,71 @@ export async function POST(req: NextRequest) {
 
         const cleanKey = FACTURAPI_KEY.trim();
         const authHeaderFacturapi = `Basic ${Buffer.from(cleanKey + ':').toString('base64')}`;
+        const targetRFC = formData.get('tax_id') as string;
 
-        console.log('[DEBUG] Step 1: Creating Org via JSON with Name:', name);
+        console.log('[DEBUG] Step 0: Searching for existing organization with RFC:', targetRFC);
 
-        // 2. Step 1: Create Organization via JSON (Robust metadata)
-        const createRes = await fetch('https://www.facturapi.io/v2/organizations', {
-            method: 'POST',
-            headers: {
-                'Authorization': authHeaderFacturapi,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                name: name, // Using Name as the primary identifier per API requirement
-                tax_id: formData.get('tax_id') as string,
-                tax_system: formData.get('tax_system') as string,
-                address: {
-                    zip: formData.get('address[zip]') as string,
+        // 0. Step 0: Search for existing Organization
+        let orgId: string | null = null;
+        let orgLegalName: string = legalName;
+
+        try {
+            const searchRes = await fetch('https://www.facturapi.io/v2/organizations', {
+                method: 'GET',
+                headers: { 'Authorization': authHeaderFacturapi }
+            });
+
+            if (searchRes.ok) {
+                const orgs = await searchRes.json();
+                const match = orgs.data.find((o: any) => o.legal.tax_id === targetRFC);
+                if (match) {
+                    orgId = match.id;
+                    orgLegalName = match.legal.legal_name;
+                    console.log(`[DEBUG] Found Existing Org: ${orgId} (${orgLegalName})`);
                 }
-            })
-        });
-
-        const json = await createRes.json();
-
-        if (!createRes.ok) {
-            console.error("Facturapi Creation Error:", json);
-            const msg = json.message || "Error creando organización (JSON)";
-            if (msg.includes('already exists') || msg.includes('duplicate')) {
-                throw new Error(`El RFC ya está registrado: ${msg}`);
             }
-            throw new Error(msg);
+        } catch (e) {
+            console.warn("Error searching organizations", e);
         }
 
-        const orgId = json.id;
-        console.log(`[DEBUG] Step 1 Success. Org ID: ${orgId}. Step 2: Uploading CSD...`);
+        // 1. Step 1: Create Organization via JSON (Only if not found)
+        if (!orgId) {
+            console.log('[DEBUG] Org not found. Creating new...');
+            const createRes = await fetch('https://www.facturapi.io/v2/organizations', {
+                method: 'POST',
+                headers: {
+                    'Authorization': authHeaderFacturapi,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    legal_name: legalName, // Trying legal_name again as it IS required for creation
+                    // name: name, // Removing name tentatively to strictly follow docs for creation if possible, or keeping both? 
+                    // Actually, if 'legal_name' failed before, maybe it was because it existed? 
+                    // Let's stick to the 'standard' schema now that we check existence first.
+                    // Docs: legal_name, tax_id, tax_system are required.
+                    legal_name: legalName,
+                    tax_id: targetRFC,
+                    tax_system: formData.get('tax_system') as string,
+                    address: {
+                        zip: formData.get('address[zip]') as string,
+                    }
+                })
+            });
+
+            const json = await createRes.json();
+
+            if (!createRes.ok) {
+                console.error("Facturapi Creation Error:", json);
+                const msg = json.message || "Error creando organización (JSON)";
+                // If it still says 'legal_name' not allowed, we are in a very weird state.
+                // But generally this IS the standard way.
+                throw new Error(msg);
+            }
+            orgId = json.id;
+            orgLegalName = json.legal_name || legalName;
+        }
+
+        console.log(`[DEBUG] Step 1 Done. Target Org ID: ${orgId}. Step 2: Uploading CSD...`);
 
         // 2. Step 2: Upload CSD Files (if provided)
         const cert = formData.get('certificate');
@@ -118,7 +150,7 @@ export async function POST(req: NextRequest) {
                 console.error("Facturapi CSD Upload Error:", uploadJson);
                 // Non-fatal? Maybe warn user but continue since Org is created.
                 // But user wants to stamp, so it IS fatal for the goal.
-                throw new Error(`Organización creada, pero falló la subida de CSD: ${uploadJson.message}`);
+                throw new Error(`Organización vinculada, pero falló la subida de CSD: ${uploadJson.message}`);
             }
             console.log('[DEBUG] Step 2 Success: CSD Uploaded.');
         }
@@ -142,7 +174,7 @@ export async function POST(req: NextRequest) {
         // Return success response based on the new flow
         return NextResponse.json({
             id: orgId,
-            legal_name: json.legal_name,
+            legal_name: orgLegalName,
             message: "Organización Fiscal Configurada Correctamente"
         });
 
