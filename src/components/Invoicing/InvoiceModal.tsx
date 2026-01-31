@@ -150,8 +150,8 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
         paymentMethod: 'PUE',
         paymentForm: '03',
         cfdiUse: 'G03',
-        satProductKey: '85121610', // Servicios de oftalmólogos (Requested Default)
-        satUnitKey: 'E48', // Unidad de servicio (More standard for medical services than E49)
+        satProductKey: '85121610',
+        satUnitKey: 'E48',
         description: '',
         quantity: 1,
         unitValue: 0 as number | string,
@@ -162,7 +162,8 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
         hasIvaRetention: false,
         hasRetention: false,
         activityType: 'RESICO',
-        txId: undefined as string | number | undefined
+        txId: undefined as string | number | undefined,
+        address: '' as string | any // [NEW] Capture Address
     });
 
     useEffect(() => {
@@ -171,10 +172,15 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
         fetch('/api/sat/clients').then(res => res.json()).then(json => {
             if (json.data) {
                 setClients(json.data.map((c: any) => ({
-                    id: c.id, // CRITICAL: Access the Facturapi ID
+                    id: c.id,
                     code: c.tax_id,
                     name: c.legal_name,
-                    regime: c.tax_system
+                    regime: c.tax_system,
+                    // [NEW] Map Address (Zip + Municipality/State)
+                    address: c.address ? (
+                        c.address.zip ? `${c.address.zip}, ${c.address.municipality || c.address.city || ''}, ${c.address.state || ''}, MEX`
+                            : 'SIN DOMICILIO'
+                    ) : ''
                 })));
             }
         });
@@ -444,7 +450,8 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                                     rfc: found.code,
                                                     client: found.name,
                                                     customerId: found.id, // SAVE THE ID
-                                                    fiscalRegime: found.regime || '626'
+                                                    fiscalRegime: found.regime || '626',
+                                                    address: found.address // [NEW] Save Address
                                                 }));
                                             }
                                         }}
