@@ -135,9 +135,8 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         <div className="flex justify-between items-start mb-8">
                             <div className="w-1/3 pt-2">
                                 {/* Logo Area */}
-                                <div className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 rounded-lg bg-slate-50/50 h-28 w-40">
-                                    <span className="font-serif text-2xl text-slate-400 font-bold italic">Synaptica</span>
-                                    <span className="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">Medical</span>
+                                <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white h-28 w-40">
+                                    <img src="/logo-synaptica.png" alt="Synaptica Logo" className="max-w-full max-h-full object-contain" />
                                 </div>
                             </div>
 

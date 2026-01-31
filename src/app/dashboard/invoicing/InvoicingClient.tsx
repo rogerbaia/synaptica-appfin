@@ -223,7 +223,8 @@ function InvoicingContent() {
                         client: t.description.split(' - ')[0] || 'Cliente',
                         rfc: t.details?.rfc || 'XAXX010101000',
                         total: t.amount,
-                        description: t.description.split(' - ')[1] || t.description,
+                        // [FIX] Prioritize details description, then robust split, or fallback
+                        description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)),
                         // [NEW] Full Details for Preview
                         details: {
                             ...t.details,
