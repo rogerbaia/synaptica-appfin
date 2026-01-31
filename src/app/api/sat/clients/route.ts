@@ -75,6 +75,9 @@ export async function GET(req: NextRequest) {
         // RE-CALCULATE DEBUG INFO FOR ERROR RESPONSE
         const debugInfo = {
             keyConfigured: !!FACTURAPI_KEY,
+            keySource: process.env.FACTURAPI_KEY ? 'ENV' : 'FALLBACK',
+            keyPreview: cleanKey ? `${cleanKey.substring(0, 8)}...` : 'none',
+            headerPreview: authHeaderDebug,
             keyLength: FACTURAPI_KEY ? FACTURAPI_KEY.length : 0,
             status: 500,
             error: error.message,
