@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: true,
   },
   // @ts-ignore
+  // @ts-ignore
   eslint: {
     ignoreDuringBuilds: true,
   },

@@ -18,7 +18,6 @@ export interface InvoiceData {
   iva: number;
   retention: number;
   total: number;
-  total: number;
   returnUrl?: string; // For redirect flow
   // [ADDED] Flags for Payload Construction
   customer?: string;

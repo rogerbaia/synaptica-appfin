@@ -603,10 +603,10 @@ function InvoicingContent() {
                     ...stamped, // Validation info (sello, chain, etc)
                     originalChain: stamped.originalChain || '|| CADENA NO DISPONIBLE ||',
                     // [FIX] Map Issuer CSD (Facturapi usually returns it as 'certificate_number' at root, or we check stamp)
-                    certificateNumber: stamped.certificate_number || stamped.certificateNumber || '30001000000500003421',
-                    expeditionPlace: stamped.expedition_place || stamped.expeditionPlace || '67510',
+                    certificateNumber: stamped.certificateNumber || '30001000000500003421',
+                    expeditionPlace: '67510',
                     // [FIX] Map Certification Date from Stamp, fallback to Emission Date
-                    certDate: stamped.stamp?.date || stamped.date || new Date().toISOString(),
+                    certDate: stamped.date || new Date().toISOString(),
                     date: stamped.date || new Date().toISOString(),
                     paymentForm: data.paymentForm,
                     paymentMethod: data.paymentMethod,
