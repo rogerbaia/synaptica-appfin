@@ -261,8 +261,8 @@ function InvoicingContent() {
                         id: t.id,
                         folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`,
                         date: formatSafeDate(t.date),
-                        // [NEW] Raw Date for Preview
-                        rawDate: t.date,
+                        // [NEW] Raw Date for Preview (Timezone Safe)
+                        rawDate: t.date.includes('T') ? t.date : `${t.date}T12:00:00`,
                         client: t.description.split(' - ')[0] || t.details?.client || 'Cliente',
                         rfc: t.details?.rfc || '',
                         total: t.amount,
@@ -564,6 +564,8 @@ function InvoicingContent() {
                     date: new Date(t.date.includes('T') ? t.date : t.date + 'T12:00:00').toLocaleDateString('es-MX', {
                         day: '2-digit', month: '2-digit', year: 'numeric'
                     }),
+                    // [NEW] Raw Date for Preview (Timezone Safe)
+                    rawDate: t.date.includes('T') ? t.date : `${t.date}T12:00:00`,
                     client: t.description.split(' - ')[0] || t.details?.client || 'Cliente',
                     rfc: t.details?.rfc || '',
                     total: t.amount,
@@ -571,7 +573,13 @@ function InvoicingContent() {
                     uuid: t.details?.uuid || '',
                     sent: false,
                     xml: t.details?.xml || '',
-                    details: t.details || {}
+                    details: {
+                        ...t.details,
+                        // [FIX] Ensure Original Chain is mapped
+                        originalChain: t.details?.original_chain || t.details?.originalChain || '|| CADENA NO DISPONIBLE ||',
+                        // Description Fix
+                        description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
+                    }
                 }));
 
             setInvoices(realInvoices);
