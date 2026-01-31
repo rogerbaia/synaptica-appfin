@@ -34,9 +34,18 @@ export async function POST(req: NextRequest) {
         const legalName = formData.get('legal_name') as string;
         const name = formData.get('name') as string || legalName;
 
+        // --- DEBUG PROBE START ---
+        return NextResponse.json({
+            message: `DEBUG PROBE: Name=${name}, LegalName=${legalName}, Keys=${Array.from(formData.keys()).join(',')}`
+        }, { status: 400 });
+        // --- DEBUG PROBE END ---
+
+        /*
         if (!name) {
-            return NextResponse.json({ message: 'Missing name or legal_name' }, { status: 400 });
+             return NextResponse.json({ message: 'Missing name or legal_name' }, { status: 400 });
         }
+        ...
+        */
 
         // [LOGIC] Default Logo Injection (Same as before)
         if (!formData.get('logo')) {
@@ -63,6 +72,10 @@ export async function POST(req: NextRequest) {
         outgoingFormData.append('tax_system', formData.get('tax_system') as string);
         const zip = formData.get('address[zip]');
         if (zip) outgoingFormData.append('address[zip]', zip as string);
+        /*
+        // Files
+        ...
+        */
 
         // Files
         const cert = formData.get('certificate');
