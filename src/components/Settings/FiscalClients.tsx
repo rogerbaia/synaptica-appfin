@@ -78,6 +78,7 @@ export default function FiscalClients() {
             client: client.name,
             rfc: client.rfc,
             fiscalRegime: client.tax_system || '626',
+            zip: client.contact !== 'Sin CP' ? client.contact : '',
             tab: 'issued'
         });
         router.push(`/dashboard/invoicing?${params.toString()}`);

@@ -300,8 +300,9 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                 hasRetention: hasRet,
                 hasIvaRetention: false,
                 // [FIX] Persist the Transaction ID to prevent duplicates
-                txId: initialData.txId
-                // Maintain defaults or load from saved client if we had a feature
+                txId: initialData.txId,
+                // [FIX] Load Zip from initialData (Draft or URL param)
+                zip: initialData.zip || initialData.details?.zip || ''
             }));
         }
     }, [isOpen, initialData]);

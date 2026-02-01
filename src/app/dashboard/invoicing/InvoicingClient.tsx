@@ -115,7 +115,8 @@ function InvoicingContent() {
                 // [NEW]
                 client,
                 rfc,
-                fiscalRegime
+                fiscalRegime,
+                zip: searchParams.get('zip') || ''
             });
             setIsModalOpen(true);
         }
