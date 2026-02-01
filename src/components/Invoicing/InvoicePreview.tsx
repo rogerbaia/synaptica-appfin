@@ -157,6 +157,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 <h2 className="font-bold text-base text-slate-900 uppercase tracking-wide">{issuer.name}</h2>
                                 <p className="text-[10px] text-slate-500 font-medium">RFC: {issuer.rfc}</p>
                                 <p className="text-[10px] text-slate-500 px-4 leading-tight">{issuer.address}</p>
+                                <p className="text-[10px] text-slate-500 font-medium">{issuer.contact.split('|')[0]}</p>
                                 <div className="pt-2">
                                     <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase">
                                         {issuer.regime.split(' ')[0]} - {issuer.regime.split(' ').slice(1).join(' ')}
@@ -207,7 +208,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                             <div className="col-span-8 text-slate-700 uppercase leading-tight text-right md:text-left">
                                                 {typeof details?.address === 'object'
                                                     ? `${details.address.street || ''} ${details.address.exterior || ''}, ${details.address.colonia || ''}, ${details.address.zip || ''}, ${details.address.city || ''}, ${details.address.state || ''}`.replace(/^ ,/, '').trim() || 'DIRECCIÓN NO DISPONIBLE'
-                                                    : (details?.address || '25210, SALTILLO, COAHUILA, MEX')}
+                                                    : (details?.address || (details?.zip ? `C.P. ${details.zip}` : ''))}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2">
@@ -314,13 +315,9 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         <p className="font-bold text-slate-500 mb-1">Forma de Pago</p>
                                         <p className="text-slate-800">{details?.paymentForm || '03'} - {details?.paymentForm === '01' ? 'Efectivo' : details?.paymentForm === '02' ? 'Cheque' : details?.paymentForm === '03' ? 'Transferencia' : details?.paymentForm === '99' ? 'Por definir' : 'Otros'}</p>
                                     </div>
-                                    <div>
+                                    <div className="col-span-2">
                                         <p className="font-bold text-slate-500 mb-1">Método de Pago</p>
                                         <p className="text-slate-800">{details?.paymentMethod || 'PUE'} - {details?.paymentMethod === 'PPD' ? 'Parcialidades' : 'Una sola exhibición'}</p>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <p className="font-bold text-slate-500 mb-1">Uso CFDI</p>
-                                        <p className="text-slate-800">{getUseDesc(details?.cfdiUse)}</p>
                                     </div>
                                 </div>
 
