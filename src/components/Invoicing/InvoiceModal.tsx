@@ -28,7 +28,7 @@ const Autocomplete = ({
 }: {
     label: string,
     value: string,
-    onChange: (val: string) => void,
+    onChange: (val: string, item?: any) => void,
     options: { code: string, name: string, zip?: string, [key: string]: any }[],
     placeholder: string,
     asyncSearch?: string,
@@ -119,7 +119,7 @@ const Autocomplete = ({
                                 onMouseDown={(e) => {
                                     e.preventDefault();
                                     setQuery(`${opt.code} - ${opt.name}`);
-                                    onChange(opt.code);
+                                    onChange(opt.code, opt);
                                     setIsOpen(false);
                                 }}
                             >
@@ -472,7 +472,20 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                     <Autocomplete
                                         label="Buscar Cliente"
                                         value=""
-                                        onChange={val => {
+                                        onChange={(val, item) => {
+                                            if (item) {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    rfc: item.code,
+                                                    client: item.name,
+                                                    customer: item.id,
+                                                    customerId: item.id,
+                                                    fiscalRegime: item.regime || '626',
+                                                    address: item.address,
+                                                    zip: item.zip || ''
+                                                }));
+                                                return;
+                                            }
                                             // [FIX] Ensure we find in clients OR fetched options
                                             // The 'clients' state might not have the async result yet if not merged?
                                             // Actually Autocomplete uses localOptions, but onChange returns 'val' (code).
