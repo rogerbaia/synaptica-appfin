@@ -562,7 +562,7 @@ function InvoicingContent() {
             const txs = await supabaseService.getTransactions();
 
             const realInvoices = txs
-                .filter((t: any) => t.has_invoice === true)
+                .filter((t: any) => t.has_invoice === true && t.category !== 'Factura Cancelada / Oculto')
                 .map((t: any) => ({
                     id: t.id,
                     // [FIX] Use Emission Date
@@ -571,8 +571,8 @@ function InvoicingContent() {
                     }),
                     // [FIX] Raw Date for Preview (Timezone Safe)
                     rawDate: typeof t.details?.date === 'object' ? new Date().toISOString() : (t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`)),
-                    // [SAFETY] Force String conversion to prevent Object Rendering Crash (Error #31)
-                    client: typeof (t.description.split(' - ')[0] || t.details?.client) === 'object' ? 'Nombre Inválido' : (String(t.description.split(' - ')[0] || t.details?.client || 'Cliente')),
+                    // [SAFETY] Prioritize explicit details.client, fallback to description split
+                    client: typeof t.details?.client === 'string' && t.details.client.length > 1 ? t.details.client : (typeof (t.description.split(' - ')[0]) === 'string' ? t.description.split(' - ')[0] : 'Cliente'),
                     rfc: typeof t.details?.rfc === 'object' ? 'XAXX010101000' : (String(t.details?.rfc || '')),
                     folio: typeof (t.invoice_number || t.details?.folio) === 'object' ? 'ERR-OBJ' : (String(t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`)),
 
