@@ -795,10 +795,29 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                     <button
                         type="button"
                         onClick={handleCancel}
-                        className="px-5 py-2.5 text-slate-500 hover:text-slate-700 font-medium text-sm transition-colors hover:bg-slate-50 rounded-lg"
+                        className="px-5 py-2.5 text-slate-500 hover:text-slate-700 font-medium text-sm transition-colors hover:bg-slate-50 rounded-lg mr-auto"
                     >
                         Cancelar
                     </button>
+
+                    {!isTicket && (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                onSave({
+                                    ...formData,
+                                    ...totals,
+                                    customer: (formData as any).customerId,
+                                    returnUrl: initialData?.returnUrl,
+                                    isDraft: true
+                                });
+                            }}
+                            className="px-5 py-2.5 text-indigo-600 hover:text-indigo-700 font-medium text-sm transition-colors hover:bg-indigo-50 rounded-lg border border-indigo-100"
+                        >
+                            Guardar Borrador
+                        </button>
+                    )}
+
                     <button
                         type="button"
                         onClick={() => {

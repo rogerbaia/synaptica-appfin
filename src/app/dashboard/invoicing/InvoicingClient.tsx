@@ -682,43 +682,62 @@ function InvoicingContent() {
                 initialData={modalData}
                 isTicket={activeTab === 'tickets' || activeTab === 'drafts' || modalData?.isDraft} // [NEW] Mode Prop + Explicit Flag
                 onSave={async (data) => {
-                    // If in 'tickets' or 'drafts' mode (Pre-Comprobante), skip stamping and just save draft/ticket
-                    if (activeTab === 'tickets' || activeTab === 'drafts' || modalData?.isDraft) {
+                    // [FIX] Check for explicit 'isDraft' flag from new button
+                    const isDraftAction = activeTab === 'tickets' || activeTab === 'drafts' || modalData?.isDraft || data.isDraft;
+
+                    if (isDraftAction) {
                         try {
-                            // 1. Save as Pre-Computante (Draft Ticket)
-                            const { error } = await supabaseService.createTransaction({
-                                user_id: (await supabaseService.getCurrentUser())?.id,
-                                amount: data.total,
-                                date: new Date().toISOString(),
-                                description: `${data.client} - ${data.description}`,
-                                category: 'Pre-CFDI', // Special category for drafts/pre-receipts
-                                type: 'income',
-                                payment_received: false, // Pending payment usually
-                                has_invoice: false, // Not stamped
-                                details: {
-                                    ...data,
-                                    folio: `PRE-${Date.now().toString().slice(-6)}`, // Temp Folio
-                                    status: 'pending' // Draft status
-                                }
-                            });
+                            const commonDetails = {
+                                ...data,
+                                // [FIX] Ensure Client Data is explicitly saved
+                                client: data.client,
+                                rfc: data.rfc,
+                                zip: data.zip,
+                                address: data.address,
+                                fiscalRegime: data.fiscalRegime,
+                                cfdiUse: data.cfdiUse,
+                                status: 'pending' // Draft status
+                            };
 
-                            if (error) throw error;
+                            // Check if Updating existing Draft
+                            if (modalData?.id && (modalData.isDraft || activeTab === 'drafts' || activeTab === 'tickets')) {
+                                // UPDATE
+                                await supabaseService.updateTransaction(modalData.id, {
+                                    amount: data.total,
+                                    // [FIX] Keep original date or update? Usually keep original transaction date for consistency unless handling emission date separately
+                                    // date: modalData.date, 
+                                    description: `${data.client} - ${data.description}`,
+                                    category: 'Pre-CFDI',
+                                    details: {
+                                        ...modalData.details, // Keep existing details (like folio)
+                                        ...commonDetails,
+                                        folio: modalData.folio || `PRE-${Date.now().toString().slice(-6)}`
+                                    }
+                                });
+                                toast.success("Borrador actualizado correctamente");
+                            } else {
+                                // CREATE NEW
+                                const { error } = await supabaseService.createTransaction({
+                                    user_id: (await supabaseService.getCurrentUser())?.id,
+                                    amount: data.total,
+                                    date: new Date().toISOString(), // [FIX] Current Date for New
+                                    description: `${data.client} - ${data.description}`,
+                                    category: 'Pre-CFDI',
+                                    type: 'income',
+                                    payment_received: false,
+                                    has_invoice: false,
+                                    details: {
+                                        ...commonDetails,
+                                        folio: `PRE-${Date.now().toString().slice(-6)}`,
+                                    }
+                                });
+                                if (error) throw error;
+                                toast.success("Pre-Comprobante guardado correctamente");
+                            }
 
-                            toast.success("Pre-Comprobante guardado correctamente");
                             setIsModalOpen(false);
-                            setRefreshTrigger(prev => prev + 1); // [NEW] Trigger Reload
+                            setRefreshTrigger(prev => prev + 1);
 
-                            // Refresh list
-                            // Trigger re-fetch logic for drafts or tickets
-                            // For now, we rely on the effect to reload on tab change or just close.
-                            // Ideal: Update local state. 
-                            // Because we are in 'tickets' tab, we might want to switch to 'drafts' or stay here?
-                            // User said: "regresar a la lista de pre comprobantes". 
-                            // Assuming 'tickets' tab IS 'pre comprobantes' or drafts tab? 
-                            // If activeTab is 'tickets', we are viewing tickets. 
-                            // Let's close and let the user see it in the list (if we refresh).
-                            // We'll trigger a refresh by toggling tab slightly or calling a refresh function if we had one extracted.
-                            // For now, simple close is okay as the main effect runs on tab change.
                         } catch (e: any) {
                             console.error(e);
                             toast.error("Error al guardar Pre-Comprobante");
