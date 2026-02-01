@@ -613,7 +613,7 @@ function InvoicingContent() {
                     certificateNumber: stamped.certificateNumber || '',
                     expeditionPlace: '67510',
                     // [FIX] Map Certification Date from Stamp, fallback to Emission Date
-                    certDate: stamped.date || new Date().toISOString(),
+                    certDate: stamped.certDate || new Date().toISOString(),
                     date: stamped.date || new Date().toISOString(),
                     paymentForm: data.paymentForm,
                     paymentMethod: data.paymentMethod,

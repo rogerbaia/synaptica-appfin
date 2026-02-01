@@ -158,6 +158,7 @@ export const satService = {
       certificateNumber: json.certificate_number || json.att_certificate_number || json.cert_number || '', // [FIX] Issuer CSD Certificate
       satCertificateNumber: stampData.sat_cert_number || '', // [NEW] SAT Certificate
       originalChain: json.original_chain || json.original_string || '',
+      certDate: stampData.date || new Date().toISOString(), // [FIX] Certification Date
       xml: json.xml || ''
     };
   },
