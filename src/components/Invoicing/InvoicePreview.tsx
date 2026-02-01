@@ -385,7 +385,9 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                                        <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                            {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                                        </p>
                                                     </p>
                                                 </div>
                                             </div>

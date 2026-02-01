@@ -590,6 +590,12 @@ function InvoicingContent() {
                         certificateNumber: typeof (t.details?.certificate_number || t.details?.certificateNumber) === 'object' ? '30001000000500003421' : (t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421'),
                         expeditionPlace: typeof (t.details?.expedition_place || t.details?.expeditionPlace) === 'object' ? '67510' : (t.details?.expedition_place || t.details?.expeditionPlace || '67510'),
                         certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
+                        // [FIX] Explicit Mapping for Sello and Chain
+                        selloCFDI: t.details?.selloCFDI || t.details?.sello_cfdi || '',
+                        selloSAT: t.details?.selloSAT || t.details?.sello_sat || '',
+                        originalChain: t.details?.originalChain || t.details?.original_chain || '',
+                        satCertificateNumber: t.details?.satCertificateNumber || t.details?.sat_cert_number || '',
+                        verificationUrl: t.details?.verificationUrl || t.details?.verification_url,
                         // Description Fix & Safety
                         description: typeof (t.details?.description || t.description) === 'object' ? 'Descripción inválida' : (t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)))
                     }
