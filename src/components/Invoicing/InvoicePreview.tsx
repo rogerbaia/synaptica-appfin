@@ -208,13 +208,15 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                             <div className="col-span-4 font-bold text-slate-600">Domicilio:</div>
                                             <div className="col-span-8 text-slate-700 uppercase leading-tight text-right md:text-left">
                                                 {typeof details?.address === 'object'
-                                                    ? [
-                                                        [details.address.street, details.address.exterior].filter(Boolean).join(' '),
-                                                        details.address.colonia,
-                                                        details.address.zip,
-                                                        details.address.city,
-                                                        details.address.state
-                                                    ].filter(Boolean).join(', ') || 'DIRECCIÓN NO DISPONIBLE'
+                                                    ? (details.address.street
+                                                        ? [
+                                                            [details.address.street, details.address.exterior].filter(Boolean).join(' '),
+                                                            details.address.colonia,
+                                                            details.address.zip,
+                                                            details.address.city,
+                                                            details.address.state
+                                                        ].filter(Boolean).join(', ')
+                                                        : (details.address.zip ? `C.P. ${details.address.zip}` : 'DIRECCIÓN NO DISPONIBLE'))
                                                     : (details?.address || (details?.zip ? `C.P. ${details.zip}` : ''))}
                                             </div>
                                         </div>
