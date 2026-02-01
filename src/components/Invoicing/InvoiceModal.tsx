@@ -4,6 +4,7 @@ import { FileText, X, CheckCircle, Search, AlertTriangle } from 'lucide-react';
 import { SAT_PRODUCTS, SAT_UNITS, PAYMENT_METHODS, SAT_PAYMENT_FORMS, SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
 import PoweredByGabi from '../Gabi/PoweredByGabi';
 import { supabaseService } from '@/services/supabaseService';
+import { toast } from 'sonner';
 
 import { useRouter } from 'next/navigation';
 
@@ -411,6 +412,24 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
     const [loading, setLoading] = useState(false); // [FIX] Add loading state
 
     const handleSave = () => {
+        // [VALIDATION] Ensure required fields are present to avoid Facturapi 400 Errors
+        if (!formData.description || formData.description.trim().length === 0) {
+            toast.error("La descripción es obligatoria.");
+            return;
+        }
+        if (!formData.satProductKey) {
+            toast.error("La Clave de Producto SAT es obligatoria.");
+            return;
+        }
+        if (!formData.satUnitKey) {
+            toast.error("La Clave de Unidad SAT es obligatoria.");
+            return;
+        }
+        if (Number(formData.unitValue) <= 0) {
+            toast.error("El valor unitario debe ser mayor a 0.");
+            return;
+        }
+
         setLoading(true);
         localStorage.setItem('invoice_prefs', JSON.stringify({
             satProductKey: formData.satProductKey,
@@ -424,8 +443,6 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
             customer: (formData as any).customerId,
             returnUrl: initialData?.returnUrl
         });
-        // We don't turn off loading because onSave likely closes modal or redirects
-        // But if it doesn't, we should. Safe for now.
     };
 
     if (!isOpen) return null;
