@@ -24,6 +24,7 @@ export interface InvoiceData {
   hasIva?: boolean;
   hasRetention?: boolean;
   activityType?: string;
+  zip?: string; // [NEW]
 }
 
 export interface StampedInvoice {
@@ -77,6 +78,7 @@ export const satService = {
 
     const payload = {
       customer: data.customer, // From previous fix
+      zip: data.zip, // [NEW] Pass Zip to API for Customer Update
       payment_form: data.paymentForm,
       payment_method: data.paymentMethod,
       use: data.cfdiUse,

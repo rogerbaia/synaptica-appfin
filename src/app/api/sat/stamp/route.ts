@@ -110,6 +110,30 @@ export async function POST(req: NextRequest) {
         // IMPORTANT: We must NOT pass 'id' or 'uuid' to Facturapi creation unless we are doing something specific.
         // We pass the invoice details.
 
+        // [NEW] Update Customer Zip if provided (Data Correction Workflow)
+        if (data.customer && data.zip) {
+            console.log(`Updating Customer ${data.customer} Addess Zip to ${data.zip}`);
+            try {
+                // We update strictly the zip code to avoid side effects on other address fields
+                // Facturapi allows partial updates to address
+                await fetch(`https://www.facturapi.io/v2/customers/${data.customer}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': getAuthHeader()
+                    },
+                    body: JSON.stringify({
+                        address: {
+                            zip: data.zip
+                        }
+                    })
+                });
+            } catch (updateErr) {
+                console.warn("Error auto-updating customer zip:", updateErr);
+                // Non-blocking, proceed to stamp (it might fail if zip is invalid, but we try)
+            }
+        }
+
         console.log('Facturapi Create Payload:', JSON.stringify(data));
 
         const response = await fetch('https://www.facturapi.io/v2/invoices', {
