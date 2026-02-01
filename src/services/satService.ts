@@ -41,20 +41,26 @@ export interface StampedInvoice {
 
 export const satService = {
   // [NEW] Get Invoice Data Verification
+  // [NEW] Get Invoice Data Verification
   async getInvoice(id: string): Promise<any> {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
-    if (!token) return null;
+    if (!token) return { message: 'No hay sesión de usuario activa' };
 
     try {
       const response = await fetch(`/api/sat/invoice-check?id=${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
-      if (!response.ok) throw new Error('Failed to fetch invoice');
-      return await response.json();
-    } catch (e) {
+
+      const json = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        return { message: json?.message || `Error API (${response.status})` };
+      }
+      return json;
+    } catch (e: any) {
       console.error("Error fetching invoice from SAT/Facturapi", e);
-      return null;
+      return { message: e.message || 'Error de red al consultar SAT' };
     }
   },
 
