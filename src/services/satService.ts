@@ -155,9 +155,9 @@ export const satService = {
       date: json.date || new Date().toISOString(),
       selloSAT: stampData.sello_sat || stampData.sat_seal || '',
       selloCFDI: stampData.sello_cfdi || stampData.signature || '',
-      certificateNumber: json.certificate_number || '', // [FIX] Issuer CSD Certificate
+      certificateNumber: json.certificate_number || json.att_certificate_number || json.cert_number || '', // [FIX] Issuer CSD Certificate
       satCertificateNumber: stampData.sat_cert_number || '', // [NEW] SAT Certificate
-      originalChain: json.original_chain || '',
+      originalChain: json.original_chain || json.original_string || '',
       xml: json.xml || ''
     };
   },

@@ -608,9 +608,9 @@ function InvoicingContent() {
                     ...stamped, // Validation info (sello, chain, etc)
                     zip: data.zip, // [FIX] Restore Client Zip (Facturapi returns Expedition Zip at root)
                     address: data.address, // [FIX] Pass full address object/string
-                    originalChain: stamped.originalChain || '|| CADENA NO DISPONIBLE ||',
+                    originalChain: stamped.originalChain || '',
                     // [FIX] Map Issuer CSD (Facturapi usually returns it as 'certificate_number' at root, or we check stamp)
-                    certificateNumber: stamped.certificateNumber || '30001000000500003421',
+                    certificateNumber: stamped.certificateNumber || '',
                     expeditionPlace: '67510',
                     // [FIX] Map Certification Date from Stamp, fallback to Emission Date
                     certDate: stamped.date || new Date().toISOString(),

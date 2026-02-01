@@ -239,25 +239,16 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 {typeof details?.address === 'object'
                                                     ? (details.address.street
                                                         ? [
-                                                            [details.address.street, details.address.exterior].filter(Boolean).join(' '),
+                                                            [details.address.street, details.address.exterior].filter(s => s && s.trim().length > 0).join(' '),
                                                             details.address.colonia,
                                                             details.address.zip,
                                                             details.address.city,
                                                             details.address.state
-                                                        ].filter(Boolean).join(', ')
+                                                        ].filter(s => s && s.trim().length > 0).join(', ')
                                                         : (details.address.zip ? `C.P. ${details.address.zip}` : 'DIRECCIÓN NO DISPONIBLE'))
                                                     : (details?.address || (details?.zip ? `C.P. ${details.zip}` : ''))}
                                             </div>
                                         </div>
-                                        {/* [DEBUG] Live Facturapi Check */}
-                                        {isStamped && details?.id && (
-                                            <div className="grid grid-cols-12 gap-2 border-b border-blue-50 bg-blue-50/50 p-1 rounded">
-                                                <div className="col-span-4 font-bold text-blue-600 text-[10px]">Domicilio (Verificación SAT):</div>
-                                                <div className="col-span-8 text-blue-700 font-mono text-[10px] text-right md:text-left">
-                                                    <FacturapiCheck id={details.id} />
-                                                </div>
-                                            </div>
-                                        )}
                                         <div className="grid grid-cols-12 gap-2">
                                             <div className="col-span-4 font-bold text-slate-600">Uso del CFDI:</div>
                                             <div className="col-span-8 text-slate-700 leading-tight text-right md:text-left">
