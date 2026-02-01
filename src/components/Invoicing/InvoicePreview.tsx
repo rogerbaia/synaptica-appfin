@@ -246,7 +246,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                             details.address.state
                                                         ].filter(s => s && s.trim().length > 0).join(', ')
                                                         : (details.address.zip ? `C.P. ${details.address.zip}` : 'DIRECCIÓN NO DISPONIBLE'))
-                                                    : (details?.address || (details?.zip ? `C.P. ${details.zip}` : ''))}
+                                                    : (details?.address ? String(details.address).replace(/,(\s*,)+/g, ',').replace(/^,\s*/, '').replace(/,\s*$/, '') : (details?.zip ? `C.P. ${details.zip}` : ''))}
                                             </div>
                                         </div>
                                         <div className="grid grid-cols-12 gap-2">
@@ -290,7 +290,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         </div>
                                         <div className="flex justify-between flex-col border-t border-slate-100 pt-1 mt-1">
                                             <span className="font-bold text-slate-600 text-[10px]">Serie CSD Emisor:</span>
-                                            <span className="font-mono text-slate-800 text-[10px]">{details?.certificateNumber || '30001000000500003421'}</span>
+                                            <span className="font-mono text-slate-800 text-[10px]">{details?.certificateNumber || '---'}</span>
                                         </div>
                                     </div>
                                 </div>
