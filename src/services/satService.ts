@@ -28,6 +28,7 @@ export interface InvoiceData {
 }
 
 export interface StampedInvoice {
+  id?: string; // Facturapi ID
   uuid: string;
   folio: string;
   date: string;
@@ -39,130 +40,188 @@ export interface StampedInvoice {
 }
 
 export const satService = {
+  // ... (stampInvoice)
+
+  // [NEW] Get Invoice Data Verification
+  async getInvoice(id: string): Promise<any> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return null;
+
+    // Use a new API route for security or reuse the stamp route logic with GET?
+    // We should probably create a simpler client-side fetch since we need to proxy the request 
+    // to avoid exposing the key, OR use a dedicated route.
+    // Given the constraints, I'll add a quick route handler or just modify the existing route to handle GET?
+    // Actually, I'll assume we can use a new route `/api/sat/invoices/[id]` or similar.
+    // For expediency, I will implement the client-side fetch to a new route `/api/sat/invoice-check`.
+
+    try {
+      const response = await fetch(`/api/sat/invoice-check?id=${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!response.ok) throw new Error('Failed to fetch invoice');
+      return await response.json();
+    } catch (e) {
+      console.error("Error fetching invoice from SAT/Facturapi", e);
+      return null;
+    }
+  },
+
   /**
    * Stams Invoice via API Route (Real or Mock handled server-side)
    */
   async stampInvoice(data: InvoiceData): Promise<StampedInvoice> {
-    // Get current session token
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-
-    if (!token) throw new Error("No hay sesión activa. Por favor inicia sesión nuevamente.");
-
-    // [TRANSFORMATION] Construct Facturapi Payload from Flat Data
-    const RETENTION_RATES: any = {
-      'RESICO': { isr: 0.0125, iva: 0.106667 },
-      'HONORARIOS': { isr: 0.10, iva: 0.106667 },
-      'ARRENDAMIENTO': { isr: 0.10, iva: 0.106667 },
-      'FLETES': { isr: 0.04, iva: 0.04 },
-      'PLATAFORMAS': { isr: 0.01, iva: 0.50 },
-    };
-
-    const taxes = [];
-    if (data.hasIva) {
-      taxes.push({ type: 'IVA', rate: 0.16 });
-    }
-
-    if (data.hasRetention) {
-      // Default to RESICO if not specified or found
-      const rates = RETENTION_RATES[data.activityType || 'RESICO'] || RETENTION_RATES['RESICO'];
-
-      // Add ISR Retention
-      taxes.push({ type: 'ISR', rate: rates.isr, factor: 'Tasa', withholding: true });
-
-      // Add IVA Retention (Only if IVA is also present usually, but let's follow the flag logic)
-      if (data.hasIva) {
-        taxes.push({ type: 'IVA', rate: rates.iva, factor: 'Tasa', withholding: true });
-      }
-    }
-
-    const payload = {
-      customer: data.customer, // From previous fix
-      zip: data.zip, // [NEW] Pass Zip to API for Customer Update
-      payment_form: data.paymentForm,
-      payment_method: data.paymentMethod,
-      use: data.cfdiUse,
-      items: [{
-        quantity: data.quantity,
-        product: {
-          description: data.description,
-          product_key: data.satProductKey,
-          price: Number(data.unitValue),
-          unit_key: data.satUnitKey,
-          unit_name: 'Servicio', // Optional but good for valid XML
-          taxes: taxes // The calculated tax array
-        }
-      }]
-    };
-
-    // Call local API Route which handles the Secret Key and Real Logic
-    const response = await fetch('/api/sat/stamp', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const rawText = await response.text();
-    console.log('[DEBUG] Stamp Response:', response.status, rawText);
-
-    let json;
-    try {
-      json = JSON.parse(rawText);
-    } catch (e) {
-      console.error('[DEBUG] JSON Parse Error:', e);
-      // If it's not JSON, it's likely an HTML error page or empty - show snippet
-      throw new Error(`Error del Servidor (${response.status}): ${rawText.substring(0, 100) || 'Respuesta vacía'}`);
-    }
-
-    if (!response.ok) {
-      throw new Error(json.message || `Error timbrando factura (${response.status})`);
-    }
-
+    // ... (existing code)
+    // ...
+    // Inside the return of stampInvoice:
+    /* 
     // [FIX] Map Facturapi Response to StampedInvoice Interface
     const stampData = json.stamp || {};
-
+    
     return {
+        id: json.id, // [NEW] Return Facturapi ID
+        uuid: json.uuid,
+           // ... rest
+    };
+    */
+    // I need to apply the edit to the stampInvoice return block first? 
+    // No, I can do it in one go if I replace the whole interface and the return block.
+    // Using MultiReplace is better here to touch interface + return + add method.
+    // But I am restricted to replace_file_content for single contiguous block or multi for non-contiguous.
+    // The methods are far apart. I'll use multi_replace.
+    return {
+      id: json.id,
       uuid: json.uuid,
       folio: json.folio_number ? `${json.series || ''}${json.folio_number}` : '',
       date: json.date || new Date().toISOString(),
-      selloSAT: stampData.sello_sat || '',
-      selloCFDI: stampData.sello_cfdi || '',
-      certificateNumber: stampData.sat_cert_number || '', // SAT Certificate
+      selloSAT: stampData.sello_sat || stampData.sat_seal || '',
+      selloCFDI: stampData.sello_cfdi || stampData.signature || '',
+      certificateNumber: stampData.sat_cert_number || '',
       originalChain: json.original_chain || '',
-      xml: json.xml || '' // Facturapi might not return XML in create response, handled differently? 
-      // Actually Facturapi usually requires a separate call for XML download or returns it if requested?
-      // For V2, create returns the object. We might need to construct the URL or fetch it if missing.
-      // But usually we just need the string content if we want to store it.
-      // Let's assume for now we save the ID/UUID and might fetch XML later if needed, 
-      // OR we map what we can. 
-      // If XML is critical for "Download XML" button, we need it. 
-      // Facturapi: `json.xml` isn't standard in create response body unless specified.
-      // However, we can construct the download URL or handle it.  
-      // For this specific fix, 'folio' is the priority. 
+      xml: json.xml || ''
     };
   },
+  // ...
+  // Get current session token
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
 
-  async stampInvoiceLocalMock(data: InvoiceData): Promise<StampedInvoice> {
-    // Simulate network latency (1.5s - 3s)
-    const delay = Math.floor(Math.random() * 1500) + 1500;
-    await new Promise(resolve => setTimeout(resolve, delay));
+  if(!token) throw new Error("No hay sesión activa. Por favor inicia sesión nuevamente.");
 
-    const uuid = uuidv4().toUpperCase();
-    const date = new Date().toISOString();
-    const year = new Date().getFullYear();
-    // [FIX] Ensure Mock Folio looks real for testing
-    const folio = `F-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+  // [TRANSFORMATION] Construct Facturapi Payload from Flat Data
+  const RETENTION_RATES: any = {
+    'RESICO': { isr: 0.0125, iva: 0.106667 },
+    'HONORARIOS': { isr: 0.10, iva: 0.106667 },
+    'ARRENDAMIENTO': { isr: 0.10, iva: 0.106667 },
+    'FLETES': { isr: 0.04, iva: 0.04 },
+    'PLATAFORMAS': { isr: 0.01, iva: 0.50 },
+  };
 
-    const selloBase = "MIIE/TCCAwWgAwIBAgIUMDAwMDEwMDAwMDA1MDU1NjM4NDAwDQYJKoZIhvcNAQELBQAwggErMQ8wDQYDVQQDDAZBQyBTQVQxLjAsBgNVBAoMJVNFUlZJQ0lPIERFIEFETUlOSVNUUkFDSU9OIFRSSUJVVEFSSUExGjAYBgNVBAsMEVNBVC1JRVMgQXV0aG9yaXR5MSgwJgYJKoZIhvcNAQkBFhljb250YWN0by50ZWNuaWNvQHNhdC5nb2IubXgxJzAlBgNVBAkMHkFWLiBISURBTEdPIDc3LCBDT0wuIEdVRVJSRVJPMRMwEQYDVQQQDApDVUFVSFRFTU9DMRMwEQYDVQQIDApESVNUUklUTyBGRURFUkFMMQswCQYDVQQGEwJNWDEtMCsGCSqGSIb3DQEJARYeYWNvZHNAY29tcC5zZXJ2aWNpb3N0cmlidXRhbnRpYW5vcy5nb2IubXgwHhcNMTkwNTE3MTY1MzQ2WhcNMjMwNTE3MTY1MzQ2WjCBzjEpMCcGA1UEAxMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEpMCcGA1UEKRMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEpMCcGA1UEChMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTElMCMGA1UELRMcU0FUOTcwNzAxTk4zIC8gROFLQTY2MTIyM1VQMTEeMBwGA1UEBRMVIC8gROFLQTY2MTIyM0hERlJSUzAxMRUwEwYDVQQLEwxTQVQgSUVTIUF1dGhvcmF0eTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ4";
+  const taxes = [];
+  if(data.hasIva) {
+    taxes.push({ type: 'IVA', rate: 0.16 });
+    }
 
-    const selloCFDI = selloBase + Math.random().toString(36).substring(7);
-    const selloSAT = selloBase + Math.random().toString(36).substring(7);
+if (data.hasRetention) {
+  // Default to RESICO if not specified or found
+  const rates = RETENTION_RATES[data.activityType || 'RESICO'] || RETENTION_RATES['RESICO'];
 
-    // Mock XML Generation
-    const xml = `<?xml version="1.0" encoding="utf-8"?>
+  // Add ISR Retention
+  taxes.push({ type: 'ISR', rate: rates.isr, factor: 'Tasa', withholding: true });
+
+  // Add IVA Retention (Only if IVA is also present usually, but let's follow the flag logic)
+  if (data.hasIva) {
+    taxes.push({ type: 'IVA', rate: rates.iva, factor: 'Tasa', withholding: true });
+  }
+}
+
+const payload = {
+  customer: data.customer, // From previous fix
+  zip: data.zip, // [NEW] Pass Zip to API for Customer Update
+  payment_form: data.paymentForm,
+  payment_method: data.paymentMethod,
+  use: data.cfdiUse,
+  items: [{
+    quantity: data.quantity,
+    product: {
+      description: data.description,
+      product_key: data.satProductKey,
+      price: Number(data.unitValue),
+      unit_key: data.satUnitKey,
+      unit_name: 'Servicio', // Optional but good for valid XML
+      taxes: taxes // The calculated tax array
+    }
+  }]
+};
+
+// Call local API Route which handles the Secret Key and Real Logic
+const response = await fetch('/api/sat/stamp', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify(payload)
+});
+
+const rawText = await response.text();
+console.log('[DEBUG] Stamp Response:', response.status, rawText);
+
+let json;
+try {
+  json = JSON.parse(rawText);
+} catch (e) {
+  console.error('[DEBUG] JSON Parse Error:', e);
+  // If it's not JSON, it's likely an HTML error page or empty - show snippet
+  throw new Error(`Error del Servidor (${response.status}): ${rawText.substring(0, 100) || 'Respuesta vacía'}`);
+}
+
+if (!response.ok) {
+  throw new Error(json.message || `Error timbrando factura (${response.status})`);
+}
+
+// [FIX] Map Facturapi Response to StampedInvoice Interface
+const stampData = json.stamp || {};
+
+return {
+  uuid: json.uuid,
+  folio: json.folio_number ? `${json.series || ''}${json.folio_number}` : '',
+  date: json.date || new Date().toISOString(),
+  selloSAT: stampData.sello_sat || '',
+  selloCFDI: stampData.sello_cfdi || '',
+  certificateNumber: stampData.sat_cert_number || '', // SAT Certificate
+  originalChain: json.original_chain || '',
+  xml: json.xml || '' // Facturapi might not return XML in create response, handled differently? 
+  // Actually Facturapi usually requires a separate call for XML download or returns it if requested?
+  // For V2, create returns the object. We might need to construct the URL or fetch it if missing.
+  // But usually we just need the string content if we want to store it.
+  // Let's assume for now we save the ID/UUID and might fetch XML later if needed, 
+  // OR we map what we can. 
+  // If XML is critical for "Download XML" button, we need it. 
+  // Facturapi: `json.xml` isn't standard in create response body unless specified.
+  // However, we can construct the download URL or handle it.  
+  // For this specific fix, 'folio' is the priority. 
+};
+  },
+
+  async stampInvoiceLocalMock(data: InvoiceData): Promise < StampedInvoice > {
+  // Simulate network latency (1.5s - 3s)
+  const delay = Math.floor(Math.random() * 1500) + 1500;
+  await new Promise(resolve => setTimeout(resolve, delay));
+
+  const uuid = uuidv4().toUpperCase();
+  const date = new Date().toISOString();
+  const year = new Date().getFullYear();
+  // [FIX] Ensure Mock Folio looks real for testing
+  const folio = `F-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+
+  const selloBase = "MIIE/TCCAwWgAwIBAgIUMDAwMDEwMDAwMDA1MDU1NjM4NDAwDQYJKoZIhvcNAQELBQAwggErMQ8wDQYDVQQDDAZBQyBTQVQxLjAsBgNVBAoMJVNFUlZJQ0lPIERFIEFETUlOSVNUUkFDSU9OIFRSSUJVVEFSSUExGjAYBgNVBAsMEVNBVC1JRVMgQXV0aG9yaXR5MSgwJgYJKoZIhvcNAQkBFhljb250YWN0by50ZWNuaWNvQHNhdC5nb2IubXgxJzAlBgNVBAkMHkFWLiBISURBTEdPIDc3LCBDT0wuIEdVRVJSRVJPMRMwEQYDVQQQDApDVUFVSFRFTU9DMRMwEQYDVQQIDApESVNUUklUTyBGRURFUkFMMQswCQYDVQQGEwJNWDEtMCsGCSqGSIb3DQEJARYeYWNvZHNAY29tcC5zZXJ2aWNpb3N0cmlidXRhbnRpYW5vcy5nb2IubXgwHhcNMTkwNTE3MTY1MzQ2WhcNMjMwNTE3MTY1MzQ2WjCBzjEpMCcGA1UEAxMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEpMCcGA1UEKRMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEpMCcGA1UEChMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTElMCMGA1UELRMcU0FUOTcwNzAxTk4zIC8gROFLQTY2MTIyM1VQMTEeMBwGA1UEBRMVIC8gROFLQTY2MTIyM0hERlJSUzAxMRUwEwYDVQQLEwxTQVQgSUVTIUF1dGhvcmF0eTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ4";
+
+  const selloCFDI = selloBase + Math.random().toString(36).substring(7);
+  const selloSAT = selloBase + Math.random().toString(36).substring(7);
+
+  // Mock XML Generation
+  const xml = `<?xml version="1.0" encoding="utf-8"?>
 <cfdi:Comprobante xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:cfdi="http://www.sat.gob.mx/cfd/4" Version="4.0" Serie="F" Folio="${folio.split('-')[2]}" Fecha="${date}" Sello="${selloCFDI}" FormaPago="${data.paymentForm}" NoCertificado="30001000000500003421" Certificado="${selloBase}" SubTotal="${data.subtotal.toFixed(2)}" Moneda="MXN" Total="${data.total.toFixed(2)}" TipoDeComprobante="I" Exportacion="01" MetodoPago="${data.paymentMethod}" LugarExpedicion="20000">
   <cfdi:Emisor Rfc="XAXX010101000" Nombre="Dr. Rogelio Barba" RegimenFiscal="612"/>
   <cfdi:Receptor Rfc="${data.rfc}" Nombre="${data.client}" DomicilioFiscalReceptor="20000" RegimenFiscalReceptor="${data.fiscalRegime}" UsoCFDI="${data.cfdiUse}"/>
@@ -185,38 +244,38 @@ export const satService = {
   </cfdi:Complemento>
 </cfdi:Comprobante>`;
 
-    const originalChain = `||1.1|${uuid}|${date}|SAT970701NN3|${selloCFDI}|30001000000500003421||`;
+  const originalChain = `||1.1|${uuid}|${date}|SAT970701NN3|${selloCFDI}|30001000000500003421||`;
 
-    return {
-      uuid,
-      folio,
-      date,
-      selloSAT,
-      selloCFDI,
-      certificateNumber: '30001000000500003421',
-      originalChain,
-      xml
-    };
-  },
+  return {
+    uuid,
+    folio,
+    date,
+    selloSAT,
+    selloCFDI,
+    certificateNumber: '30001000000500003421',
+    originalChain,
+    xml
+  };
+},
 
   /**
   /**
    * Generates a link to a mocked PDF layout
    */
   generatePDFUrl(uuid: string): string {
-    return `/api/pdf/${uuid}`;
-  },
+  return `/api/pdf/${uuid}`;
+},
 
   /**
    * Stamps a Payment Supplement (REP)
    */
-  async stampPaymentSupplement(data: any): Promise<StampedInvoice> {
-    // Logic for real API or Mock
-    // For now, Mock
-    return this.stampPaymentSupplementMock(data);
-  },
+  async stampPaymentSupplement(data: any): Promise < StampedInvoice > {
+  // Logic for real API or Mock
+  // For now, Mock
+  return this.stampPaymentSupplementMock(data);
+},
 
-  async stampPaymentSupplementMock(data: any): Promise<StampedInvoice> {
+  async stampPaymentSupplementMock(data: any): Promise < StampedInvoice > {
     const delay = Math.floor(Math.random() * 1000) + 1000;
     await new Promise(resolve => setTimeout(resolve, delay));
 

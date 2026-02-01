@@ -1,9 +1,29 @@
 import { createPortal } from 'react-dom';
 import React, { useEffect, useState } from 'react';
-import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft } from 'lucide-react';
+import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { numberToLetters } from '@/utils/numberToLetters';
 import { SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
+import { satService } from '@/services/satService';
+
+// [NEW] Debug Component
+const FacturapiCheck = ({ id }: { id: string }) => {
+    const [addr, setAddr] = useState<string>('Verificando...');
+
+    useEffect(() => {
+        satService.getInvoice(id).then(res => {
+            if (res && res.customer && res.customer.address) {
+                setAddr(`C.P. ${res.customer.address.zip} (Registrado en SAT)`);
+            } else if (res) {
+                setAddr('No se encontró dirección en respuesta');
+            } else {
+                setAddr('Error verificando');
+            }
+        });
+    }, [id]);
+
+    return <span>{addr}</span>;
+}
 
 interface InvoicePreviewProps {
     isOpen: boolean;
@@ -221,6 +241,15 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                     : (details?.address || (details?.zip ? `C.P. ${details.zip}` : ''))}
                                             </div>
                                         </div>
+                                        {/* [DEBUG] Live Facturapi Check */}
+                                        {isStamped && details?.id && (
+                                            <div className="grid grid-cols-12 gap-2 border-b border-blue-50 bg-blue-50/50 p-1 rounded">
+                                                <div className="col-span-4 font-bold text-blue-600 text-[10px]">Domicilio (Verificación SAT):</div>
+                                                <div className="col-span-8 text-blue-700 font-mono text-[10px] text-right md:text-left">
+                                                    <FacturapiCheck id={details.id} />
+                                                </div>
+                                            </div>
+                                        )}
                                         <div className="grid grid-cols-12 gap-2">
                                             <div className="col-span-4 font-bold text-slate-600">Uso del CFDI:</div>
                                             <div className="col-span-8 text-slate-700 leading-tight text-right md:text-left">
