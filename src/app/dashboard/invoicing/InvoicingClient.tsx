@@ -768,15 +768,13 @@ function InvoicingContent() {
 
                         if (isConfirmed) {
                             try {
-                                // 1. Cancel in DB (and SAT if connected)
-                                // const reason = prompt('Motivo de cancelación (01, 02, 03, 04):', '02');
+                                // 1. Cancel in Facturapi
+                                const satService = await import('@/services/satService').then(m => m.satService);
+                                // Assuming '02' as default reason for now, or prompt user if needed
+                                await satService.cancelInvoice(previewInvoice.details?.id || previewInvoice.id, '02');
 
-                                // Call Service (Mock implementation for "void" logic)
+                                // 2. Cancel in DB
                                 await supabaseService.updateTransaction(previewInvoice.id, {
-                                    // Update details to remove UUID or mark invalid?
-                                    // Or better, set type to 'void_income' or status 'cancelled' in a details field?
-                                    // We don't have a status column in DB Transaction, we infer it.
-                                    // Let's use the 'details' field to store JSON status.
                                     details: {
                                         ...previewInvoice.details,
                                         status: 'cancelled',
@@ -784,18 +782,17 @@ function InvoicingContent() {
                                     }
                                 });
 
-                                toast.success('✅ Factura cancelada correctamente.');
+                                toast.success('✅ Factura cancelada en SAT y Sistema.');
 
                                 // Refresh
                                 const txs = await supabaseService.getTransactions();
-                                // ... (Reuse mapping logic? Ideally refactor to loadInvoices function but for now just force reload by toggling tab or inline refresh)
-                                // Let's just optimistic update locally and close
+                                // Optimistic update
                                 setInvoices(prev => prev.map(inv => inv.id === previewInvoice.id ? { ...inv, status: 'cancelled' } : inv));
                                 setPreviewInvoice(null);
 
-                            } catch (err) {
+                            } catch (err: any) {
                                 console.error(err);
-                                toast.error('Error al cancelar.');
+                                toast.error(`Error al cancelar: ${err.message}`);
                             }
                         }
                     } else if (action === 'email') {

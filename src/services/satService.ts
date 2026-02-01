@@ -155,10 +155,34 @@ export const satService = {
       date: json.date || new Date().toISOString(),
       selloSAT: stampData.sello_sat || stampData.sat_seal || '',
       selloCFDI: stampData.sello_cfdi || stampData.signature || '',
-      certificateNumber: stampData.sat_cert_number || '', // SAT Certificate
+      certificateNumber: json.certificate_number || '', // [FIX] Issuer CSD Certificate
+      satCertificateNumber: stampData.sat_cert_number || '', // [NEW] SAT Certificate
       originalChain: json.original_chain || '',
       xml: json.xml || ''
     };
+  },
+
+  // [NEW] Cancel Invoice
+  async cancelInvoice(id: string, reason: string = '02'): Promise<any> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("No hay sesión activa");
+
+    // Call internal API route to handle Facturapi cancellation
+    const response = await fetch('/api/sat/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ id, reason })
+    });
+
+    const json = await response.json();
+    if (!response.ok) {
+      throw new Error(json.message || 'Error al cancelar en SAT');
+    }
+    return json;
   },
 
   async stampInvoiceLocalMock(data: InvoiceData): Promise<StampedInvoice> {
@@ -203,6 +227,7 @@ export const satService = {
     const originalChain = `||1.1|${uuid}|${date}|SAT970701NN3|${selloCFDI}|30001000000500003421||`;
 
     return {
+      id: `mock_${uuid}`, // [NEW] Mock ID
       uuid,
       folio,
       date,
