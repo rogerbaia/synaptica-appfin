@@ -356,15 +356,16 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         {/* Left: QR Code & Validation */}
                                         <div className="md:w-48 flex flex-col items-center justify-center space-y-2">
                                             <div className="p-2 bg-white border border-slate-200 rounded-lg">
-                                                {details?.verificationUrl || (details?.uuid && details?.total) ? (
+                                                {details?.verificationUrl ? (
                                                     <QRCodeSVG
-                                                        value={details?.verificationUrl || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${details.uuid}&re=${satService?.rfc || 'XAXX010101000'}&rr=${details.rfc}&tt=${details.total}&fe=${(details.selloCFDI || '').slice(-8)}`}
+                                                        value={details.verificationUrl}
                                                         size={140}
                                                         level="M"
                                                     />
                                                 ) : (
-                                                    <div className="w-[140px] h-[140px] bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 text-center p-2">
-                                                        QR NO DISPONIBLE EN VISTA PREVIA
+                                                    <div className="w-[140px] h-[140px] bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 text-center p-2 flex-col gap-2">
+                                                        <span>QR NO DISPONIBLE</span>
+                                                        <span className="text-[8px] text-slate-300">(Genere una nueva factura)</span>
                                                     </div>
                                                 )}
                                             </div>
