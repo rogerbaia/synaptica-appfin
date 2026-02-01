@@ -163,7 +163,8 @@ export const satService = {
       originalChain: json.original_chain || json.original_string || '',
       certDate: stampData.date || new Date().toISOString(), // [FIX] Certification Date
       verificationUrl: json.verification_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${json.uuid}&re=${json.issuer?.rfc || ''}&rr=${json.customer?.rfc || ''}&tt=${json.total}&fe=${(stampData.sello_cfdi || stampData.signature || '').slice(-8)}`,
-      xml: json.xml || ''
+      xml: json.xml || '',
+      fullResponse: json // [NEW] Store complete raw response for absolute truth
     };
   },
 

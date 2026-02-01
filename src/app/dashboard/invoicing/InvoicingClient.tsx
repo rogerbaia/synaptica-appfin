@@ -586,15 +586,14 @@ function InvoicingContent() {
                     details: {
                         ...t.details,
                         // [FIX] Ensure Original Chain is mapped (Check all possible variants)
-                        originalChain: typeof (t.details?.original_chain || t.details?.originalChain || t.details?.original_string) === 'object' ? '|| CADENA NO DISPONIBLE ||' : (t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||'),
-                        certificateNumber: typeof (t.details?.certificate_number || t.details?.certificateNumber) === 'object' ? '30001000000500003421' : (t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421'),
+                        originalChain: t.details?.fullResponse?.original_chain || t.details?.fullResponse?.original_string || t.details?.originalChain || t.details?.original_chain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
+                        certificateNumber: t.details?.fullResponse?.certificate_number || t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
                         expeditionPlace: typeof (t.details?.expedition_place || t.details?.expeditionPlace) === 'object' ? '67510' : (t.details?.expedition_place || t.details?.expeditionPlace || '67510'),
                         certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
                         // [FIX] Explicit Mapping for Sello and Chain
-                        selloCFDI: t.details?.selloCFDI || t.details?.sello_cfdi || '',
-                        selloSAT: t.details?.selloSAT || t.details?.sello_sat || '',
-                        originalChain: t.details?.originalChain || t.details?.original_chain || '',
-                        satCertificateNumber: t.details?.satCertificateNumber || t.details?.sat_cert_number || '',
+                        selloCFDI: t.details?.fullResponse?.stamp?.sello_cfdi || t.details?.selloCFDI || t.details?.sello_cfdi || '',
+                        selloSAT: t.details?.fullResponse?.stamp?.sello_sat || t.details?.selloSAT || t.details?.sello_sat || '',
+                        satCertificateNumber: t.details?.fullResponse?.stamp?.sat_cert_number || t.details?.satCertificateNumber || t.details?.sat_cert_number || '',
                         verificationUrl: t.details?.verificationUrl || t.details?.verification_url,
                         // Description Fix & Safety
                         description: typeof (t.details?.description || t.description) === 'object' ? 'Descripción inválida' : (t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)))
