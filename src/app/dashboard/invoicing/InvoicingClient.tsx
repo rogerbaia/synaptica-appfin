@@ -532,7 +532,7 @@ function InvoicingContent() {
 
     const handleModalSave = async (data: any) => {
         try {
-            // 1. Show processing state (optional if we had a loading UI, but for now just close and optimistic update)
+            toast.loading(`DEBUG ZIP ENVIADO: ${data.zip || '(VACIO)'}`);
             // Ideally we should have a loading state in the modal, but the modal props uses onSave which closes it.
             // Let's rely on toast or global loading if available, or just proceed.
 
