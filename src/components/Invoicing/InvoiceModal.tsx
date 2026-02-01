@@ -618,7 +618,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="space-y-1.5 md:col-span-1">
+                                    <div className="space-y-1.5 md:col-span-2">
                                         <label className="text-xs font-semibold text-slate-500 ml-1">Uso de CFDI</label>
                                         <select
                                             value={formData.cfdiUse}
