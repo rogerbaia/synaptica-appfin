@@ -34,7 +34,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
         name: 'ROGERIO MARTINS BAIA',
         rfc: 'MABR750116P78',
         regime: '626 Régimen Simplificado de Confianza',
-        address: 'MATAMOROS 514 MATAMOROS, MONTEMORELOS, NUEVO LEÓN. Mexico. C.P. 67510',
+        address: 'MATAMOROS 514 MATAMOROS, MONTEMORELOS, NUEVO LEÓN. Mexico.',
         contact: 'Tel: 81 20227181 | rogerbaia@hotmail.com | Web: www.christianeyeclinic.com'
     };
 
@@ -157,6 +157,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 <h2 className="font-bold text-base text-slate-900 uppercase tracking-wide">{issuer.name}</h2>
                                 <p className="text-[10px] text-slate-500 font-medium">RFC: {issuer.rfc}</p>
                                 <p className="text-[10px] text-slate-500 px-4 leading-tight">{issuer.address}</p>
+                                <p className="text-[10px] text-slate-500 font-medium">C.P. 67510</p>
                                 <p className="text-[10px] text-slate-500 font-medium">{issuer.contact.split('|')[0]}</p>
                                 <div className="pt-2">
                                     <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase">
@@ -207,7 +208,13 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                             <div className="col-span-4 font-bold text-slate-600">Domicilio:</div>
                                             <div className="col-span-8 text-slate-700 uppercase leading-tight text-right md:text-left">
                                                 {typeof details?.address === 'object'
-                                                    ? `${details.address.street || ''} ${details.address.exterior || ''}, ${details.address.colonia || ''}, ${details.address.zip || ''}, ${details.address.city || ''}, ${details.address.state || ''}`.replace(/^ ,/, '').trim() || 'DIRECCIÓN NO DISPONIBLE'
+                                                    ? [
+                                                        [details.address.street, details.address.exterior].filter(Boolean).join(' '),
+                                                        details.address.colonia,
+                                                        details.address.zip,
+                                                        details.address.city,
+                                                        details.address.state
+                                                    ].filter(Boolean).join(', ') || 'DIRECCIÓN NO DISPONIBLE'
                                                     : (details?.address || (details?.zip ? `C.P. ${details.zip}` : ''))}
                                             </div>
                                         </div>
