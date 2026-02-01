@@ -630,15 +630,6 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                             ))}
                                         </select>
                                     </div>
-                                    <div className="space-y-1.5 md:col-span-1">
-                                        <label className="text-xs font-semibold text-slate-500 ml-1">C.P.</label>
-                                        <input
-                                            type="text"
-                                            disabled
-                                            value={formData.zip}
-                                            className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-100 text-slate-600 text-xs text-center font-mono"
-                                        />
-                                    </div>
                                 </div>
                             </div>
                         </section>
