@@ -35,7 +35,9 @@ export interface StampedInvoice {
   selloSAT: string;
   selloCFDI: string;
   certificateNumber: string;
+  satCertificateNumber?: string; // [NEW] - Optional if not always present
   originalChain: string;
+  certDate?: string; // [NEW] - Optional
   xml: string;
 }
 
