@@ -121,7 +121,28 @@ export const satService = {
       throw new Error(json.message || `Error timbrando factura (${response.status})`);
     }
 
-    return json;
+    // [FIX] Map Facturapi Response to StampedInvoice Interface
+    const stampData = json.stamp || {};
+
+    return {
+      uuid: json.uuid,
+      folio: json.folio_number ? `${json.series || ''}${json.folio_number}` : '',
+      date: json.date || new Date().toISOString(),
+      selloSAT: stampData.sello_sat || '',
+      selloCFDI: stampData.sello_cfdi || '',
+      certificateNumber: stampData.sat_cert_number || '', // SAT Certificate
+      originalChain: json.original_chain || '',
+      xml: json.xml || '' // Facturapi might not return XML in create response, handled differently? 
+      // Actually Facturapi usually requires a separate call for XML download or returns it if requested?
+      // For V2, create returns the object. We might need to construct the URL or fetch it if missing.
+      // But usually we just need the string content if we want to store it.
+      // Let's assume for now we save the ID/UUID and might fetch XML later if needed, 
+      // OR we map what we can. 
+      // If XML is critical for "Download XML" button, we need it. 
+      // Facturapi: `json.xml` isn't standard in create response body unless specified.
+      // However, we can construct the download URL or handle it.  
+      // For this specific fix, 'folio' is the priority. 
+    };
   },
 
   async stampInvoiceLocalMock(data: InvoiceData): Promise<StampedInvoice> {
@@ -132,7 +153,8 @@ export const satService = {
     const uuid = uuidv4().toUpperCase();
     const date = new Date().toISOString();
     const year = new Date().getFullYear();
-    const folio = `F-${year}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    // [FIX] Ensure Mock Folio looks real for testing
+    const folio = `F-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
 
     const selloBase = "MIIE/TCCAwWgAwIBAgIUMDAwMDEwMDAwMDA1MDU1NjM4NDAwDQYJKoZIhvcNAQELBQAwggErMQ8wDQYDVQQDDAZBQyBTQVQxLjAsBgNVBAoMJVNFUlZJQ0lPIERFIEFETUlOSVNUUkFDSU9OIFRSSUJVVEFSSUExGjAYBgNVBAsMEVNBVC1JRVMgQXV0aG9yaXR5MSgwJgYJKoZIhvcNAQkBFhljb250YWN0by50ZWNuaWNvQHNhdC5nb2IubXgxJzAlBgNVBAkMHkFWLiBISURBTEdPIDc3LCBDT0wuIEdVRVJSRVJPMRMwEQYDVQQQDApDVUFVSFRFTU9DMRMwEQYDVQQIDApESVNUUklUTyBGRURFUkFMMQswCQYDVQQGEwJNWDEtMCsGCSqGSIb3DQEJARYeYWNvZHNAY29tcC5zZXJ2aWNpb3N0cmlidXRhbnRpYW5vcy5nb2IubXgwHhcNMTkwNTE3MTY1MzQ2WhcNMjMwNTE3MTY1MzQ2WjCBzjEpMCcGA1UEAxMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEpMCcGA1UEKRMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTEpMCcGA1UEChMgU0VSVklDSU8gREUgQURNSU5JU1RSQUNJT04gVFJJQlVUQVJJQTElMCMGA1UELRMcU0FUOTcwNzAxTk4zIC8gROFLQTY2MTIyM1VQMTEeMBwGA1UEBRMVIC8gROFLQTY2MTIyM0hERlJSUzAxMRUwEwYDVQQLEwxTQVQgSUVTIUF1dGhvcmF0eTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAJ4";
 

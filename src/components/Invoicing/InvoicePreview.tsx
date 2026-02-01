@@ -160,9 +160,6 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                 <p className="text-[10px] text-slate-500 font-medium">
                                     {issuer.contact.split('|')[0].trim()} <span className="mx-1 text-slate-300">|</span> C.P. 67510
                                 </p>
-                                <p className="text-[10px] text-slate-500 font-medium">
-                                    {issuer.contact.split('|').slice(1).join(' | ').trim()}
-                                </p>
                                 <div className="pt-2">
                                     <span className="inline-block px-2 py-0.5 bg-slate-100 text-slate-600 text-[9px] font-bold rounded uppercase">
                                         {issuer.regime.split(' ')[0]} - {issuer.regime.split(' ').slice(1).join(' ')}
