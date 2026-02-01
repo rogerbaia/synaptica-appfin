@@ -11,18 +11,26 @@ const FacturapiCheck = ({ id }: { id: string }) => {
     const [addr, setAddr] = useState<string>('Verificando...');
 
     useEffect(() => {
+        if (!id) {
+            setAddr('ID inválido');
+            return;
+        }
         satService.getInvoice(id).then(res => {
             if (res && res.customer && res.customer.address) {
                 setAddr(`C.P. ${res.customer.address.zip} (Registrado en SAT)`);
+            } else if (res && res.message) {
+                setAddr(`Error SAT: ${res.message}`);
             } else if (res) {
-                setAddr('No se encontró dirección en respuesta');
+                setAddr('Sin dirección en respuesta');
             } else {
-                setAddr('Error verificando');
+                setAddr('Error de conexión');
             }
+        }).catch(err => {
+            setAddr(`Error: ${err.message}`);
         });
     }, [id]);
 
-    return <span>{addr}</span>;
+    return <span title={`ID: ${id}`}>{addr}</span>;
 }
 
 interface InvoicePreviewProps {
