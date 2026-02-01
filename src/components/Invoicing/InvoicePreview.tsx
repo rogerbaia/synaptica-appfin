@@ -1,6 +1,7 @@
 import { createPortal } from 'react-dom';
 import React, { useEffect, useState } from 'react';
 import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft, RefreshCw, ShieldCheck } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { numberToLetters } from '@/utils/numberToLetters';
 import { SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
@@ -348,79 +349,134 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
 
 
 
-                                <div className="grid grid-cols-2 gap-4 text-xs">
-                                    <div>
-                                        <p className="font-bold text-slate-500 mb-1">Forma de Pago</p>
-                                        <p className="text-slate-800">{details?.paymentForm || '03'} - {details?.paymentForm === '01' ? 'Efectivo' : details?.paymentForm === '02' ? 'Cheque' : details?.paymentForm === '03' ? 'Transferencia' : details?.paymentForm === '99' ? 'Por definir' : 'Otros'}</p>
-                                    </div>
-                                    <div className="col-span-2">
-                                        <p className="font-bold text-slate-500 mb-1">Método de Pago</p>
-                                        <p className="text-slate-800">{details?.paymentMethod || 'PUE'} - {details?.paymentMethod === 'PPD' ? 'Parcialidades' : 'Una sola exhibición'}</p>
-                                    </div>
-                                </div>
+                                {/* [NEW] Fiscal Footer Grid */}
+                                <div className="mt-8 border-t border-slate-200 pt-6">
+                                    <div className="flex flex-col md:flex-row gap-6">
 
-                                <div className="mt-4 pt-4 border-t border-slate-100">
-                                    <div className="flex items-center gap-2 text-indigo-600">
-                                        <Zap size={14} />
-                                        <span className="text-[10px] font-bold uppercase">Cadena Original del Timbre{isStamped ? '' : ' (Simulado)'}</span>
-                                    </div>
-                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1 mb-3">
-                                        <p className="text-[9px] text-slate-500 font-mono break-all leading-tight">
-                                            {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
-                                        </p>
-                                    </div>
+                                        {/* Left: QR Code & Validation */}
+                                        <div className="md:w-48 flex flex-col items-center justify-center space-y-2">
+                                            <div className="p-2 bg-white border border-slate-200 rounded-lg">
+                                                {details?.verificationUrl || (details?.uuid && details?.total) ? (
+                                                    <QRCodeSVG
+                                                        value={details?.verificationUrl || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${details.uuid}&re=${satService?.rfc || 'XAXX010101000'}&rr=${details.rfc}&tt=${details.total}&fe=${(details.selloCFDI || '').slice(-8)}`}
+                                                        size={140}
+                                                        level="M"
+                                                    />
+                                                ) : (
+                                                    <div className="w-[140px] h-[140px] bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 text-center p-2">
+                                                        QR NO DISPONIBLE EN VISTA PREVIA
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <p className="text-[9px] text-slate-400 text-center leading-tight">
+                                                Representación impresa de un CFDI 4.0
+                                            </p>
+                                        </div>
 
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <ShieldCheck size={14} />
-                                        <span className="text-[10px] font-bold uppercase">Sello Digital del CFDI</span>
-                                    </div>
-                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1 mb-3">
-                                        <p className="text-[8px] text-slate-500 font-mono break-all leading-tight">
-                                            {details?.selloCFDI || '---'}
-                                        </p>
-                                    </div>
+                                        {/* Right: Fiscal Strings & Seals */}
+                                        <div className="flex-1 space-y-3">
 
-                                    <div className="flex items-center gap-2 text-slate-600">
-                                        <ShieldCheck size={14} />
-                                        <span className="text-[10px] font-bold uppercase">Sello Digital del SAT</span>
-                                    </div>
-                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1">
-                                        <p className="text-[8px] text-slate-500 font-mono break-all leading-tight">
-                                            {details?.selloSAT || '---'}
-                                        </p>
+                                            {/* Cadena Original */}
+                                            <div>
+                                                <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                                                    <Zap size={12} />
+                                                    <span className="text-[9px] font-bold uppercase">Cadena Original del Complemento de Certificación Digital del SAT</span>
+                                                </div>
+                                                <div className="bg-slate-50 p-2 border border-slate-100 rounded">
+                                                    <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                        {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Sello Digital CFDI */}
+                                            <div>
+                                                <div className="flex items-center gap-2 text-slate-600 mb-1">
+                                                    <ShieldCheck size={12} />
+                                                    <span className="text-[9px] font-bold uppercase">Sello Digital del CFDI</span>
+                                                </div>
+                                                <div className="bg-slate-50 p-2 border border-slate-100 rounded">
+                                                    <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                        {details?.selloCFDI || '---'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Sello Digital SAT */}
+                                            <div>
+                                                <div className="flex items-center gap-2 text-slate-600 mb-1">
+                                                    <ShieldCheck size={12} />
+                                                    <span className="text-[9px] font-bold uppercase">Sello Digital del SAT</span>
+                                                </div>
+                                                <div className="bg-slate-50 p-2 border border-slate-100 rounded">
+                                                    <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                        {details?.selloSAT || '---'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* SAT Cert & Dates */}
+                                            <div className="grid grid-cols-2 gap-4 pt-2">
+                                                <div>
+                                                    <p className="font-bold text-slate-500 text-[9px] uppercase">No. de Serie del Certificado del SAT</p>
+                                                    <p className="font-mono text-slate-800 text-[10px]">{details?.satCertificateNumber || '---'}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-slate-500 text-[9px] uppercase">Fecha y Hora de Certificación</p>
+                                                    <p className="font-mono text-slate-800 text-[10px]">
+                                                        {details?.certDate ? new Date(details.certDate).toLocaleString('es-MX') : '---'}
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Totals Column */}
-                            <div className="w-full md:w-64 bg-slate-50 rounded-lg p-4 border border-slate-200">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-xs text-slate-500">
-                                        <span>Subtotal</span>
-                                        <span className="font-mono">${(details?.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            {/* Totals Column (Sidebar) */}
+                            <div className="w-full md:w-64 bg-slate-50 rounded-lg p-4 border border-slate-200 h-fit">
+                                <div className="space-y-4">
+                                    {/* Payment Meta Moved Here for Better Space Usage */}
+                                    <div className="space-y-3 pb-4 border-b border-slate-200 text-xs">
+                                        <div>
+                                            <p className="font-bold text-slate-500 mb-1">Forma de Pago</p>
+                                            <p className="text-slate-800 leading-tight">{details?.paymentForm || '03'} - {details?.paymentForm === '01' ? 'Efectivo' : details?.paymentForm === '02' ? 'Cheque' : details?.paymentForm === '03' ? 'Transferencia' : details?.paymentForm === '99' ? 'Por definir' : 'Otros'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-500 mb-1">Método de Pago</p>
+                                            <p className="text-slate-800 leading-tight">{details?.paymentMethod || 'PUE'} - {details?.paymentMethod === 'PPD' ? 'Parcialidades' : 'Una sola exhibición'}</p>
+                                        </div>
                                     </div>
-                                    {details?.iva > 0 && (
+
+                                    <div className="space-y-2">
                                         <div className="flex justify-between text-xs text-slate-500">
-                                            <span>(+ 002 IVA)</span>
-                                            <span className="font-mono">${details.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                            <span>Subtotal</span>
+                                            <span className="font-mono">${(details?.subtotal || 0).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
-                                    )}
-                                    {details?.retention > 0 && (
-                                        <div className="flex justify-between text-xs text-red-500">
-                                            <span>(- Ret. ISR)</span>
-                                            <span className="font-mono">-${details.retention.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                        {details?.iva > 0 && (
+                                            <div className="flex justify-between text-xs text-slate-500">
+                                                <span>(+ 002 IVA)</span>
+                                                <span className="font-mono">${details.iva.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                        {details?.retention > 0 && (
+                                            <div className="flex justify-between text-xs text-red-500">
+                                                <span>(- Ret. ISR)</span>
+                                                <span className="font-mono">-${details.retention.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                        {details?.ivaRetention > 0 && (
+                                            <div className="flex justify-between text-xs text-red-500">
+                                                <span>(- Ret. IVA)</span>
+                                                <span className="font-mono">-${details.ivaRetention.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-slate-200 my-2 pt-2"></div>
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-sm font-bold text-slate-800">Total</span>
+                                            <span className="text-xl font-bold text-indigo-600 font-mono">${finalTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                         </div>
-                                    )}
-                                    {details?.ivaRetention > 0 && (
-                                        <div className="flex justify-between text-xs text-red-500">
-                                            <span>(- Ret. IVA)</span>
-                                            <span className="font-mono">-${details.ivaRetention.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                                        </div>
-                                    )}
-                                    <div className="border-t border-slate-200 my-2 pt-2"></div>
-                                    <div className="flex justify-between items-end">
-                                        <span className="text-sm font-bold text-slate-800">Total</span>
-                                        <span className="text-xl font-bold text-indigo-600 font-mono">${finalTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                     </div>
                                 </div>
                             </div>

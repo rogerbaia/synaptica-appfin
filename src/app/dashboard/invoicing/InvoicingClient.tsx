@@ -611,6 +611,9 @@ function InvoicingContent() {
                     originalChain: stamped.originalChain || '',
                     // [FIX] Map Issuer CSD (Facturapi usually returns it as 'certificate_number' at root, or we check stamp)
                     certificateNumber: stamped.certificateNumber || '',
+                    // [NEW] SAT Certificate & QR Data
+                    satCertificateNumber: stamped.satCertificateNumber || '',
+                    verificationUrl: stamped.verificationUrl,
                     expeditionPlace: '67510',
                     // [FIX] Map Certification Date from Stamp, fallback to Emission Date
                     certDate: stamped.certDate || new Date().toISOString(),

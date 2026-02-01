@@ -38,6 +38,7 @@ export interface StampedInvoice {
   satCertificateNumber?: string; // [NEW] - Optional if not always present
   originalChain: string;
   certDate?: string; // [NEW] - Optional
+  verificationUrl?: string; // [NEW] - URL for QR Code
   xml: string;
 }
 
@@ -161,6 +162,7 @@ export const satService = {
       satCertificateNumber: stampData.sat_cert_number || '', // [NEW] SAT Certificate
       originalChain: json.original_chain || json.original_string || '',
       certDate: stampData.date || new Date().toISOString(), // [FIX] Certification Date
+      verificationUrl: json.verification_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${json.uuid}&re=${json.issuer?.rfc || ''}&rr=${json.customer?.rfc || ''}&tt=${json.total}&fe=${(stampData.sello_cfdi || stampData.signature || '').slice(-8)}`,
       xml: json.xml || ''
     };
   },
