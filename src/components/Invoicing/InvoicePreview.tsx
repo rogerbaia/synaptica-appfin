@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom';
 import React, { useEffect, useState } from 'react';
-import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft, RefreshCw } from 'lucide-react';
+import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft, RefreshCw, ShieldCheck } from 'lucide-react';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { numberToLetters } from '@/utils/numberToLetters';
 import { SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
