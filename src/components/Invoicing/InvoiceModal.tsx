@@ -309,7 +309,6 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                 // [FIX] Persist the Transaction ID to prevent duplicates
                 txId: initialData.txId,
                 // [FIX] Load Zip from initialData (Draft or URL param)
-                zip: initialData.zip || initialData.details?.zip || ''
             }));
         }
     }, [isOpen, initialData]);
@@ -628,249 +627,251 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                         />
                                     </div>
                                 </div>
+                            </div>
+                        </section>
 
-                                {/* --- Conceptos --- */}
-                                <section className="space-y-3">
-                                    <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider pl-1">Conceptos</h4>
-                                    <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 relative overflow-hidden">
-                                        {/* Decorative accent */}
-                                        <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-violet-500"></div>
+                        {/* --- Conceptos --- */}
+                        <section className="space-y-3">
+                            <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider pl-1">Conceptos</h4>
+                            <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 relative overflow-hidden">
+                                {/* Decorative accent */}
+                                <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-violet-500"></div>
 
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <Autocomplete
-                                                label="Clave Prod/Serv (Busca en el SAT)"
-                                                value={formData.satProductKey}
-                                                onChange={val => setFormData({ ...formData, satProductKey: val })}
-                                                options={SAT_PRODUCTS}
-                                                placeholder="Escribe 3 letras o números..."
-                                                asyncSearch="/api/sat/catalogs/products"
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Autocomplete
+                                        label="Clave Prod/Serv (Busca en el SAT)"
+                                        value={formData.satProductKey}
+                                        onChange={val => setFormData({ ...formData, satProductKey: val })}
+                                        options={SAT_PRODUCTS}
+                                        placeholder="Escribe 3 letras o números..."
+                                        asyncSearch="/api/sat/catalogs/products"
+                                    />
+                                    <Autocomplete
+                                        label="Clave Unidad"
+                                        value={formData.satUnitKey}
+                                        onChange={val => setFormData({ ...formData, satUnitKey: val })}
+                                        options={SAT_UNITS}
+                                        placeholder="Buscar unidad..."
+                                    />
+                                </div>
+
+                                <div className="grid grid-cols-12 gap-4 items-start">
+                                    <div className="col-span-2 space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">Cant.</label>
+                                        <input
+                                            type="number"
+                                            value={formData.quantity}
+                                            onChange={e => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center font-bold bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                        />
+                                    </div>
+                                    <div className="col-span-7 space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">Descripción</label>
+                                        <textarea
+                                            value={formData.description}
+                                            onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                            rows={1}
+                                            className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none uppercase"
+                                            placeholder="DESCRIPCIÓN DEL SERVICIO O PRODUCTO"
+                                        />
+                                    </div>
+                                    <div className="col-span-3 space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">Valor Unit.</label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
+                                            <input
+                                                type="text"
+                                                inputMode="decimal"
+                                                value={formData.unitValue}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    if (/^[\d,]*\.?\d*$/.test(val)) setFormData({ ...formData, unitValue: val });
+                                                }}
+                                                onBlur={() => {
+                                                    const val = parseFloat(formData.unitValue.toString().replace(/,/g, '')) || 0;
+                                                    setFormData({ ...formData, unitValue: val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
+                                                }}
+                                                className="w-full pl-6 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-mono font-bold text-right bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                                placeholder="0.00"
                                             />
-                                            <Autocomplete
-                                                label="Clave Unidad"
-                                                value={formData.satUnitKey}
-                                                onChange={val => setFormData({ ...formData, satUnitKey: val })}
-                                                options={SAT_UNITS}
-                                                placeholder="Buscar unidad..."
-                                            />
-                                        </div>
-
-                                        <div className="grid grid-cols-12 gap-4 items-start">
-                                            <div className="col-span-2 space-y-1.5">
-                                                <label className="text-xs font-semibold text-slate-500 ml-1">Cant.</label>
-                                                <input
-                                                    type="number"
-                                                    value={formData.quantity}
-                                                    onChange={e => setFormData({ ...formData, quantity: parseFloat(e.target.value) || 0 })}
-                                                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center font-bold bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                                />
-                                            </div>
-                                            <div className="col-span-7 space-y-1.5">
-                                                <label className="text-xs font-semibold text-slate-500 ml-1">Descripción</label>
-                                                <textarea
-                                                    value={formData.description}
-                                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
-                                                    rows={1}
-                                                    className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none uppercase"
-                                                    placeholder="DESCRIPCIÓN DEL SERVICIO O PRODUCTO"
-                                                />
-                                            </div>
-                                            <div className="col-span-3 space-y-1.5">
-                                                <label className="text-xs font-semibold text-slate-500 ml-1">Valor Unit.</label>
-                                                <div className="relative">
-                                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
-                                                    <input
-                                                        type="text"
-                                                        inputMode="decimal"
-                                                        value={formData.unitValue}
-                                                        onChange={e => {
-                                                            const val = e.target.value;
-                                                            if (/^[\d,]*\.?\d*$/.test(val)) setFormData({ ...formData, unitValue: val });
-                                                        }}
-                                                        onBlur={() => {
-                                                            const val = parseFloat(formData.unitValue.toString().replace(/,/g, '')) || 0;
-                                                            setFormData({ ...formData, unitValue: val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) });
-                                                        }}
-                                                        className="w-full pl-6 pr-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-mono font-bold text-right bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                                                        placeholder="0.00"
-                                                    />
-                                                </div>
-                                            </div>
                                         </div>
                                     </div>
-                                </section>
+                                </div>
+                            </div>
+                        </section>
 
-                                {/* Section: Payment & Taxes */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Section: Payment & Taxes */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-                                    {/* Payment Method */}
-                                    <section className="space-y-3">
-                                        <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider pl-1">Pago</h4>
-                                        <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 h-full relative overflow-hidden">
-                                            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-violet-500"></div>
-                                            <Autocomplete
-                                                label="Método de Pago"
-                                                value={formData.paymentMethod}
-                                                onChange={val => setFormData({ ...formData, paymentMethod: val })}
-                                                options={PAYMENT_METHODS}
-                                                placeholder="Seleccionar..."
-                                            />
-                                            <Autocomplete
-                                                label="Forma de Pago"
-                                                value={formData.paymentForm}
-                                                onChange={val => setFormData({ ...formData, paymentForm: val })}
-                                                options={SAT_PAYMENT_FORMS}
-                                                placeholder="Seleccionar..."
-                                            />
-                                        </div>
-                                    </section>
+                            {/* Payment Method */}
+                            <section className="space-y-3">
+                                <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider pl-1">Pago</h4>
+                                <div className="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 h-full relative overflow-hidden">
+                                    <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-violet-500"></div>
+                                    <Autocomplete
+                                        label="Método de Pago"
+                                        value={formData.paymentMethod}
+                                        onChange={val => setFormData({ ...formData, paymentMethod: val })}
+                                        options={PAYMENT_METHODS}
+                                        placeholder="Seleccionar..."
+                                    />
+                                    <Autocomplete
+                                        label="Forma de Pago"
+                                        value={formData.paymentForm}
+                                        onChange={val => setFormData({ ...formData, paymentForm: val })}
+                                        options={SAT_PAYMENT_FORMS}
+                                        placeholder="Seleccionar..."
+                                    />
+                                </div>
+                            </section>
 
-                                    {/* Taxes & Totals */}
-                                    <section className="space-y-3">
-                                        <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider pl-1">Totales</h4>
-                                        <div className="bg-slate-100 dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner space-y-4 h-full flex flex-col justify-between">
+                            {/* Taxes & Totals */}
+                            <section className="space-y-3">
+                                <h4 className="text-xs font-bold text-indigo-500 uppercase tracking-wider pl-1">Totales</h4>
+                                <div className="bg-slate-100 dark:bg-slate-800/80 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner space-y-4 h-full flex flex-col justify-between">
 
-                                            {/* Toggles */}
-                                            <div className="flex flex-wrap gap-3">
-                                                <label className={`
+                                    {/* Toggles */}
+                                    <div className="flex flex-wrap gap-3">
+                                        <label className={`
                                             flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all
                                             ${formData.hasIva ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}
                                         `}>
-                                                    <input type="checkbox" checked={formData.hasIva} onChange={e => setFormData({ ...formData, hasIva: e.target.checked })} className="hidden" />
-                                                    {formData.hasIva && <CheckCircle size={14} />}
-                                                    + IVA 16%
-                                                </label>
+                                            <input type="checkbox" checked={formData.hasIva} onChange={e => setFormData({ ...formData, hasIva: e.target.checked })} className="hidden" />
+                                            {formData.hasIva && <CheckCircle size={14} />}
+                                            + IVA 16%
+                                        </label>
 
-                                                <label className={`
+                                        <label className={`
                                             flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-semibold cursor-pointer transition-all
                                             ${formData.hasRetention ? 'bg-orange-50 border-orange-200 text-orange-700' : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}
                                         `}>
-                                                    <input type="checkbox" checked={formData.hasRetention} onChange={e => setFormData({ ...formData, hasRetention: e.target.checked })} className="hidden" />
-                                                    {formData.hasRetention && <CheckCircle size={14} />}
-                                                    - Retenciones
-                                                </label>
-                                            </div>
-
-                                            {/* Breakdown */}
-                                            <div className="space-y-2 pt-2">
-                                                <div className="flex justify-between text-xs text-slate-500">
-                                                    <span>Subtotal</span>
-                                                    <span className="font-mono">${totals.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                </div>
-                                                {formData.hasIva && (
-                                                    <div className="flex justify-between text-xs text-slate-500">
-                                                        <span>IVA (16%)</span>
-                                                        <span className="font-mono text-indigo-600">+ ${totals.iva.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                {(formData.hasRetention || formData.hasIvaRetention) && (totals.retention + totals.ivaRetention > 0) && (
-                                                    <div className="flex justify-between text-xs text-slate-500">
-                                                        <span>Retenciones</span>
-                                                        <span className="font-mono text-red-500">- ${(totals.retention + totals.ivaRetention).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                    </div>
-                                                )}
-                                                <div className="border-t border-slate-300 dark:border-slate-600 my-2"></div>
-                                                <div className="flex justify-between items-end">
-                                                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total Neto</span>
-                                                    <span className="text-2xl font-black text-indigo-600 leading-none">
-                                                        <span className="text-sm text-slate-400 font-normal align-top mr-1">$</span>
-                                                        {totals.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </section>
-                                </div>
-
-                            </div>
-                    </div>
-
-                    {/* Footer Buttons */}
-                    <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 shrink-0">
-                        <button
-                            type="button"
-                            onClick={handleCancel}
-                            className="px-5 py-2.5 text-slate-500 hover:text-slate-700 font-medium text-sm transition-colors hover:bg-slate-50 rounded-lg"
-                        >
-                            Cancelar
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => {
-                                localStorage.setItem('invoice_prefs', JSON.stringify({
-                                    satProductKey: formData.satProductKey,
-                                    satUnitKey: formData.satUnitKey,
-                                    paymentMethod: formData.paymentMethod,
-                                    paymentForm: formData.paymentForm
-                                }));
-                                onSave({
-                                    ...formData,
-                                    ...totals,
-                                    customer: (formData as any).customerId, // PASS TO API
-                                    returnUrl: initialData?.returnUrl
-                                });
-                            }}
-                            className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
-                        >
-                            {isTicket ? (
-                                <>
-                                    <FileText size={18} /> Guardar Pre Comprobante
-                                </>
-                            ) : (
-                                <>
-                                    <FileText size={18} /> Timbrar Factura
-                                </>
-                            )}
-                        </button>
-                    </div>
-                    {/* Exit Confirmation Overlay */}
-                    {
-                        showExitConfirm && (
-                            <div className="absolute inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-                                <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-700">
-                                    <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-2">¿Salir sin timbrar?</h4>
-                                    <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
-                                        La factura no ha sido generada. ¿Deseas guardar el Ingreso como borrador o descartar todo?
-                                    </p>
-                                    <div className="flex flex-col gap-3">
-                                        <button
-                                            onClick={handleSave}
-                                            disabled={loading}
-                                            className="px-6 py-2 bg-[var(--primary-color)] text-white font-bold rounded-lg hover:bg-opacity-90 transition flex items-center gap-2"
-                                        >
-                                            {isTicket ? (
-                                                <>
-                                                    <FileText size={18} /> Guardar Pre Comprobante
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <FileText size={18} /> Timbrar Factura
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={handleDiscard}
-                                            className="w-full py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-600 dark:text-red-400 font-semibold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition"
-                                        >
-                                            Descartar Todo
-                                        </button>
-                                        <button
-                                            onClick={() => setShowExitConfirm(false)}
-                                            className="w-full py-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
-                                        >
-                                            Volver a editar
-                                        </button>
+                                            <input type="checkbox" checked={formData.hasRetention} onChange={e => setFormData({ ...formData, hasRetention: e.target.checked })} className="hidden" />
+                                            {formData.hasRetention && <CheckCircle size={14} />}
+                                            - Retenciones
+                                        </label>
                                     </div>
+
+                                    {/* Breakdown */}
+                                    <div className="space-y-2 pt-2">
+                                        <div className="flex justify-between text-xs text-slate-500">
+                                            <span>Subtotal</span>
+                                            <span className="font-mono">${totals.subtotal.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        {formData.hasIva && (
+                                            <div className="flex justify-between text-xs text-slate-500">
+                                                <span>IVA (16%)</span>
+                                                <span className="font-mono text-indigo-600">+ ${totals.iva.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                        {(formData.hasRetention || formData.hasIvaRetention) && (totals.retention + totals.ivaRetention > 0) && (
+                                            <div className="flex justify-between text-xs text-slate-500">
+                                                <span>Retenciones</span>
+                                                <span className="font-mono text-red-500">- ${(totals.retention + totals.ivaRetention).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                        <div className="border-t border-slate-300 dark:border-slate-600 my-2"></div>
+                                        <div className="flex justify-between items-end">
+                                            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Total Neto</span>
+                                            <span className="text-2xl font-black text-indigo-600 leading-none">
+                                                <span className="text-sm text-slate-400 font-normal align-top mr-1">$</span>
+                                                {totals.total.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </section>
+                        </div>
+
+                    </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={handleCancel}
+                        className="px-5 py-2.5 text-slate-500 hover:text-slate-700 font-medium text-sm transition-colors hover:bg-slate-50 rounded-lg"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            localStorage.setItem('invoice_prefs', JSON.stringify({
+                                satProductKey: formData.satProductKey,
+                                satUnitKey: formData.satUnitKey,
+                                paymentMethod: formData.paymentMethod,
+                                paymentForm: formData.paymentForm
+                            }));
+                            onSave({
+                                ...formData,
+                                ...totals,
+                                customer: (formData as any).customerId, // PASS TO API
+                                returnUrl: initialData?.returnUrl
+                            });
+                        }}
+                        className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
+                    >
+                        {isTicket ? (
+                            <>
+                                <FileText size={18} /> Guardar Pre Comprobante
+                            </>
+                        ) : (
+                            <>
+                                <FileText size={18} /> Timbrar Factura
+                            </>
+                        )}
+                    </button>
+                </div>
+                {/* Exit Confirmation Overlay */}
+                {
+                    showExitConfirm && (
+                        <div className="absolute inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+                            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-sm w-full p-6 border border-slate-200 dark:border-slate-700">
+                                <h4 className="text-lg font-bold text-slate-800 dark:text-white mb-2">¿Salir sin timbrar?</h4>
+                                <p className="text-sm text-slate-600 dark:text-slate-300 mb-6">
+                                    La factura no ha sido generada. ¿Deseas guardar el Ingreso como borrador o descartar todo?
+                                </p>
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleSave}
+                                        disabled={loading}
+                                        className="px-6 py-2 bg-[var(--primary-color)] text-white font-bold rounded-lg hover:bg-opacity-90 transition flex items-center gap-2"
+                                    >
+                                        {isTicket ? (
+                                            <>
+                                                <FileText size={18} /> Guardar Pre Comprobante
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FileText size={18} /> Timbrar Factura
+                                            </>
+                                        )}
+                                    </button>
+                                    <button
+                                        onClick={handleDiscard}
+                                        className="w-full py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-red-600 dark:text-red-400 font-semibold rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition"
+                                    >
+                                        Descartar Todo
+                                    </button>
+                                    <button
+                                        onClick={() => setShowExitConfirm(false)}
+                                        className="w-full py-2 text-slate-500 hover:text-slate-700 text-sm font-medium transition"
+                                    >
+                                        Volver a editar
+                                    </button>
                                 </div>
                             </div>
-                        )
-                    }
-                </div >
+                        </div>
+                    )
+                }
             </div >
-            );
+        </div >
+    );
 
-            // Only render portal if mounted
-            if (!mounted) return null;
+    // Only render portal if mounted
+    if (!mounted) return null;
 
-            return createPortal(modalContent, document.body);
+    return createPortal(modalContent, document.body);
 }
