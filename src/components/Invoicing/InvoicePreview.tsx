@@ -359,14 +359,34 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     </div>
                                 </div>
 
-                                <div className="mt-8 pt-4 border-t border-slate-100">
+                                <div className="mt-4 pt-4 border-t border-slate-100">
                                     <div className="flex items-center gap-2 text-indigo-600">
                                         <Zap size={14} />
                                         <span className="text-[10px] font-bold uppercase">Cadena Original del Timbre{isStamped ? '' : ' (Simulado)'}</span>
                                     </div>
-                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1">
-                                        <p className="text-[10px] text-slate-500 font-mono break-all leading-tight">
+                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1 mb-3">
+                                        <p className="text-[9px] text-slate-500 font-mono break-all leading-tight">
                                             {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <ShieldCheck size={14} />
+                                        <span className="text-[10px] font-bold uppercase">Sello Digital del CFDI</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1 mb-3">
+                                        <p className="text-[8px] text-slate-500 font-mono break-all leading-tight">
+                                            {details?.selloCFDI || '---'}
+                                        </p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-slate-600">
+                                        <ShieldCheck size={14} />
+                                        <span className="text-[10px] font-bold uppercase">Sello Digital del SAT</span>
+                                    </div>
+                                    <div className="bg-slate-50 p-2 border border-slate-100 rounded mt-1">
+                                        <p className="text-[8px] text-slate-500 font-mono break-all leading-tight">
+                                            {details?.selloSAT || '---'}
                                         </p>
                                     </div>
                                 </div>
