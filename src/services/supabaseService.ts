@@ -27,6 +27,7 @@ export const supabaseService = {
         const details = {
             ...invoiceData,
             ...stampData, // UUID, XML, Sellos
+            zip: invoiceData.zip, // [FIX] Restore Client Zip (Facturapi returns Expedition Zip at root)
             xml: stampData.xml,
             originalChain: stampData.originalChain
         };

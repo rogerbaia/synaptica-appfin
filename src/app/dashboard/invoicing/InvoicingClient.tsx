@@ -532,7 +532,7 @@ function InvoicingContent() {
 
     const handleModalSave = async (data: any) => {
         try {
-            toast.loading(`DEBUG ZIP ENVIADO: ${data.zip || '(VACIO)'}`);
+            // 1. Show processing state (optional if we had a loading UI, but for now just close and optimistic update)
             // Ideally we should have a loading state in the modal, but the modal props uses onSave which closes it.
             // Let's rely on toast or global loading if available, or just proceed.
 
@@ -606,6 +606,7 @@ function InvoicingContent() {
                 details: {
                     ...data,
                     ...stamped, // Validation info (sello, chain, etc)
+                    zip: data.zip, // [FIX] Restore Client Zip (Facturapi returns Expedition Zip at root)
                     originalChain: stamped.originalChain || '|| CADENA NO DISPONIBLE ||',
                     // [FIX] Map Issuer CSD (Facturapi usually returns it as 'certificate_number' at root, or we check stamp)
                     certificateNumber: stamped.certificateNumber || '30001000000500003421',
