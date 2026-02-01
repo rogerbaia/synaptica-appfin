@@ -590,7 +590,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                 <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-indigo-500 to-violet-500"></div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-slate-500 ml-1">RFC Receptor</label>
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">RFC Receptor <span className="text-red-500">*</span></label>
                                         <input
                                             type="text"
                                             value={formData.rfc}
@@ -602,7 +602,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                                     <div className="space-y-1.5 md:col-span-8">
-                                        <label className="text-xs font-semibold text-slate-500 ml-1">Razón Social</label>
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">Razón Social <span className="text-red-500">*</span></label>
                                         <input
                                             type="text"
                                             value={formData.client}
@@ -612,7 +612,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                         />
                                     </div>
                                     <div className="space-y-1.5 md:col-span-4">
-                                        <label className="text-xs font-semibold text-slate-500 ml-1">C.P. (Receptor)</label>
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">C.P. (Receptor) <span className="text-red-500">*</span></label>
                                         <input
                                             type="text"
                                             value={formData.zip}
@@ -686,8 +686,8 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                             className="w-full px-3 py-2 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-center font-bold bg-slate-50 dark:bg-slate-900 focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                         />
                                     </div>
-                                    <div className="col-span-7 space-y-1.5">
-                                        <label className="text-xs font-semibold text-slate-500 ml-1">Descripción</label>
+                                    <div className="col-span-12 md:col-span-7 space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">Descripción <span className="text-red-500">*</span></label>
                                         <textarea
                                             value={formData.description}
                                             onChange={e => setFormData({ ...formData, description: e.target.value })}
@@ -696,8 +696,8 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
                                             placeholder="DESCRIPCIÓN DEL SERVICIO O PRODUCTO"
                                         />
                                     </div>
-                                    <div className="col-span-3 space-y-1.5">
-                                        <label className="text-xs font-semibold text-slate-500 ml-1">Valor Unit.</label>
+                                    <div className="col-span-12 md:col-span-3 space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-500 ml-1">Valor Unit. <span className="text-red-500">*</span></label>
                                         <div className="relative">
                                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
                                             <input
@@ -837,20 +837,7 @@ export default function InvoiceModal({ isOpen, onClose, onSave, initialData, isT
 
                     <button
                         type="button"
-                        onClick={() => {
-                            localStorage.setItem('invoice_prefs', JSON.stringify({
-                                satProductKey: formData.satProductKey,
-                                satUnitKey: formData.satUnitKey,
-                                paymentMethod: formData.paymentMethod,
-                                paymentForm: formData.paymentForm
-                            }));
-                            onSave({
-                                ...formData,
-                                ...totals,
-                                customer: (formData as any).customerId, // PASS TO API
-                                returnUrl: initialData?.returnUrl
-                            });
-                        }}
+                        onClick={handleSave}
                         className="px-8 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 dark:shadow-indigo-900/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-2"
                     >
                         {isTicket ? (
