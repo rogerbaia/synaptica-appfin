@@ -169,7 +169,27 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                             <div className="h-2 w-2 rounded-full bg-green-500"></div>
                             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">{isStamped ? 'Comprobante Fiscal Digital' : 'Vista Previa del CFDI 4.0'}</span>
                         </div>
-                        <span className="text-[10px] text-slate-400 font-mono">ID: {data.id}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-slate-400 font-mono">ID: {data.id}</span>
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    const toastId = toast.loading("Actualizando datos del SAT...");
+                                    try {
+                                        const facturapiId = details?.id || data.details?.id || data.id; // Fallback to main ID
+                                        await satService.recoverInvoice(data.id || data.txId, facturapiId);
+                                        toast.success("Factura actualizada.", { id: toastId });
+                                        window.location.reload();
+                                    } catch (err: any) {
+                                        toast.error("Error: " + err.message, { id: toastId });
+                                    }
+                                }}
+                                title="Forzar actualización de datos"
+                                className="p-1 hover:bg-slate-100 rounded-full text-slate-400 hover:text-indigo-600 transition-colors"
+                            >
+                                <RefreshCw size={10} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* INVOICE CONTENT */}
@@ -216,7 +236,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         {/* [NEW] Recovery Alert for Missing Data */}
                         {isStamped && (
                             (!details?.originalChain || details?.originalChain === '|| CADENA NO DISPONIBLE ||') ||
-                            (!details?.certificateNumber || details?.certificateNumber === '---')
+                            (!details?.certificateNumber || details?.certificateNumber === '---' || details?.certificateNumber === '30001000000500003421')
                         ) && (
                                 <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-2">
                                     <div className="flex items-center justify-between">
