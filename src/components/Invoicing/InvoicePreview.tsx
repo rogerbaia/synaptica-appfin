@@ -205,7 +205,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     <p className="text-red-500 font-bold text-2xl font-mono">{data.folio || '---'}</p>
                                     <div className="h-px bg-indigo-100 my-2"></div>
                                     <p className="text-[10px] text-slate-500">Fecha de Emisión</p>
-                                    <p className="text-xs font-bold text-slate-700">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : (data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'))}</p>
+                                    <p className="text-xs font-bold text-slate-700">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX', { hour12: false }) : (data.date ? new Date(data.date).toLocaleString('es-MX', { hour12: false }) : new Date().toLocaleString('es-MX', { hour12: false }))}</p>
                                 </div>
                             </div>
                         </div>
@@ -283,11 +283,11 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="font-bold text-slate-600 whitespace-nowrap">Emisión:</span>
-                                            <span className="text-slate-800">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : (data.date ? new Date(data.date).toLocaleString('es-MX') : new Date().toLocaleString('es-MX'))}</span>
+                                            <span className="text-slate-800">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX', { hour12: false }) : (data.date ? new Date(data.date).toLocaleString('es-MX', { hour12: false }) : new Date().toLocaleString('es-MX', { hour12: false }))}</span>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="font-bold text-slate-600 whitespace-nowrap">Certificación:</span>
-                                            <span className="text-slate-800">{details?.certDate ? new Date(details.certDate).toLocaleString('es-MX') : (data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX') : '---')}</span>
+                                            <span className="text-slate-800">{details?.certDate ? new Date(details.certDate).toLocaleString('es-MX', { hour12: false }) : (data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX', { hour12: false }) : '---')}</span>
                                         </div>
                                         <div className="flex justify-between flex-col border-t border-slate-100 pt-1 mt-1">
                                             <span className="font-bold text-slate-600 text-[10px]">Serie CSD Emisor:</span>
@@ -385,9 +385,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                            {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
-                                                        </p>
+                                                        {details?.fullResponse?.original_chain || details?.fullResponse?.original_string || details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -400,7 +398,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.selloCFDI || '---'}
+                                                        {details?.fullResponse?.stamp?.sello_cfdi || details?.fullResponse?.stamp?.signature || details?.selloCFDI || '---'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -413,7 +411,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.selloSAT || '---'}
+                                                        {details?.fullResponse?.stamp?.sello_sat || details?.fullResponse?.stamp?.sat_seal || details?.selloSAT || '---'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -422,12 +420,12 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                             <div className="grid grid-cols-2 gap-4 pt-2">
                                                 <div>
                                                     <p className="font-bold text-slate-500 text-[9px] uppercase">No. de Serie del Certificado del SAT</p>
-                                                    <p className="font-mono text-slate-800 text-[10px]">{details?.satCertificateNumber || '---'}</p>
+                                                    <p className="font-mono text-slate-800 text-[10px]">{details?.fullResponse?.stamp?.sat_cert_number || details?.satCertificateNumber || '---'}</p>
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-slate-500 text-[9px] uppercase">Fecha y Hora de Certificación</p>
                                                     <p className="font-mono text-slate-800 text-[10px]">
-                                                        {details?.certDate ? new Date(details.certDate).toLocaleString('es-MX') : '---'}
+                                                        {details?.certDate ? new Date(details.certDate).toLocaleString('es-MX', { hour12: false }) : '---'}
                                                     </p>
                                                 </div>
                                             </div>
