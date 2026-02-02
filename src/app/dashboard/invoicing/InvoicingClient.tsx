@@ -756,18 +756,22 @@ function InvoicingContent() {
             // [FIX] DIRECT PRINT via Invisible Iframe (Improved UX)
             const iframe = document.createElement('iframe');
             iframe.style.position = 'fixed';
-            // Give it dimensions so browser can render the Preview in the Dialog
-            iframe.style.left = '-10000px';
-            iframe.style.top = '0px';
-            iframe.style.width = '1000px';
-            iframe.style.height = '1000px';
+            // Use Z-Index/Opacity to hide it while keeping it "on screen" for the renderer
+            iframe.style.left = '0';
+            iframe.style.top = '0';
+            iframe.style.width = '100vw';
+            iframe.style.height = '100vh';
             iframe.style.border = 'none';
+            iframe.style.zIndex = '-9999';
+            iframe.style.opacity = '0.001'; // Critical: Must be slightly visible for preview gen
             iframe.src = url;
             document.body.appendChild(iframe);
 
             // Wait for load then print
             iframe.onload = () => {
                 setTimeout(() => {
+                    // Focus is often required for the browser to register the print target correctly
+                    iframe.contentWindow?.focus();
                     iframe.contentWindow?.print();
                     toast.dismiss(toastId);
 
@@ -776,7 +780,7 @@ function InvoicingContent() {
                         document.body.removeChild(iframe);
                         URL.revokeObjectURL(url);
                     }, 60000);
-                }, 500);
+                }, 1000); // 1s delay for full render
             };
 
         } catch (e: any) {
