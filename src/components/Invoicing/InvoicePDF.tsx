@@ -3,9 +3,10 @@ import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/render
 import { numberToLetters } from '@/utils/numberToLetters';
 
 /* 
-    PREMIUM PDF (FINAL REVISION)
-    - Added: Version 4.0, Emision, Certification Time, CSD Serial
-    - Fixed: Date Rendering (Full DateTime), Logo Fallback
+    PREMIUM PDF (FINAL REVISION V2)
+    - Reordered Fiscal Data (Folio -> Type -> Version -> Place -> Emission -> Certification -> CSD)
+    - Added "México" to Address
+    - Explicit Logo Handling
 */
 
 // --- LOCAL DATA MAPS ---
@@ -50,7 +51,8 @@ const styles = StyleSheet.create({
     issuerSub: { fontSize: 7, color: '#64748b', marginBottom: 1 },
     issuerTag: { fontSize: 6, backgroundColor: '#f1f5f9', paddingHorizontal: 4, paddingVertical: 2, borderRadius: 2, marginTop: 4, fontWeight: 'bold', color: '#475569' },
 
-    // Folio Box
+    // Folio Box (Now Empty/Simplified as requested indirectly by focusing on Fiscal Data order?)
+    // No, keeping it as is, just reordering the GRID content.
     folioBox: {
         width: '100%',
         backgroundColor: '#f8fafc',
@@ -93,6 +95,13 @@ const styles = StyleSheet.create({
     row: { flexDirection: 'row', marginBottom: 3 },
     label: { width: '30%', fontSize: 7, fontWeight: 'bold', color: '#64748b' },
     val: { flex: 1, fontSize: 7, color: '#0f172a' },
+
+    // Separator line
+    separator: {
+        height: 1,
+        backgroundColor: '#f1f5f9',
+        marginVertical: 4
+    },
 
     // Table
     table: { width: '100%', marginBottom: 15 },
@@ -172,15 +181,13 @@ const fmtMoney = (v: any) => {
     try { return '$' + Number(v).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); } catch { return '$0.00'; }
 };
 
-// [FIX] Full DateTime Formatter (YYYY-MM-DD HH:mm:ss)
 const fmtDateTime = (v: any) => {
     if (!v) return '---';
     try {
         const d = new Date(v);
         if (isNaN(d.getTime())) return String(v);
-        // Manual format to avoid locale issues in React-PDF engine
         const pad = (n: number) => n < 10 ? '0' + n : n;
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+        return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}, ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     } catch { return String(v); }
 };
 
@@ -197,6 +204,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
     const det = d.details || {};
     const items = (det.items && Array.isArray(det.items)) ? det.items : [d];
 
+    // Logo passed from preparePdfData (base64)
     const logoUrl = d.logoUrl;
     const qrCodeUrl = d.qrCodeUrl;
 
@@ -217,6 +225,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                         {logoUrl ? (
                             <Image src={logoUrl} style={styles.logo} />
                         ) : (
+                            // Last resort fallback if even Base64 failed
                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#cbd5e1' }}>SYNAPTICA</Text>
                         )}
                     </View>
@@ -252,7 +261,8 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Domicilio:</Text>
-                                <Text style={styles.val}>{safe(det.zip ? 'CP ' + det.zip : '---')}</Text>
+                                {/* Added Country "México" */}
+                                <Text style={styles.val}>{safe(det.zip ? 'CP ' + det.zip : '---')}, México</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Uso CFDI:</Text>
@@ -267,18 +277,22 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                     <View style={styles.gridRight}>
                         <Text style={styles.gridHeader}>DATOS FISCALES</Text>
                         <View style={styles.gridContent}>
+                            {/* ORDER: Folio, Type, Version, Place, Emission, Certification, CSD */}
                             <View style={styles.row}>
-                                <Text style={styles.label}>Folio Fiscal (UUID):</Text>
+                                <Text style={styles.label}>Folio Fiscal:</Text>
                                 <Text style={[styles.val, { fontSize: 6, fontFamily: 'Courier' }]}>{safe(d.uuid || det.uuid || '---')}</Text>
-                            </View>
-                            {/* [NEW] Missing Fields */}
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Serie CSD:</Text>
-                                <Text style={styles.val}>{safe(det.certificateNumber || '---')}</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Tipo CFDI:</Text>
-                                <Text style={styles.val}>I - Ingreso   Version: 4.0</Text>
+                                <Text style={styles.val}>I - Ingreso</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Versión:</Text>
+                                <Text style={styles.val}>4.0</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Lugar Exp.:</Text>
+                                <Text style={styles.val}>{safe(det.expeditionPlace || '67510')}</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Emisión:</Text>
@@ -288,9 +302,14 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                                 <Text style={styles.label}>Certificación:</Text>
                                 <Text style={styles.val}>{fmtDateTime(det.certDate)}</Text>
                             </View>
+
+                            <View style={styles.separator} />
+
                             <View style={styles.row}>
-                                <Text style={styles.label}>Lugar Exp.:</Text>
-                                <Text style={styles.val}>{safe(det.expeditionPlace || '67510')}</Text>
+                                <View style={{ flexDirection: 'column' }}>
+                                    <Text style={[styles.label, { width: '100%', marginBottom: 1 }]}>Serie CSD Emisor:</Text>
+                                    <Text style={styles.val}>{safe(det.certificateNumber || '---')}</Text>
+                                </View>
                             </View>
                         </View>
                     </View>

@@ -659,8 +659,15 @@ function InvoicingContent() {
     // [NEW] Helper to prepare robust PDF data (Assets -> Base64)
     const preparePdfData = async (invoice: any) => {
         // 1. Logo Handling (Base64) - Trust current logo or organisation logo
-        let finalLogo = organizationLogo || invoice.logoUrl;
-        if (finalLogo && finalLogo.startsWith('http')) {
+        // 1. Logo Handling (Base64) - Trust current logo or organisation logo, then fallback to Synaptica default
+        let finalLogo = organizationLogo || invoice.logoUrl || '/logo-synaptica.png'; // FALLBACK ADDED
+
+        // Ensure absolute path for local fallback if we are in browser environment
+        if (finalLogo.startsWith('/')) {
+            finalLogo = window.location.origin + finalLogo;
+        }
+
+        if (finalLogo && (finalLogo.startsWith('http') || finalLogo.startsWith('blob:'))) {
             try {
                 // Fetch to blob -> base64 to avoid PDF potential network blocks
                 const response = await fetch(finalLogo);
@@ -670,7 +677,12 @@ function InvoicingContent() {
                     reader.onloadend = () => resolve(reader.result as string);
                     reader.readAsDataURL(blob);
                 });
-            } catch (e) { console.warn("Logo fetch warning:", e); }
+            } catch (e) {
+                console.warn("Logo fetch warning:", e);
+                // If fetch fails, we might leave it as URL and hope PDF renderer handles it, 
+                // or clear it to properly show text fallback in PDF.
+                // For now, let's try to leave it if it was a URL.
+            }
         }
 
         // 2. QR Code Generation (Base64)
