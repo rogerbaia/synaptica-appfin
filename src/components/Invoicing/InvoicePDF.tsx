@@ -1,342 +1,50 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import { SAT_PAYMENT_FORMS, PAYMENT_METHODS, SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 import { numberToLetters } from '@/utils/numberToLetters';
 
-// Use standard fonts only
+// SIMPLIFIED STYLES (Less nesting, standard fonts)
 const styles = StyleSheet.create({
-    page: {
-        flexDirection: 'column',
-        backgroundColor: '#FFFFFF',
-        padding: 30,
-        fontFamily: 'Helvetica',
-        fontSize: 8,
-        color: '#1e293b'
-    },
-    watermarkContainer: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        justifyContent: 'center', alignItems: 'center',
-        zIndex: -1
-    },
-    watermarkText: {
-        fontSize: 60,
-        color: '#f1f5f9',
-        transform: 'rotate(-45deg)',
-        fontWeight: 'bold',
-        textTransform: 'uppercase'
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        marginBottom: 20
-    },
-    logoContainer: {
-        width: '30%',
-        alignItems: 'center',
-        justifyContent: 'center'
-    },
-    logo: {
-        width: 100,
-        height: 'auto',
-        objectFit: 'contain'
-    },
-    issuerContainer: {
-        width: '35%',
-        alignItems: 'center',
-        textAlign: 'center'
-    },
-    issuerName: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#0f172a',
-        textTransform: 'uppercase',
-        marginBottom: 2
-    },
-    issuerCode: {
-        fontSize: 7,
-        color: '#64748b',
-        marginBottom: 2
-    },
-    issuerAddress: {
-        fontSize: 7,
-        color: '#64748b',
-        marginBottom: 2,
-        lineHeight: 1.2
-    },
-    issuerRegime: {
-        fontSize: 7,
-        backgroundColor: '#f1f5f9',
-        padding: '2 4',
-        borderRadius: 2,
-        marginTop: 4,
-        color: '#475569',
-        fontWeight: 'bold'
-    },
-    folioContainer: {
-        width: '30%',
-        alignItems: 'flex-end'
-    },
-    folioBox: {
-        backgroundColor: '#eef2ff',
-        borderColor: '#e0e7ff',
-        borderWidth: 1,
-        borderRadius: 4,
-        padding: 8,
-        width: '100%',
-        alignItems: 'flex-end'
-    },
-    folioTitle: {
-        fontSize: 7,
-        fontWeight: 'bold',
-        color: '#312e81',
-        textTransform: 'uppercase',
-        marginBottom: 2
-    },
-    folioNumber: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#ef4444',
-        marginBottom: 4
-    },
-    folioDateLabel: {
-        fontSize: 6,
-        color: '#64748b'
-    },
-    folioDateValue: {
-        fontSize: 7,
-        fontWeight: 'bold',
-        color: '#334155'
-    },
-    gridContainer: {
-        flexDirection: 'row',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-        borderRadius: 4,
-        overflow: 'hidden',
-        marginBottom: 15
-    },
-    gridColumnLeft: {
-        width: '60%',
-        borderRightWidth: 1,
-        borderRightColor: '#e2e8f0'
-    },
-    gridColumnRight: {
-        width: '40%'
-    },
-    gridHeader: {
-        backgroundColor: '#f8fafc',
-        padding: 6,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
-        textAlign: 'center',
-        fontSize: 7,
-        fontWeight: 'bold',
-        color: '#334155',
-        textTransform: 'uppercase'
-    },
-    gridContent: {
-        padding: 8
-    },
-    gridRow: {
-        flexDirection: 'row',
-        marginBottom: 4
-    },
-    gridLabel: {
-        width: '30%',
-        fontSize: 7,
-        fontWeight: 'bold',
-        color: '#64748b'
-    },
-    gridValue: {
-        width: '70%',
-        fontSize: 7,
-        color: '#0f172a'
-    },
-    table: {
-        width: '100%',
-        marginBottom: 15
-    },
-    tableHeaderBase: {
-        flexDirection: 'row',
-        backgroundColor: '#1e293b',
-        padding: 5,
-        alignItems: 'center',
-        color: 'white',
-        borderTopLeftRadius: 4,
-        borderTopRightRadius: 4
-    },
-    tableRow: {
-        flexDirection: 'row',
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
-        padding: 6,
-        alignItems: 'flex-start'
-    },
-    colQty: { width: '8%', textAlign: 'center' },
-    colUnit: { width: '12%' },
-    colKey: { width: '12%' },
-    colDesc: { width: '43%' },
-    colPrice: { width: '12%', textAlign: 'right' },
-    colTotal: { width: '13%', textAlign: 'right' },
-    tableHeaderText: {
-        fontSize: 7,
-        fontWeight: 'bold',
-        color: 'white'
-    },
-    tableText: { fontSize: 7, color: '#334155' },
-    tableTextBold: { fontSize: 7, fontWeight: 'bold', color: '#0f172a' },
-    totalsSection: {
-        flexDirection: 'row',
-        marginTop: 5
-    },
-    amountToTextFor: {
-        width: '60%',
-        paddingRight: 20
-    },
-    amountBox: {
-        backgroundColor: '#f8fafc',
-        padding: 6,
-        borderRadius: 4,
-        borderWidth: 1,
-        borderColor: '#e2e8f0'
-    },
-    amountLabel: {
-        fontSize: 6,
-        fontWeight: 'bold',
-        color: '#94a3b8',
-        textTransform: 'uppercase',
-        marginBottom: 2
-    },
-    amountText: {
-        fontSize: 7,
-        fontWeight: 'bold',
-        color: '#334155',
-        textTransform: 'uppercase'
-    },
-    totalsBox: {
-        width: '40%',
-        backgroundColor: '#f8fafc',
-        borderRadius: 4,
-        padding: 8,
-        borderWidth: 1,
-        borderColor: '#e2e8f0'
-    },
-    totalRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginBottom: 3
-    },
-    totalRowLabel: {
-        fontSize: 7,
-        color: '#64748b'
-    },
-    totalRowValue: {
-        fontSize: 7,
-        fontFamily: 'Helvetica',
-        fontWeight: 'bold',
-        color: '#334155'
-    },
-    grandTotalRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: 4,
-        paddingTop: 4,
-        borderTopWidth: 1,
-        borderTopColor: '#e2e8f0'
-    },
-    grandTotalLabel: {
-        fontSize: 8,
-        fontWeight: 'bold',
-        color: '#0f172a'
-    },
-    grandTotalValue: {
-        fontSize: 10,
-        fontWeight: 'bold',
-        color: '#4f46e5'
-    },
-    footer: {
-        marginTop: 15,
-        borderTopWidth: 1,
-        borderTopColor: '#e2e8f0',
-        paddingTop: 10,
-        flexDirection: 'row'
-    },
-    qrContainer: {
-        width: '20%',
-        alignItems: 'center'
-    },
-    qrImage: {
-        width: 80,
-        height: 80
-    },
-    stringsContainer: {
-        width: '80%',
-        paddingLeft: 10
-    },
-    stringBlock: {
-        marginBottom: 6
-    },
-    stringLabel: {
-        fontSize: 6,
-        fontWeight: 'bold',
-        color: '#64748b',
-        textTransform: 'uppercase',
-        marginBottom: 1
-    },
-    stringContent: {
-        fontSize: 5,
-        color: '#64748b',
-        backgroundColor: '#f8fafc',
-        padding: 3,
-        borderRadius: 2,
-        borderWidth: 1,
-        borderColor: '#f1f5f9',
-        fontFamily: 'Courier',
-        wordBreak: 'break-all'
-    },
-    footerDates: {
-        flexDirection: 'row',
-        marginTop: 2
-    },
-    footerDateCol: {
-        width: '50%'
-    }
+    page: { padding: 30, fontFamily: 'Helvetica', fontSize: 9 },
+    header: { flexDirection: 'row', marginBottom: 20, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 10 },
+    headerLeft: { flexGrow: 1 },
+    headerRight: { width: 150, textAlign: 'right' },
+    title: { fontSize: 14, fontWeight: 'bold', marginBottom: 4 },
+    subtitle: { fontSize: 8, color: '#555', marginBottom: 2 },
+
+    // Grid (Simplified to simple rows)
+    section: { marginBottom: 15 },
+    sectionTitle: { fontSize: 8, fontWeight: 'bold', backgroundColor: '#f0f0f0', padding: 4, marginBottom: 4 },
+    row: { flexDirection: 'row', marginBottom: 2 },
+    label: { width: 80, fontSize: 8, color: '#666' },
+    value: { flex: 1, fontSize: 8 },
+
+    // Table
+    tableHeader: { flexDirection: 'row', backgroundColor: '#333', color: '#fff', padding: 4, fontSize: 8, fontWeight: 'bold' },
+    tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#eee', padding: 6, fontSize: 8 },
+    colQty: { width: '10%', textAlign: 'center' },
+    colDesc: { width: '60%' },
+    colPrice: { width: '15%', textAlign: 'right' },
+    colTotal: { width: '15%', textAlign: 'right' },
+
+    // Totals
+    totalsContainer: { flexDirection: 'row', marginTop: 10 },
+    totalsLeft: { flex: 1 },
+    totalsRight: { width: 150 },
+    totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    totalLabel: { fontSize: 8, fontWeight: 'bold' },
+    totalValue: { fontSize: 9 }
 });
 
-// SAFE GUARD HELPER FUNCTIONS
-const safeString = (val: any) => {
-    if (val === null || val === undefined) return '';
-    return String(val);
+// ROBUST HELPERS (No Polyfills)
+const fmtMoney = (amount: any) => {
+    const val = Number(amount) || 0;
+    return '$' + val.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 };
 
-const formatCurrency = (amount: any) => {
-    try {
-        const value = Number(amount) || 0;
-        return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
-    } catch (e) { return '$0.00'; }
-};
-
-const formatDate = (dateString: any) => {
-    if (!dateString) return '---';
-    try {
-        const d = new Date(dateString);
-        if (isNaN(d.getTime())) return String(dateString); // Return original if parse fails
-        return d.toLocaleString('es-MX', {
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit'
-        });
-    } catch (e) { return String(dateString); }
-};
-
-const safeGetCatalogName = (catalog: any[], code: any) => {
-    if (!Array.isArray(catalog)) return '';
-    if (!code) return '';
-    try {
-        const item = catalog.find((c: any) => c.code === code);
-        return item ? item.name : '';
-    } catch (e) { return ''; }
+const fmtDate = (dateStr: any) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? String(dateStr) : d.toISOString().split('T')[0];
 };
 
 interface InvoiceDocumentProps {
@@ -344,217 +52,113 @@ interface InvoiceDocumentProps {
 }
 
 export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
-    // Guard against null data
-    const safeData = data || {};
-    const details = safeData.details || {};
+    const d = data || {};
+    const details = d.details || {};
 
-    // Items Logic
-    let items = [safeData];
-    if (details.items && Array.isArray(details.items) && details.items.length > 0) {
-        items = details.items;
-    }
-
-    const isStamped = !!safeData.uuid || ['paid', 'pending', 'cancelled'].includes(safeData.status);
-
-    const issuer = {
-        name: 'ROGERIO MARTINS BAIA',
-        rfc: 'MABR750116P78',
-        regime: '626 - Régimen Simplificado de Confianza',
-        address: 'MATAMOROS 514 MATAMOROS, MONTEMORELOS, NUEVO LEÓN. Mexico.',
-        contact: 'Tel: 81 20227181 | C.P. 67510'
-    };
+    // Flatten Items
+    const items = (details.items && Array.isArray(details.items)) ? details.items : [d];
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                {/* Watermark */}
-                {!isStamped && (
-                    <View style={styles.watermarkContainer}>
-                        <Text style={styles.watermarkText}>SIN VALIDEZ OFICIAL</Text>
-                    </View>
-                )}
-
-                {/* Header */}
+                {/* HEADER */}
                 <View style={styles.header}>
-                    <View style={styles.logoContainer}>
-                        {/* No Image for Safety */}
-                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#cbd5e1' }}>SYNAPTICA</Text>
+                    <View style={styles.headerLeft}>
+                        <Text style={styles.title}>ROGERIO MARTINS BAIA</Text>
+                        <Text style={styles.subtitle}>RFC: MABR750116P78</Text>
+                        <Text style={styles.subtitle}>Régimen: 626 - Simplificado de Confianza</Text>
+                        <Text style={styles.subtitle}>C.P. 67510 | México</Text>
                     </View>
-                    <View style={styles.issuerContainer}>
-                        <Text style={styles.issuerName}>{safeString(issuer.name)}</Text>
-                        <Text style={styles.issuerCode}>RFC: {safeString(issuer.rfc)}</Text>
-                        <Text style={styles.issuerAddress}>{safeString(issuer.address)}</Text>
-                        <Text style={styles.issuerCode}>{safeString(issuer.contact)}</Text>
-                        <Text style={styles.issuerRegime}>{safeString(issuer.regime)}</Text>
-                    </View>
-                    <View style={styles.folioContainer}>
-                        <View style={styles.folioBox}>
-                            <Text style={styles.folioTitle}>{isStamped ? 'FACTURA ELECTRÓNICA' : 'PRE-COMPROBANTE'}</Text>
-                            <Text style={styles.folioNumber}>{safeString(safeData.folio || 'F-001')}</Text>
-                            <Text style={styles.folioDateLabel}>Fecha de Emisión</Text>
-                            <Text style={styles.folioDateValue}>{formatDate(safeData.date)}</Text>
-                        </View>
+                    <View style={styles.headerRight}>
+                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: 'red' }}>
+                            {d.uuid ? 'FACTURA' : 'PRE-CFDI'}
+                        </Text>
+                        <Text style={styles.subtitle}>{d.folio || '---'}</Text>
+                        <Text style={styles.subtitle}>{fmtDate(d.date)}</Text>
                     </View>
                 </View>
 
-                {/* Grids */}
-                <View style={styles.gridContainer}>
-                    <View style={styles.gridColumnLeft}>
-                        <Text style={styles.gridHeader}>DATOS DEL RECEPTOR</Text>
-                        <View style={styles.gridContent}>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Razón Social:</Text>
-                                <Text style={[styles.gridValue, { fontWeight: 'bold' }]}>{safeString(safeData.client || '---')}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>RFC:</Text>
-                                <Text style={styles.gridValue}>{safeString(safeData.rfc || '---')}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Régimen Fiscal:</Text>
-                                <Text style={styles.gridValue}>{safeString(details.fiscalRegime)} - {safeGetCatalogName(FISCAL_REGIMES, details.fiscalRegime)}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Domicilio:</Text>
-                                <Text style={styles.gridValue}>C.P. {safeString(details.zip || '---')}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Uso del CFDI:</Text>
-                                <Text style={styles.gridValue}>{safeString(details.cfdiUse)} - {safeGetCatalogName(SAT_CFDI_USES, details.cfdiUse)}</Text>
-                            </View>
-                        </View>
+                {/* CLIENT INFO */}
+                <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>CLIENTE</Text>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>Nombre:</Text>
+                        <Text style={styles.value}>{d.client || '---'}</Text>
                     </View>
-                    <View style={styles.gridColumnRight}>
-                        <Text style={styles.gridHeader}>DATOS FISCALES</Text>
-                        <View style={styles.gridContent}>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Folio Fiscal:</Text>
-                                <Text style={[styles.gridValue, { fontSize: 6 }]}>{safeString(safeData.uuid || details.uuid || '---')}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Tipo CFDI:</Text>
-                                <Text style={styles.gridValue}>I - Ingreso</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Lugar Exp.:</Text>
-                                <Text style={styles.gridValue}>{safeString(details.expeditionPlace || '67510')}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Certificación:</Text>
-                                <Text style={styles.gridValue}>{formatDate(details.certDate)}</Text>
-                            </View>
-                            <View style={styles.gridRow}>
-                                <Text style={styles.gridLabel}>Serie CSD:</Text>
-                                <Text style={styles.gridValue}>{safeString(details.certificateNumber || '00001000000000000000')}</Text>
-                            </View>
-                        </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>RFC:</Text>
+                        <Text style={styles.value}>{d.rfc || 'XAXX010101000'}</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>Uso CFDI:</Text>
+                        <Text style={styles.value}>{details.cfdiUse || 'G03'} (Gastos en general)</Text>
+                    </View>
+                    <View style={styles.row}>
+                        <Text style={styles.label}>C.P.:</Text>
+                        <Text style={styles.value}>{details.zip || '---'}</Text>
                     </View>
                 </View>
 
-                {/* Items */}
-                <View style={styles.table}>
-                    <View style={styles.tableHeaderBase}>
-                        <Text style={[styles.tableHeaderText, styles.colQty]}>Cant.</Text>
-                        <Text style={[styles.tableHeaderText, styles.colUnit]}>Unidad</Text>
-                        <Text style={[styles.tableHeaderText, styles.colKey]}>Clave</Text>
-                        <Text style={[styles.tableHeaderText, styles.colDesc]}>Descripción</Text>
-                        <Text style={[styles.tableHeaderText, styles.colPrice]}>Valor Unit.</Text>
-                        <Text style={[styles.tableHeaderText, styles.colTotal]}>Importe</Text>
+                {/* ITEMS TABLE */}
+                <View style={styles.section}>
+                    <View style={styles.tableHeader}>
+                        <Text style={styles.colQty}>Cant</Text>
+                        <Text style={styles.colDesc}>Descripción</Text>
+                        <Text style={styles.colPrice}>Unitario</Text>
+                        <Text style={styles.colTotal}>Importe</Text>
                     </View>
-                    {items.map((item: any, index: number) => {
-                        // Calculate safe values inside mapping
-                        const qty = Number(item.quantity) || 1;
-                        const val = Number(item.unitValue) || 0;
-                        const sub = item.subtotal ? Number(item.subtotal) : (qty * val);
-                        return (
-                            <View key={index} style={styles.tableRow}>
-                                <Text style={[styles.tableTextBold, styles.colQty]}>{qty}</Text>
-                                <View style={styles.colUnit}>
-                                    <Text style={styles.tableTextBold}>{safeString(item.satUnitKey || 'E48')}</Text>
-                                </View>
-                                <Text style={[styles.tableText, styles.colKey]}>{safeString(item.satProductKey || '85121600')}</Text>
-                                <View style={styles.colDesc}>
-                                    <Text style={[styles.tableTextBold, { textTransform: 'uppercase' }]}>{safeString(item.description)}</Text>
-                                </View>
-                                <Text style={[styles.tableText, styles.colPrice]}>{formatCurrency(val)}</Text>
-                                <Text style={[styles.tableTextBold, styles.colTotal]}>{formatCurrency(sub)}</Text>
-                            </View>
-                        );
-                    })}
-                </View>
-
-                {/* Footer Totals */}
-                <View style={styles.totalsSection}>
-                    <View style={styles.amountToTextFor}>
-                        <View style={styles.amountBox}>
-                            <Text style={styles.amountLabel}>Importe con Letra</Text>
-                            <Text style={styles.amountText}>*** {safeString(numberToLetters(Number(safeData.total) || 0))} ***</Text>
-                        </View>
-                    </View>
-                    <View style={styles.totalsBox}>
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalRowLabel}>Forma de Pago</Text>
-                            <Text style={[styles.totalRowValue, { width: '60%', textAlign: 'right' }]}>
-                                {safeString(details.paymentForm || '03')} - {safeGetCatalogName(SAT_PAYMENT_FORMS, details.paymentForm || '03')}
-                            </Text>
-                        </View>
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalRowLabel}>Método de Pago</Text>
-                            <Text style={[styles.totalRowValue, { width: '60%', textAlign: 'right' }]}>
-                                {safeString(details.paymentMethod || 'PUE')}
-                            </Text>
-                        </View>
-                        <View style={styles.totalRow}>
-                            <Text style={styles.totalRowLabel}>Subtotal</Text>
-                            <Text style={styles.totalRowValue}>{formatCurrency(safeData.subtotal)}</Text>
-                        </View>
-                        {Number(safeData.iva) > 0 && (
-                            <View style={styles.totalRow}>
-                                <Text style={styles.totalRowLabel}>IVA 16%</Text>
-                                <Text style={styles.totalRowValue}>{formatCurrency(safeData.iva)}</Text>
-                            </View>
-                        )}
-                        {Number(safeData.retention) > 0 && (
-                            <View style={styles.totalRow}>
-                                <Text style={[styles.totalRowLabel, { color: '#ef4444' }]}>Retención ISR</Text>
-                                <Text style={[styles.totalRowValue, { color: '#ef4444' }]}>- {formatCurrency(safeData.retention)}</Text>
-                            </View>
-                        )}
-                        <View style={styles.grandTotalRow}>
-                            <Text style={styles.grandTotalLabel}>TOTAL MXN</Text>
-                            <Text style={styles.grandTotalValue}>{formatCurrency(safeData.total)}</Text>
-                        </View>
-                    </View>
-                </View>
-
-                {/* Fiscal Footer */}
-                <View style={styles.footer}>
-                    <View style={styles.qrContainer}>
-                        {/* QR Placeholder */}
-                        <View style={[styles.qrImage, { backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' }]}>
-                            <Text style={{ fontSize: 6, color: '#94a3b8' }}>QR Code</Text>
-                        </View>
-                    </View>
-                    <View style={styles.stringsContainer}>
-                        <View style={styles.stringBlock}>
-                            <Text style={styles.stringLabel}>Cadena Original</Text>
-                            <Text style={styles.stringContent}>{safeString(details.originalChain || details.complement_string || '|| CADENA NO DISPONIBLE ||')}</Text>
-                        </View>
-                        <View style={styles.footerDates}>
-                            <View style={styles.footerDateCol}>
-                                <Text style={styles.stringLabel}>No. Certificado SAT</Text>
-                                <Text style={[styles.stringContent, { backgroundColor: 'transparent', borderWidth: 0, padding: 0 }]}>
-                                    {safeString(details.satCertificateNumber || '---')}
+                    {items.map((item: any, i: number) => (
+                        <View key={i} style={styles.tableRow} wrap={false}>
+                            <Text style={styles.colQty}>{item.quantity || 1}</Text>
+                            <View style={styles.colDesc}>
+                                <Text>{item.description || 'Servicio'}</Text>
+                                <Text style={{ fontSize: 6, color: '#777' }}>
+                                    Clave: {item.satProductKey || '84111506'} | Unidad: {item.satUnitKey || 'E48'}
                                 </Text>
                             </View>
-                            <View style={styles.footerDateCol}>
-                                <Text style={styles.stringLabel}>Fecha Certificación</Text>
-                                <Text style={[styles.stringContent, { backgroundColor: 'transparent', borderWidth: 0, padding: 0 }]}>
-                                    {formatDate(details.certDate)}
-                                </Text>
+                            <Text style={styles.colPrice}>{fmtMoney(item.unitValue)}</Text>
+                            <Text style={styles.colTotal}>{fmtMoney(item.subtotal || item.amount || 0)}</Text>
+                        </View>
+                    ))}
+                </View>
+
+                {/* TOTALS */}
+                <View style={styles.totalsContainer}>
+                    <View style={styles.totalsLeft}>
+                        <Text style={{ fontSize: 8, fontStyle: 'italic', marginTop: 10 }}>
+                            {numberToLetters(Number(d.total) || 0)}
+                        </Text>
+                    </View>
+                    <View style={styles.totalsRight}>
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>Subtotal:</Text>
+                            <Text style={styles.totalValue}>{fmtMoney(d.subtotal)}</Text>
+                        </View>
+                        <View style={styles.totalRow}>
+                            <Text style={styles.totalLabel}>IVA 16%:</Text>
+                            <Text style={styles.totalValue}>{fmtMoney(d.iva)}</Text>
+                        </View>
+                        {(Number(d.retention) > 0) && (
+                            <View style={styles.totalRow}>
+                                <Text style={styles.totalLabel}>Ret. ISR:</Text>
+                                <Text style={styles.totalValue}>- {fmtMoney(d.retention)}</Text>
                             </View>
+                        )}
+                        <View style={[styles.totalRow, { borderTopWidth: 1, paddingTop: 4 }]}>
+                            <Text style={[styles.totalLabel, { fontSize: 10 }]}>TOTAL:</Text>
+                            <Text style={[styles.totalValue, { fontSize: 10, color: 'blue' }]}>{fmtMoney(d.total)}</Text>
                         </View>
                     </View>
+                </View>
+
+                {/* FOOTER */}
+                <View style={[styles.section, { marginTop: 30, paddingTop: 10, borderTopWidth: 1, borderColor: '#ccc' }]}>
+                    <Text style={{ fontSize: 6, color: '#999', textAlign: 'center' }}>
+                        Este documento es una representación impresa de un CFDI 4.0
+                    </Text>
+                    <Text style={{ fontSize: 6, color: '#999', textAlign: 'center' }}>
+                        UUID: {d.uuid || details.uuid || '---'}
+                    </Text>
                 </View>
             </Page>
         </Document>
