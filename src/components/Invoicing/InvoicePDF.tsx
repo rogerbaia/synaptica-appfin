@@ -3,10 +3,10 @@ import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/render
 import { numberToLetters } from '@/utils/numberToLetters';
 
 /* 
-    PREMIUM PDF (MATCHING PREVIEW UI)
-    - Zero External Dependencies (Safe for Printing)
-    - Styles aligned with Tailwind Slate Palette from InvoicePreview.tsx
-    - Robust Image Handling
+    PREMIUM PDF (DIRECT PRINT OPTIMIZED)
+    - Zero External Dependencies (Assets pre-processed in Client)
+    - Full Strings (No Truncation)
+    - Correct Tax Logic
 */
 
 // --- LOCAL DATA MAPS ---
@@ -34,17 +34,15 @@ const getUseName = (code: string) => {
     return map[code] || '';
 };
 
-// --- STYLES (Tailwind Match) ---
-// Slate-50: #f8fafc | Slate-100: #f1f5f9 | Slate-200: #e2e8f0 
-// Slate-500: #64748b | Slate-800: #1e293b | Slate-900: #0f172a
+// --- STYLES ---
 const styles = StyleSheet.create({
     page: { padding: 30, fontFamily: 'Helvetica', fontSize: 8, color: '#1e293b', backgroundColor: '#FFFFFF' },
 
     // Header
     header: { flexDirection: 'row', marginBottom: 20 },
-    headerLeft: { width: '30%', height: 70, justifyContent: 'center' }, // Logo
-    headerCenter: { width: '40%', alignItems: 'center', textAlign: 'center', paddingTop: 5 }, // Issuer
-    headerRight: { width: '30%', alignItems: 'flex-end' }, // Folio
+    headerLeft: { width: '30%', height: 70, justifyContent: 'center' },
+    headerCenter: { width: '40%', alignItems: 'center', textAlign: 'center', paddingTop: 5 },
+    headerRight: { width: '30%', alignItems: 'flex-end' },
 
     logo: { width: '100%', height: '100%', objectFit: 'contain' },
 
@@ -56,19 +54,19 @@ const styles = StyleSheet.create({
     // Folio Box
     folioBox: {
         width: '100%',
-        backgroundColor: '#f8fafc', // Slate-50
+        backgroundColor: '#f8fafc',
         borderWidth: 1,
-        borderColor: '#e0e7ff', // Indigo-100
+        borderColor: '#e0e7ff',
         padding: 8,
         borderRadius: 6,
         alignItems: 'flex-end'
     },
-    folioLabel: { fontSize: 6, fontWeight: 'bold', color: '#312e81', textTransform: 'uppercase', marginBottom: 2 }, // Indigo-900
-    folioVal: { fontSize: 14, fontWeight: 'bold', color: '#ef4444', marginBottom: 4 }, // Red-500
+    folioLabel: { fontSize: 6, fontWeight: 'bold', color: '#312e81', textTransform: 'uppercase', marginBottom: 2 },
+    folioVal: { fontSize: 14, fontWeight: 'bold', color: '#ef4444', marginBottom: 4 },
     folioDate: { fontSize: 7, fontWeight: 'bold', color: '#334155' },
     folioDateLabel: { fontSize: 6, color: '#64748b' },
 
-    // Grids (Side by Side)
+    // Grids
     gridContainer: {
         flexDirection: 'row',
         borderWidth: 1,
@@ -81,14 +79,14 @@ const styles = StyleSheet.create({
     gridRight: { width: '40%' },
 
     gridHeader: {
-        backgroundColor: '#f8fafc', // Slate-50 
+        backgroundColor: '#f8fafc',
         padding: 5,
         fontSize: 7,
         fontWeight: 'bold',
-        color: '#1e293b', // Slate-800
+        color: '#1e293b',
         borderBottomWidth: 1,
         borderBottomColor: '#e2e8f0',
-        uppercase: 'uppercase',
+        textTransform: 'uppercase', // react-pdf uppercase property
         textAlign: 'center'
     },
     gridContent: { padding: 6 },
@@ -101,7 +99,7 @@ const styles = StyleSheet.create({
     table: { width: '100%', marginBottom: 15 },
     thead: {
         flexDirection: 'row',
-        backgroundColor: '#1e293b', // Slate-800
+        backgroundColor: '#1e293b',
         paddingVertical: 5,
         paddingHorizontal: 4,
         borderTopLeftRadius: 4,
@@ -117,7 +115,6 @@ const styles = StyleSheet.create({
     },
     td: { fontSize: 7, color: '#334155' },
 
-    // Cols
     cQty: { width: '8%', textAlign: 'center' },
     cUnit: { width: '12%' },
     cKey: { width: '12%' },
@@ -130,7 +127,6 @@ const styles = StyleSheet.create({
     totalText: { width: '60%', paddingRight: 20 },
     totalNums: { width: '40%' },
 
-    // Amount Box
     amountBox: {
         backgroundColor: '#f8fafc',
         padding: 8,
@@ -138,7 +134,6 @@ const styles = StyleSheet.create({
         borderColor: '#e2e8f0',
         borderRadius: 4
     },
-
     tRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 },
 
     // Footer Strings
@@ -150,15 +145,13 @@ const styles = StyleSheet.create({
         flexDirection: 'row'
     },
     qrBox: { width: '18%', alignItems: 'center' },
+    qrImage: { width: 90, height: 90 }, // Bigger QR
     qrPlaceholder: {
         width: 70,
         height: 70,
         backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
         justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: 2
+        alignItems: 'center'
     },
     strBox: { width: '82%', paddingLeft: 10 },
     strRow: { marginBottom: 6 },
@@ -171,11 +164,12 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#f1f5f9',
         color: '#475569',
-        borderRadius: 2
+        borderRadius: 2,
+        // Ensure wrapping
+        textOverflow: 'clip'
     }
 });
 
-// --- HELPERS ---
 const fmtMoney = (v: any) => {
     try { return '$' + Number(v).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); } catch { return '$0.00'; }
 };
@@ -188,22 +182,23 @@ const fmtDate = (v: any) => {
     } catch { return String(v); }
 };
 const safe = (v: any) => (v === null || v === undefined) ? '' : String(v).trim();
+const safeRegime = (v: any) => { const s = safe(v); return s.includes('-') ? s : s + ' - ' + getRegimeName(s); };
+const safeUse = (v: any) => { const s = safe(v); return s.includes('-') ? s : s + ' - ' + getUseName(s); };
 
 interface InvoiceDocumentProps {
     data: any;
 }
 
 export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
-    // 1. Data Prep
     const d = data || {};
     const det = d.details || {};
     const items = (det.items && Array.isArray(det.items)) ? det.items : [d];
 
-    // RELAXED LOGO CHECK: Trust the URL if at least 5 chars (e.g. /a.png)
-    const logoUrl = d.logoUrl || det.logoUrl;
-    const hasLogo = logoUrl && typeof logoUrl === 'string' && logoUrl.length > 4;
+    // Assets from props (handled in Client)
+    const logoUrl = d.logoUrl;
+    const qrCodeUrl = d.qrCodeUrl;
 
-    // Issuer Hardcoded (Matches Preview)
+    // Issuer (Hardcoded for this user context, matching Preview)
     const issuer = {
         name: 'ROGERIO MARTINS BAIA',
         rfc: 'MABR750116P78',
@@ -218,7 +213,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
-                        {hasLogo ? (
+                        {logoUrl ? (
                             <Image src={logoUrl} style={styles.logo} />
                         ) : (
                             <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#cbd5e1' }}>SYNAPTICA</Text>
@@ -260,11 +255,11 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Uso CFDI:</Text>
-                                <Text style={styles.val}>{safe(det.cfdiUse)} - {getUseName(det.cfdiUse)}</Text>
+                                <Text style={styles.val}>{safeUse(det.cfdiUse)}</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Régimen:</Text>
-                                <Text style={styles.val}>{safe(det.fiscalRegime)} - {getRegimeName(det.fiscalRegime)}</Text>
+                                <Text style={styles.val}>{safeRegime(det.fiscalRegime)}</Text>
                             </View>
                         </View>
                     </View>
@@ -334,11 +329,15 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                                 <Text style={{ fontSize: 7, color: '#64748b' }}>Subtotal</Text>
                                 <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#334155', fontFamily: 'Courier' }}>{fmtMoney(d.subtotal)}</Text>
                             </View>
-                            <View style={styles.tRow}>
-                                <Text style={{ fontSize: 7, color: '#64748b' }}>IVA 16%</Text>
-                                <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#334155', fontFamily: 'Courier' }}>{fmtMoney(d.iva)}</Text>
-                            </View>
-                            {(Number(d.retention) > 0) && (
+                            {/* IVA check: Show if positive */}
+                            {Number(d.iva) > 0 && (
+                                <View style={styles.tRow}>
+                                    <Text style={{ fontSize: 7, color: '#64748b' }}>IVA 16%</Text>
+                                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#334155', fontFamily: 'Courier' }}>{fmtMoney(d.iva)}</Text>
+                                </View>
+                            )}
+                            {/* Retention check: Show if positive */}
+                            {Number(d.retention) > 0 && (
                                 <View style={styles.tRow}>
                                     <Text style={{ fontSize: 7, color: '#ef4444' }}>Ret. ISR</Text>
                                     <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#ef4444', fontFamily: 'Courier' }}>- {fmtMoney(d.retention)}</Text>
@@ -355,23 +354,28 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                 {/* Footer */}
                 <View style={styles.footer}>
                     <View style={styles.qrBox}>
-                        <View style={styles.qrPlaceholder}>
-                            <Text style={{ fontSize: 6, color: '#94a3b8' }}>QR CODE</Text>
-                        </View>
+                        {qrCodeUrl ? (
+                            <Image src={qrCodeUrl} style={styles.qrImage} />
+                        ) : (
+                            <View style={styles.qrPlaceholder}>
+                                <Text style={{ fontSize: 6, color: '#94a3b8' }}>QR Code</Text>
+                            </View>
+                        )}
                         <Text style={{ fontSize: 5, color: '#94a3b8', textAlign: 'center', marginTop: 2 }}>Representación impresa de un CFDI 4.0</Text>
                     </View>
                     <View style={styles.strBox}>
                         <View style={styles.strRow}>
                             <Text style={styles.strLab}>Cadena Original del Complemento de Certificación Digital del SAT</Text>
-                            <Text style={styles.strVal}>{safe(det.originalChain || det.complement_string || '|| CADENA NO DISPONIBLE ||').slice(0, 180)}{det.originalChain?.length > 180 ? '...' : ''}</Text>
+                            {/* No Slice - Full String */}
+                            <Text style={styles.strVal}>{safe(d.originalChain || '|| CADENA NO DISPONIBLE ||')}</Text>
                         </View>
                         <View style={styles.strRow}>
                             <Text style={styles.strLab}>Sello Digital del CFDI</Text>
-                            <Text style={styles.strVal}>{safe(det.selloCFDI || det.signature || '---').slice(0, 100)}...</Text>
+                            <Text style={styles.strVal}>{safe(d.selloCFDI || '---')}</Text>
                         </View>
                         <View style={styles.strRow}>
                             <Text style={styles.strLab}>Sello Digital del SAT</Text>
-                            <Text style={styles.strVal}>{safe(det.selloSAT || det.sat_signature || '---').slice(0, 100)}...</Text>
+                            <Text style={styles.strVal}>{safe(d.selloSAT || '---')}</Text>
                         </View>
                     </View>
                 </View>

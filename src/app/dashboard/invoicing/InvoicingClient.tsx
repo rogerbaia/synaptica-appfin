@@ -656,20 +656,65 @@ function InvoicingContent() {
         }
     };
 
+    // [NEW] Helper to prepare robust PDF data (Assets -> Base64)
+    const preparePdfData = async (invoice: any) => {
+        // 1. Logo Handling (Base64) - Trust current logo or organisation logo
+        let finalLogo = organizationLogo || invoice.logoUrl;
+        if (finalLogo && finalLogo.startsWith('http')) {
+            try {
+                // Fetch to blob -> base64 to avoid PDF potential network blocks
+                const response = await fetch(finalLogo);
+                const blob = await response.blob();
+                finalLogo = await new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (e) { console.warn("Logo fetch warning:", e); }
+        }
+
+        // 2. QR Code Generation (Base64)
+        let qrDataUrl = '';
+        // Prioritize Verification URL (standard), fallback to a basic string construction
+        const verificationUrl = invoice.details?.verificationUrl ||
+            invoice.details?.verification_url ||
+            `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${invoice.uuid}&re=${invoice.rfc || 'X'}&rr=${invoice.clientRfc || 'X'}&tt=${invoice.total}&fe=${(invoice.details?.selloCFDI || 'X').slice(-8)}`;
+
+        if (verificationUrl) {
+            try {
+                // Generate locally to ensure it always renders in PDF
+                const QRCode = await import('qrcode'); // Dynamic import
+                qrDataUrl = await QRCode.toDataURL(verificationUrl, { width: 150, margin: 0 });
+            } catch (e) { console.warn("QR Generation warning:", e); }
+        }
+
+        // 3. Tax & String Stability
+        const d = invoice.details || {};
+        return {
+            ...invoice,
+            ...d,
+            logoUrl: finalLogo,     // Pre-processed Base64
+            qrCodeUrl: qrDataUrl,   // Pre-generated Base64
+            // Pass explicit numeric/string checks
+            total: Number(invoice.total || 0),
+            subtotal: Number(d.subtotal || invoice.subtotal || invoice.total),
+            // Explicitly respect 0 if defined
+            iva: (d.iva !== undefined) ? Number(d.iva) : 0,
+            retention: (d.retention !== undefined) ? Number(d.retention) : 0,
+            // Full strings (no truncation)
+            originalChain: d.originalChain || d.complement_string || '',
+            selloCFDI: d.selloCFDI || d.signature || '',
+            selloSAT: d.selloSAT || d.sat_signature || '',
+            satCertificateNumber: d.satCertificateNumber || d.sat_cert_number || ''
+        };
+    };
+
     const handlePremiumDownload = async (invoice: any) => {
         const toastId = toast.loading("Generando PDF Premium...");
         try {
-            // [FIX] Flatten details for PDF Generator (InvoiceDocument expects flat props like Modal output)
-            const pdfData = {
-                ...invoice,
-                ...(invoice.details || {}), // Flatten details
-                logoUrl: organizationLogo,
-                // Ensure critical numerical values are passed if missing in details
-                total: invoice.total,
-                subtotal: invoice.details?.subtotal || (invoice.total / 1.16),
-                iva: invoice.details?.iva || (invoice.total - (invoice.total / 1.16))
-            };
+            const pdfData = await preparePdfData(invoice);
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
+
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -690,30 +735,35 @@ function InvoicingContent() {
     };
 
     const handlePremiumPrint = async (invoice: any) => {
-        const toastId = toast.loading("Preparando documento...");
+        const toastId = toast.loading("Preparando impresión...");
         try {
-            // [FIX] Flatten details for PDF Generator
-            const pdfData = {
-                ...invoice,
-                ...(invoice.details || {}), // Flatten details
-                logoUrl: organizationLogo,
-                // Ensure critical numerical values are passed
-                total: invoice.total,
-                subtotal: invoice.details?.subtotal || (invoice.total / 1.16),
-                iva: invoice.details?.iva || (invoice.total - (invoice.total / 1.16))
-            };
+            const pdfData = await preparePdfData(invoice);
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
             const url = URL.createObjectURL(blob);
 
-            // [FIX] Open in New Tab for true "Preview" before printing
-            window.open(url, '_blank');
+            // [FIX] DIRECT PRINT via Invisible Iframe (Improved UX)
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.width = '0px';
+            iframe.style.height = '0px';
+            iframe.style.border = 'none';
+            iframe.src = url;
+            document.body.appendChild(iframe);
 
-            // Cleanup after a delay (enough time for browser to load)
-            setTimeout(() => {
-                URL.revokeObjectURL(url);
-            }, 60000);
+            // Wait for load then print
+            iframe.onload = () => {
+                setTimeout(() => {
+                    iframe.contentWindow?.print();
+                    toast.dismiss(toastId);
 
-            toast.dismiss(toastId);
+                    // Cleanup after print dialog usage (give user time)
+                    setTimeout(() => {
+                        document.body.removeChild(iframe);
+                        URL.revokeObjectURL(url);
+                    }, 60000);
+                }, 500);
+            };
+
         } catch (e: any) {
             console.error("Print generation error:", e);
             toast.dismiss(toastId);
@@ -734,15 +784,8 @@ function InvoicingContent() {
             const replyTo = user?.email || '';
             const senderName = user?.user_metadata?.full_name || user?.user_metadata?.name || 'Dr. Usuario';
 
-            // [FIX] Generate PDF Blob on Client with Flattened Data
-            const pdfData = {
-                ...invoice,
-                ...(invoice.details || {}),
-                logoUrl: organizationLogo,
-                total: invoice.total,
-                subtotal: invoice.details?.subtotal || (invoice.total / 1.16),
-                iva: invoice.details?.iva || (invoice.total - (invoice.total / 1.16))
-            };
+            // Prepare robust data
+            const pdfData = await preparePdfData(invoice);
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
 
             // Convert to Base64
