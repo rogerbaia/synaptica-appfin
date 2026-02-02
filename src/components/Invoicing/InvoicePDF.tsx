@@ -3,10 +3,9 @@ import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/render
 import { numberToLetters } from '@/utils/numberToLetters';
 
 /* 
-    PREMIUM PDF (DIRECT PRINT OPTIMIZED)
-    - Zero External Dependencies (Assets pre-processed in Client)
-    - Full Strings (No Truncation)
-    - Correct Tax Logic
+    PREMIUM PDF (FINAL REVISION)
+    - Added: Version 4.0, Emision, Certification Time, CSD Serial
+    - Fixed: Date Rendering (Full DateTime), Logo Fallback
 */
 
 // --- LOCAL DATA MAPS ---
@@ -86,7 +85,7 @@ const styles = StyleSheet.create({
         color: '#1e293b',
         borderBottomWidth: 1,
         borderBottomColor: '#e2e8f0',
-        textTransform: 'uppercase', // react-pdf uppercase property
+        textTransform: 'uppercase',
         textAlign: 'center'
     },
     gridContent: { padding: 6 },
@@ -145,7 +144,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row'
     },
     qrBox: { width: '18%', alignItems: 'center' },
-    qrImage: { width: 90, height: 90 }, // Bigger QR
+    qrImage: { width: 90, height: 90 },
     qrPlaceholder: {
         width: 70,
         height: 70,
@@ -165,7 +164,6 @@ const styles = StyleSheet.create({
         borderColor: '#f1f5f9',
         color: '#475569',
         borderRadius: 2,
-        // Ensure wrapping
         textOverflow: 'clip'
     }
 });
@@ -173,14 +171,19 @@ const styles = StyleSheet.create({
 const fmtMoney = (v: any) => {
     try { return '$' + Number(v).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,'); } catch { return '$0.00'; }
 };
-const fmtDate = (v: any) => {
-    if (!v) return '';
+
+// [FIX] Full DateTime Formatter (YYYY-MM-DD HH:mm:ss)
+const fmtDateTime = (v: any) => {
+    if (!v) return '---';
     try {
         const d = new Date(v);
         if (isNaN(d.getTime())) return String(v);
-        return d.toISOString().split('T')[0];
+        // Manual format to avoid locale issues in React-PDF engine
+        const pad = (n: number) => n < 10 ? '0' + n : n;
+        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
     } catch { return String(v); }
 };
+
 const safe = (v: any) => (v === null || v === undefined) ? '' : String(v).trim();
 const safeRegime = (v: any) => { const s = safe(v); return s.includes('-') ? s : s + ' - ' + getRegimeName(s); };
 const safeUse = (v: any) => { const s = safe(v); return s.includes('-') ? s : s + ' - ' + getUseName(s); };
@@ -194,11 +197,9 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
     const det = d.details || {};
     const items = (det.items && Array.isArray(det.items)) ? det.items : [d];
 
-    // Assets from props (handled in Client)
     const logoUrl = d.logoUrl;
     const qrCodeUrl = d.qrCodeUrl;
 
-    // Issuer (Hardcoded for this user context, matching Preview)
     const issuer = {
         name: 'ROGERIO MARTINS BAIA',
         rfc: 'MABR750116P78',
@@ -231,7 +232,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                             <Text style={styles.folioLabel}>FACTURA</Text>
                             <Text style={styles.folioVal}>{safe(d.folio || 'F-001')}</Text>
                             <Text style={styles.folioDateLabel}>Fecha de Emisión</Text>
-                            <Text style={styles.folioDate}>{fmtDate(d.date)}</Text>
+                            <Text style={styles.folioDate}>{fmtDateTime(d.date)}</Text>
                         </View>
                     </View>
                 </View>
@@ -267,20 +268,29 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                         <Text style={styles.gridHeader}>DATOS FISCALES</Text>
                         <View style={styles.gridContent}>
                             <View style={styles.row}>
-                                <Text style={styles.label}>Folio Fiscal:</Text>
+                                <Text style={styles.label}>Folio Fiscal (UUID):</Text>
                                 <Text style={[styles.val, { fontSize: 6, fontFamily: 'Courier' }]}>{safe(d.uuid || det.uuid || '---')}</Text>
+                            </View>
+                            {/* [NEW] Missing Fields */}
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Serie CSD:</Text>
+                                <Text style={styles.val}>{safe(det.certificateNumber || '---')}</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Tipo CFDI:</Text>
+                                <Text style={styles.val}>I - Ingreso   Version: 4.0</Text>
+                            </View>
+                            <View style={styles.row}>
+                                <Text style={styles.label}>Emisión:</Text>
+                                <Text style={styles.val}>{fmtDateTime(d.date)}</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Certificación:</Text>
-                                <Text style={styles.val}>{fmtDate(det.certDate)}</Text>
+                                <Text style={styles.val}>{fmtDateTime(det.certDate)}</Text>
                             </View>
                             <View style={styles.row}>
                                 <Text style={styles.label}>Lugar Exp.:</Text>
                                 <Text style={styles.val}>{safe(det.expeditionPlace || '67510')}</Text>
-                            </View>
-                            <View style={styles.row}>
-                                <Text style={styles.label}>Tipo CFDI:</Text>
-                                <Text style={styles.val}>I - Ingreso</Text>
                             </View>
                         </View>
                     </View>
@@ -329,14 +339,12 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                                 <Text style={{ fontSize: 7, color: '#64748b' }}>Subtotal</Text>
                                 <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#334155', fontFamily: 'Courier' }}>{fmtMoney(d.subtotal)}</Text>
                             </View>
-                            {/* IVA check: Show if positive */}
                             {Number(d.iva) > 0 && (
                                 <View style={styles.tRow}>
                                     <Text style={{ fontSize: 7, color: '#64748b' }}>IVA 16%</Text>
                                     <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#334155', fontFamily: 'Courier' }}>{fmtMoney(d.iva)}</Text>
                                 </View>
                             )}
-                            {/* Retention check: Show if positive */}
                             {Number(d.retention) > 0 && (
                                 <View style={styles.tRow}>
                                     <Text style={{ fontSize: 7, color: '#ef4444' }}>Ret. ISR</Text>
@@ -366,7 +374,6 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                     <View style={styles.strBox}>
                         <View style={styles.strRow}>
                             <Text style={styles.strLab}>Cadena Original del Complemento de Certificación Digital del SAT</Text>
-                            {/* No Slice - Full String */}
                             <Text style={styles.strVal}>{safe(d.originalChain || '|| CADENA NO DISPONIBLE ||')}</Text>
                         </View>
                         <View style={styles.strRow}>
