@@ -1,7 +1,8 @@
-import { createPortal } from 'react-dom';
 import React, { useEffect, useState } from 'react';
-import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft, RefreshCw, ShieldCheck } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Printer, Mail, Copy, Download, X, Edit, Zap, CheckCircle, FileText, ArrowLeft, RefreshCw, ShieldCheck, AlertTriangle } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { numberToLetters } from '@/utils/numberToLetters';
 import { SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
@@ -205,10 +206,43 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     <p className="text-red-500 font-bold text-2xl font-mono">{data.folio || '---'}</p>
                                     <div className="h-px bg-indigo-100 my-2"></div>
                                     <p className="text-[10px] text-slate-500">Fecha de Emisión</p>
-                                    <p className="text-xs font-bold text-slate-700">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX', { hour12: false }) : (data.date ? new Date(data.date).toLocaleString('es-MX', { hour12: false }) : new Date().toLocaleString('es-MX', { hour12: false }))}</p>
+                                    <p className="text-xs font-bold text-slate-700">
+                                        {satService.formatDate24h(data.rawDate || data.date)}
+                                    </p>
                                 </div>
                             </div>
                         </div>
+
+                        {/* [NEW] Recovery Alert for Missing Data */}
+                        {isStamped && !details?.originalChain && (
+                            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2 text-amber-700 text-xs">
+                                    <AlertTriangle size={16} />
+                                    <span>Algunos datos fiscales (Cadena Original) no se guardaron correctamente.</span>
+                                </div>
+                                <button
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        const toastId = toast.loading("Recuperando datos...");
+                                        try {
+                                            const facturapiId = details?.id || data.details?.id;
+                                            if (!facturapiId) throw new Error("ID de Facturapi no encontrado");
+
+                                            // Call Recovery
+                                            await satService.recoverInvoice(data.id || data.txId, facturapiId);
+                                            toast.success("Datos recuperados exitosamente. Recarga la vista.", { id: toastId });
+                                            // Ideally we trigger a reload here
+                                            window.location.reload();
+                                        } catch (err: any) {
+                                            toast.error("Error al recuperar: " + err.message, { id: toastId });
+                                        }
+                                    }}
+                                    className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                                >
+                                    Reparar Datos
+                                </button>
+                            </div>
+                        )}
 
                         {/* Client & Fiscal Data Grid (Side-by-Side) */}
                         <div className="rounded-lg border border-slate-200 overflow-hidden mb-8 text-xs">
@@ -283,11 +317,11 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="font-bold text-slate-600 whitespace-nowrap">Emisión:</span>
-                                            <span className="text-slate-800">{data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX', { hour12: false }) : (data.date ? new Date(data.date).toLocaleString('es-MX', { hour12: false }) : new Date().toLocaleString('es-MX', { hour12: false }))}</span>
+                                            <span className="text-slate-800">{satService.formatDate24h(data.rawDate || data.date)}</span>
                                         </div>
                                         <div className="flex justify-between gap-2">
                                             <span className="font-bold text-slate-600 whitespace-nowrap">Certificación:</span>
-                                            <span className="text-slate-800">{details?.certDate ? new Date(details.certDate).toLocaleString('es-MX', { hour12: false }) : (data.rawDate ? new Date(data.rawDate).toLocaleString('es-MX', { hour12: false }) : '---')}</span>
+                                            <span className="text-slate-800">{satService.formatDate24h(details?.certDate || data.rawDate)}</span>
                                         </div>
                                         <div className="flex justify-between flex-col border-t border-slate-100 pt-1 mt-1">
                                             <span className="font-bold text-slate-600 text-[10px]">Serie CSD Emisor:</span>
@@ -425,7 +459,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 <div>
                                                     <p className="font-bold text-slate-500 text-[9px] uppercase">Fecha y Hora de Certificación</p>
                                                     <p className="font-mono text-slate-800 text-[10px]">
-                                                        {details?.certDate ? new Date(details.certDate).toLocaleString('es-MX', { hour12: false }) : '---'}
+                                                        {satService.formatDate24h(details?.certDate)}
                                                     </p>
                                                 </div>
                                             </div>

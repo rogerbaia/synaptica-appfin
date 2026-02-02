@@ -40,6 +40,7 @@ export interface StampedInvoice {
   certDate?: string; // [NEW] - Optional
   verificationUrl?: string; // [NEW] - URL for QR Code
   xml: string;
+  fullResponse?: any; // [NEW] - Raw Facturapi Response
 }
 
 export const satService = {
@@ -302,5 +303,77 @@ export const satService = {
       originalChain,
       xml
     };
+  },
+
+  // [NEW] Recover Invoice Data from Facturapi and Update DB
+  async recoverInvoice(txId: number | string, facturapiId: string) {
+    console.log("Recovering Invoice Data...", { txId, facturapiId });
+    try {
+      const invoiceData = await this.getInvoice(facturapiId);
+
+      if (!invoiceData || invoiceData.error) {
+        throw new Error(invoiceData.error || 'Failed to fetch from Facturapi');
+      }
+
+      console.log("Fetched Fresh Data:", invoiceData);
+
+      // Now Update Supabase
+      const { data: tx, error: fetchError } = await supabase
+        .from('transactions')
+        .select('details')
+        .eq('id', txId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const currentDetails = tx.details || {};
+      const newDetails = {
+        ...currentDetails,
+        fullResponse: invoiceData,
+        // Patch Helper Fields
+        originalChain: invoiceData.original_chain || invoiceData.original_string || currentDetails.originalChain,
+        selloSAT: invoiceData.stamp?.sello_sat || currentDetails.selloSAT,
+        selloCFDI: invoiceData.stamp?.sello_cfdi || currentDetails.selloCFDI,
+        satCertificateNumber: invoiceData.stamp?.sat_cert_number || currentDetails.satCertificateNumber,
+        certificateNumber: invoiceData.certificate_number || currentDetails.certificateNumber,
+        certDate: invoiceData.stamp?.date || currentDetails.certDate,
+        verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl,
+        uuid: invoiceData.uuid || currentDetails.uuid
+      };
+
+      const { error: updateError } = await supabase
+        .from('transactions')
+        .update({ details: newDetails })
+        .eq('id', txId);
+
+      if (updateError) throw updateError;
+
+      return newDetails;
+
+    } catch (e) {
+      console.error("Recovery Failed:", e);
+      throw e;
+    }
+  },
+
+  // [NEW] 24h Time Formatter Helper
+  formatDate24h(dateStr: string | Date | undefined) {
+    if (!dateStr) return '---';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return '---';
+
+      // Manual 24h Formatting: DD/MM/YYYY, HH:mm:ss
+      const day = d.getDate().toString().padStart(2, '0');
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const year = d.getFullYear();
+      const hours = d.getHours().toString().padStart(2, '0');
+      const minutes = d.getMinutes().toString().padStart(2, '0');
+      const seconds = d.getSeconds().toString().padStart(2, '0');
+
+      return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+    } catch (e) {
+      return '---';
+    }
   }
 };
