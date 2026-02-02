@@ -775,10 +775,19 @@ function InvoicingContent() {
                     iframe.contentWindow?.print();
                     toast.dismiss(toastId);
 
-                    // Cleanup immediately
+                    // DO NOT remove immediately, as it closes the dialog in non-blocking browsers.
+                    // Instead, hide it so user can interact with App, but keep DOM element alive.
+                    iframe.style.zIndex = '-9999';
+                    iframe.style.opacity = '0';
                     toast.dismiss(toastId);
-                    document.body.removeChild(iframe);
-                    URL.revokeObjectURL(url);
+
+                    // Real cleanup after enough time for user to print/cancel
+                    setTimeout(() => {
+                        if (document.body.contains(iframe)) {
+                            document.body.removeChild(iframe);
+                        }
+                        URL.revokeObjectURL(url);
+                    }, 60000); // 1 minute keep-alive
                 }, 1000); // 1s delay for full render
             };
 
