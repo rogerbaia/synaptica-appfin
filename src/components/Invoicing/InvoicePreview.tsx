@@ -214,8 +214,8 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         </div>
 
                         {/* [NEW] Recovery Alert for Missing Data */}
-                        {isStamped && (!details?.originalChain || details?.originalChain === '|| CADENA NO DISPONIBLE ||') && (
-                            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+                        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-amber-700 text-xs">
                                     <AlertTriangle size={16} />
                                     <span>Algunos datos fiscales (Cadena Original) no se guardaron correctamente.</span>
@@ -242,6 +242,16 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                     Reparar Datos
                                 </button>
                             </div>
+                            <details className="group">
+                                <summary className="text-[9px] text-amber-600/70 cursor-pointer list-none flex items-center gap-1 hover:text-amber-800 transition-colors">
+                                    <span className="font-bold underline decoration-dotted">Ver respuesta técnica RAW</span> (Para Soporte)
+                                </summary>
+                                <div className="mt-2 text-[8px] font-mono bg-white p-2 rounded border border-amber-100 overflow-x-auto max-h-[150px] shadow-inner text-slate-600">
+                                    <p className="font-bold mb-1">// Details Dump:</p>
+                                    {JSON.stringify(details, null, 2)}
+                                </div>
+                            </details>
+                        </div>
                         )}
 
                         {/* Client & Fiscal Data Grid (Side-by-Side) */}

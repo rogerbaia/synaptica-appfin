@@ -394,6 +394,46 @@ export const satService = {
       if (fetchError) throw fetchError;
 
       const currentDetails = tx.details || {};
+
+
+      // [FIX] XML Fallback for Missing SelloSAT
+      if (!invoiceData.stamp?.sello_sat && !invoiceData.stamp?.sat_seal && !invoiceData.stamp?.sat_signature) {
+        console.log("SelloSAT missing in JSON. Attempting XML extraction...");
+        // If we already have XML in invoiceData, use it
+        let xmlContent = invoiceData.xml;
+
+        if (!xmlContent && issuerCert) {
+          // If we fetched XML for cert, we might not have saved the full text globally in the previous block unless we refactor.
+          // Let's rely on invoiceData.xml for now, or fetch it if needed.
+          // Since we have a fetch block above for Cert, let's optimize to use that same fetch if possible.
+        }
+
+        // If we don't have XML yet but need it for SelloSAT
+        if (!xmlContent) {
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (token) {
+              const xmlRes = await fetch(`/api/sat/invoice-xml?id=${facturapiId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+              });
+              if (xmlRes.ok) xmlContent = await xmlRes.text();
+            }
+          } catch (e) {
+            console.warn("Failed to fetch XML for SelloSAT recovery");
+          }
+        }
+
+        if (xmlContent) {
+          const selloSatMatch = xmlContent.match(/SelloSAT="([^"]+)"/);
+          if (selloSatMatch) {
+            console.log("Recovered SelloSAT from XML");
+            // We can inject it into our "flattened" details
+            invoiceData.stamp = { ...invoiceData.stamp, sello_sat: selloSatMatch[1] };
+          }
+        }
+      }
+
       const newDetails = {
         ...currentDetails,
         fullResponse: invoiceData,
@@ -405,7 +445,16 @@ export const satService = {
         certificate_number: issuerCert || currentDetails.certificate_number || currentDetails.certificateNumber,
         cert_date: invoiceData.stamp?.date || currentDetails.cert_date || currentDetails.certDate,
         verification_url: invoiceData.verification_url || currentDetails.verification_url || currentDetails.verificationUrl,
-        uuid: invoiceData.uuid || currentDetails.uuid
+        uuid: invoiceData.uuid || currentDetails.uuid,
+
+        // [FIX] Ensure camelCase aliases are ALSO saved for UI consistency
+        originalChain: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.originalChain,
+        selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.selloSAT,
+        selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
+        satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
+        certificateNumber: issuerCert || currentDetails.certificateNumber,
+        certDate: invoiceData.stamp?.date || currentDetails.certDate,
+        verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl
       };
 
       const { error: updateError } = await supabase
