@@ -659,8 +659,16 @@ function InvoicingContent() {
     const handlePremiumDownload = async (invoice: any) => {
         const toastId = toast.loading("Generando PDF Premium...");
         try {
-            // [FIX] Inject Dynamic Logo
-            const pdfData = { ...invoice, logoUrl: organizationLogo };
+            // [FIX] Flatten details for PDF Generator (InvoiceDocument expects flat props like Modal output)
+            const pdfData = {
+                ...invoice,
+                ...(invoice.details || {}), // Flatten details
+                logoUrl: organizationLogo,
+                // Ensure critical numerical values are passed if missing in details
+                total: invoice.total,
+                subtotal: invoice.details?.subtotal || (invoice.total / 1.16),
+                iva: invoice.details?.iva || (invoice.total - (invoice.total / 1.16))
+            };
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -684,13 +692,20 @@ function InvoicingContent() {
     const handlePremiumPrint = async (invoice: any) => {
         const toastId = toast.loading("Preparando documento...");
         try {
-            // [FIX] Inject Dynamic Logo
-            const pdfData = { ...invoice, logoUrl: organizationLogo };
+            // [FIX] Flatten details for PDF Generator
+            const pdfData = {
+                ...invoice,
+                ...(invoice.details || {}), // Flatten details
+                logoUrl: organizationLogo,
+                // Ensure critical numerical values are passed
+                total: invoice.total,
+                subtotal: invoice.details?.subtotal || (invoice.total / 1.16),
+                iva: invoice.details?.iva || (invoice.total - (invoice.total / 1.16))
+            };
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
             const url = URL.createObjectURL(blob);
 
             // [FIX] Open in New Tab for true "Preview" before printing
-            // This leverages the browser's native PDF viewer which has the best Print UX
             window.open(url, '_blank');
 
             // Cleanup after a delay (enough time for browser to load)
@@ -719,8 +734,15 @@ function InvoicingContent() {
             const replyTo = user?.email || '';
             const senderName = user?.user_metadata?.full_name || user?.user_metadata?.name || 'Dr. Usuario';
 
-            // [FIX] Generate PDF Blob on Client
-            const pdfData = { ...invoice, logoUrl: organizationLogo };
+            // [FIX] Generate PDF Blob on Client with Flattened Data
+            const pdfData = {
+                ...invoice,
+                ...(invoice.details || {}),
+                logoUrl: organizationLogo,
+                total: invoice.total,
+                subtotal: invoice.details?.subtotal || (invoice.total / 1.16),
+                iva: invoice.details?.iva || (invoice.total - (invoice.total / 1.16))
+            };
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
 
             // Convert to Base64
