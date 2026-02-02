@@ -381,8 +381,8 @@ export const satService = {
             });
             if (xmlRes.ok) {
               const xmlText = await xmlRes.text();
-              // [FIX] Robust Regex for NoCertificado (handles single/double quotes)
-              const match = xmlText.match(/NoCertificado=["']([^"']+)["']/);
+              // [FIX] Robust Regex for NoCertificado (handles single/double quotes and spaces)
+              const match = xmlText.match(/NoCertificado\s*=\s*["']([^"']+)["']/);
               if (match) {
                 issuerCert = match[1];
                 console.log("Recovered Issuer Cert from XML:", issuerCert);
