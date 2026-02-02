@@ -257,7 +257,7 @@ function InvoicingContent() {
 
                 // Process Real Invoices
                 const dbInvoices = txs
-                    .filter((t: any) => t.has_invoice === true)
+                    .filter((t: any) => t.has_invoice === true && t.category !== 'Factura Cancelada / Oculto')
                     .map((t: any) => ({
                         id: t.id,
                         folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`, // Preferred Folio Source
@@ -282,8 +282,8 @@ function InvoicingContent() {
                         details: {
                             ...t.details,
                             // [FIX] Ensure Original Chain is mapped (Check all possible variants)
-                            originalChain: t.details?.original_chain || t.details?.originalChain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                            certificateNumber: t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
+                            originalChain: t.details?.fullResponse?.original_chain || t.details?.fullResponse?.original_string || t.details?.originalChain || t.details?.original_chain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
+                            certificateNumber: t.details?.fullResponse?.certificate_number || t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
                             expeditionPlace: t.details?.expedition_place || t.details?.expeditionPlace || '67510',
                             certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
                             // Ensure description is also in details for table
@@ -557,48 +557,42 @@ function InvoicingContent() {
             // 3. Save to DB
             await supabaseService.createInvoice(data, stamped);
 
-            // 4. Update UI
-            // Reload Invoices
-            const txs = await supabaseService.getTransactions();
+            // 5. Refresh UI
+            // Reuse loadDocs logic for consistency
+            const updatedTxs = await supabaseService.getTransactions();
 
-            const realInvoices = txs
+            const mapTransactionToInvoice = (t: any) => ({
+                id: t.id,
+                folio: t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`,
+                date: new Date((t.details?.date || (t.date.includes('T') ? t.date : t.date + 'T12:00:00'))).toLocaleDateString('es-MX', {
+                    day: '2-digit', month: '2-digit', year: 'numeric'
+                }),
+                rawDate: typeof t.details?.date === 'object' ? new Date().toISOString() : (t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`)),
+                client: typeof t.details?.client === 'string' && t.details.client.length > 1 ? t.details.client : (typeof (t.description.split(' - ')[0]) === 'string' ? t.description.split(' - ')[0] : 'Cliente'),
+                rfc: typeof t.details?.rfc === 'object' ? 'XAXX010101000' : (String(t.details?.rfc || '')),
+                total: typeof t.amount === 'number' ? t.amount : 0,
+                status: (t.details?.status === 'cancelled') ? 'cancelled' : (t.payment_received ? 'paid' : 'pending'),
+                uuid: typeof t.details?.uuid === 'object' ? '' : (String(t.details?.uuid || '')),
+                sent: false,
+                xml: typeof t.details?.xml === 'object' ? '' : (t.details?.xml || ''),
+                details: {
+                    ...t.details,
+                    originalChain: t.details?.fullResponse?.original_chain || t.details?.fullResponse?.original_string || t.details?.originalChain || t.details?.original_chain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
+                    certificateNumber: t.details?.fullResponse?.certificate_number || t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
+                    expeditionPlace: typeof (t.details?.expedition_place || t.details?.expeditionPlace) === 'object' ? '67510' : (t.details?.expedition_place || t.details?.expeditionPlace || '67510'),
+                    certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
+                    selloCFDI: t.details?.fullResponse?.stamp?.sello_cfdi || t.details?.selloCFDI || t.details?.sello_cfdi || '',
+                    selloSAT: t.details?.fullResponse?.stamp?.sello_sat || t.details?.selloSAT || t.details?.sello_sat || '',
+                    satCertificateNumber: t.details?.fullResponse?.stamp?.sat_cert_number || t.details?.satCertificateNumber || t.details?.sat_cert_number || '',
+                    verificationUrl: t.details?.verificationUrl || t.details?.verification_url,
+                    description: typeof (t.details?.description || t.description) === 'object' ? 'Descripción inválida' : (t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)))
+                }
+            });
+
+            // Replicated Filter logic from loadDocs
+            const realInvoices = updatedTxs
                 .filter((t: any) => t.has_invoice === true && t.category !== 'Factura Cancelada / Oculto')
-                .map((t: any) => ({
-                    id: t.id,
-                    // [FIX] Use Emission Date
-                    date: new Date((t.details?.date || (t.date.includes('T') ? t.date : t.date + 'T12:00:00'))).toLocaleDateString('es-MX', {
-                        day: '2-digit', month: '2-digit', year: 'numeric'
-                    }),
-                    // [FIX] Raw Date for Preview (Timezone Safe)
-                    rawDate: typeof t.details?.date === 'object' ? new Date().toISOString() : (t.details?.date || (t.date.includes('T') ? t.date : `${t.date}T12:00:00`)),
-                    // [SAFETY] Prioritize explicit details.client, fallback to description split
-                    client: typeof t.details?.client === 'string' && t.details.client.length > 1 ? t.details.client : (typeof (t.description.split(' - ')[0]) === 'string' ? t.description.split(' - ')[0] : 'Cliente'),
-                    rfc: typeof t.details?.rfc === 'object' ? 'XAXX010101000' : (String(t.details?.rfc || '')),
-                    folio: typeof (t.invoice_number || t.details?.folio) === 'object' ? 'ERR-OBJ' : (String(t.invoice_number || t.details?.folio || `F-${new Date(t.date).getFullYear()}${t.id.toString().slice(-3)}`)),
-
-                    // [SAFETY] Force Number
-                    total: typeof t.amount === 'number' ? t.amount : 0,
-
-                    status: t.payment_received ? 'paid' : 'pending',
-                    uuid: typeof t.details?.uuid === 'object' ? '' : (String(t.details?.uuid || '')),
-                    sent: false,
-                    xml: typeof t.details?.xml === 'object' ? '' : (t.details?.xml || ''),
-                    details: {
-                        ...t.details,
-                        // [FIX] Ensure Original Chain is mapped (Check all possible variants)
-                        originalChain: t.details?.fullResponse?.original_chain || t.details?.fullResponse?.original_string || t.details?.originalChain || t.details?.original_chain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                        certificateNumber: t.details?.fullResponse?.certificate_number || t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
-                        expeditionPlace: typeof (t.details?.expedition_place || t.details?.expeditionPlace) === 'object' ? '67510' : (t.details?.expedition_place || t.details?.expeditionPlace || '67510'),
-                        certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
-                        // [FIX] Explicit Mapping for Sello and Chain
-                        selloCFDI: t.details?.fullResponse?.stamp?.sello_cfdi || t.details?.selloCFDI || t.details?.sello_cfdi || '',
-                        selloSAT: t.details?.fullResponse?.stamp?.sello_sat || t.details?.selloSAT || t.details?.sello_sat || '',
-                        satCertificateNumber: t.details?.fullResponse?.stamp?.sat_cert_number || t.details?.satCertificateNumber || t.details?.sat_cert_number || '',
-                        verificationUrl: t.details?.verificationUrl || t.details?.verification_url,
-                        // Description Fix & Safety
-                        description: typeof (t.details?.description || t.description) === 'object' ? 'Descripción inválida' : (t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)))
-                    }
-                }));
+                .map(mapTransactionToInvoice);
 
             setInvoices(realInvoices);
 
