@@ -317,6 +317,32 @@ export const satService = {
 
       console.log("Fetched Fresh Data:", invoiceData);
 
+      // [FIX] XML Fallback for Missing Certificate
+      let issuerCert = invoiceData.certificate_number;
+      if (!issuerCert) {
+        console.log("Issuer Certificate missing in JSON. Attempting XML fetch...");
+        try {
+          // Call refined Proxy for XML
+          const { data: { session } } = await supabase.auth.getSession();
+          const token = session?.access_token;
+          if (token) {
+            const xmlRes = await fetch(`/api/sat/invoice-xml?id=${facturapiId}`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (xmlRes.ok) {
+              const xmlText = await xmlRes.text();
+              const match = xmlText.match(/NoCertificado="(\d+)"/);
+              if (match) {
+                issuerCert = match[1];
+                console.log("Recovered Issuer Cert from XML:", issuerCert);
+              }
+            }
+          }
+        } catch (err) {
+          console.warn("Failed to recover cert from XML:", err);
+        }
+      }
+
       // Now Update Supabase
       const { data: tx, error: fetchError } = await supabase
         .from('transactions')
@@ -335,7 +361,7 @@ export const satService = {
         selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || currentDetails.selloSAT,
         selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
         satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
-        certificateNumber: invoiceData.certificate_number || currentDetails.certificateNumber,
+        certificateNumber: issuerCert || currentDetails.certificateNumber,
         certDate: invoiceData.stamp?.date || currentDetails.certDate,
         verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl,
         uuid: invoiceData.uuid || currentDetails.uuid
