@@ -273,7 +273,7 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
         name: 'ROGERIO MARTINS BAIA',
         rfc: 'MABR750116P78',
         regime: '626 Régimen Simplificado de Confianza',
-        addressLine1: 'MATAMOROS 514',
+        addressLine1: 'MATAMOROS 514, MATAMOROS',
         addressLine2: 'MONTEMORELOS, NUEVO LEÓN, MÉXICO.',
         contact: 'Tel: 81 20227181 | C.P. 67510'
     };
@@ -319,32 +319,17 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
 
                 {/* Grids */}
                 <View style={styles.gridContainer}>
-                    {/* Left Column */}
+                    {/* Left Column - Recipient Data Stacked */}
                     <View style={styles.columnLeft}>
-                        {/* Centered Title */}
-                        <View style={[styles.sectionHeader, { alignItems: 'center' }]}>
+                        <View style={styles.sectionHeader}>
                             <Text style={styles.sectionTitle}>Datos del Receptor</Text>
                         </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Razón Social:</Text>
-                            {/* Bold Name */}
-                            <Text style={[styles.value, { fontWeight: 'bold' }]}>{data.client || '---'}</Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>RFC:</Text>
-                            <Text style={styles.value}>{data.rfc || '---'}</Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Régimen:</Text>
-                            <Text style={[styles.value, { fontSize: 7 }]}>{getRegimeDesc(details?.fiscalRegime)}</Text>
-                        </View>
-                        <View style={styles.row}>
-                            <Text style={styles.label}>Uso CFDI:</Text>
-                            <Text style={styles.value}>{getUseDesc(details?.cfdiUse)}</Text>
-                        </View>
-                        <View style={{ ...styles.row, borderBottomWidth: 0 }}>
-                            <Text style={styles.label}>C.P.:</Text>
-                            <Text style={styles.value}>{details?.address?.zip || details?.zip || '---'}</Text>
+                        <View style={{ padding: 8 }}>
+                            <Text style={{ fontSize: 9, fontWeight: 'bold', color: '#1e293b', marginBottom: 2 }}>{data.client || '---'}</Text>
+                            <Text style={{ fontSize: 8, color: '#334155', marginBottom: 2 }}>{data.rfc || '---'}</Text>
+                            <Text style={{ fontSize: 8, color: '#334155', marginBottom: 2 }}>{getRegimeDesc(details?.fiscalRegime)}</Text>
+                            <Text style={{ fontSize: 8, color: '#334155', marginBottom: 2 }}>{getUseDesc(details?.cfdiUse)}</Text>
+                            <Text style={{ fontSize: 8, color: '#334155', marginBottom: 2 }}>{details?.address?.zip || details?.zip || '---'}</Text>
                         </View>
                     </View>
 
