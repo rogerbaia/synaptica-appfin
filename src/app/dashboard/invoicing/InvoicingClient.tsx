@@ -756,8 +756,11 @@ function InvoicingContent() {
             // [FIX] DIRECT PRINT via Invisible Iframe (Improved UX)
             const iframe = document.createElement('iframe');
             iframe.style.position = 'fixed';
-            iframe.style.width = '0px';
-            iframe.style.height = '0px';
+            // Give it dimensions so browser can render the Preview in the Dialog
+            iframe.style.left = '-10000px';
+            iframe.style.top = '0px';
+            iframe.style.width = '1000px';
+            iframe.style.height = '1000px';
             iframe.style.border = 'none';
             iframe.src = url;
             document.body.appendChild(iframe);
