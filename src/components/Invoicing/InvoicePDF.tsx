@@ -284,10 +284,8 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
 
     // Resolve Logo URL
     // CAUTION: Image src in @react-pdf must be absolute URL or base64. Relative paths like '/logo.png' fail in some envs.
-    // We will assume window.location.origin is available if running client side, but we must be careful.
-    // For safety, we can try to pass the full URL or handle it in the parent. 
-    // Here we'll try a relative path and see if it works, otherwise we might need a prop.
-    const logoUrl = typeof window !== 'undefined' ? `${window.location.origin}/logo-synaptica.png` : '/logo-synaptica.png';
+    // [NEW] Use dynamic logo if provided, otherwise fallback to app logo
+    const logoUrl = data.logoUrl || (typeof window !== 'undefined' ? `${window.location.origin}/logo-synaptica.png` : '/logo-synaptica.png');
 
     return (
         <Document>

@@ -200,8 +200,9 @@ export async function POST(req: NextRequest) {
 
         // 3. Step 3: Logo Upload (if provided)
         const logo = formData.get('logo');
-        if (logo) {
+        if (logo && logo instanceof Blob) {
             try {
+                // A. Upload to Facturapi
                 const logoFormData = new FormData();
                 logoFormData.append('logo', logo);
                 await fetch(`https://www.facturapi.io/v2/organizations/${orgId}/logo`, {
@@ -209,8 +210,55 @@ export async function POST(req: NextRequest) {
                     headers: { 'Authorization': authHeaderFacturapi },
                     body: logoFormData
                 });
+
+                // B. Upload to Supabase Storage (For Custom PDF)
+                const storageClient = SERVICE_ROLE_KEY
+                    ? createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
+                    : supabase;
+
+                // Ensure bucket exists (idempotent-ish)
+                await storageClient.storage.createBucket('organization-assets', { public: true }).catch(() => { });
+
+                const fileName = `logos/${orgId}.png`; // Keep generic name to overwrite
+                const arrayBuffer = await logo.arrayBuffer();
+                const fileBuffer = Buffer.from(arrayBuffer);
+
+                const { error: uploadError } = await storageClient
+                    .storage
+                    .from('organization-assets')
+                    .upload(fileName, fileBuffer, {
+                        contentType: 'image/png',
+                        upsert: true
+                    });
+
+                if (!uploadError) {
+                    const { data: { publicUrl } } = storageClient
+                        .storage
+                        .from('organization-assets')
+                        .getPublicUrl(fileName);
+
+                    console.log("✅ Logo uploaded to Storage:", publicUrl);
+
+                    // Update User Metadata with Logo URL
+                    if (SERVICE_ROLE_KEY) {
+                        const adminAuth = createClient(SUPABASE_URL, SERVICE_ROLE_KEY).auth;
+                        await adminAuth.admin.updateUserById(user.id, {
+                            user_metadata: {
+                                ...user.user_metadata,
+                                facturapi_logo_url: publicUrl // [NEW] Saved URL
+                            }
+                        });
+                    } else {
+                        await supabase.auth.updateUser({
+                            data: { facturapi_logo_url: publicUrl }
+                        });
+                    }
+                } else {
+                    console.warn("Storage Upload Error:", uploadError);
+                }
+
             } catch (e) {
-                console.warn("Logo upload failed silently", e);
+                console.warn("Logo upload failed", e);
             }
         }
 

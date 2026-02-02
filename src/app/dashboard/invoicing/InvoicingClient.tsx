@@ -74,8 +74,10 @@ function InvoicingContent() {
     const [invoices, setInvoices] = useState(INITIAL_INVOICES);
 
     const [paymentModalInvoice, setPaymentModalInvoice] = useState<any>(null);
-    const [refreshTrigger, setRefreshTrigger] = useState(0); // [NEW] Refresh Trigger
-
+    const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [stats, setStats] = useState({ issued: 0, amount: 0 });
+    // [NEW] Dynamic Logo State
+    const [organizationLogo, setOrganizationLogo] = useState<string | null>(null);
     useEffect(() => {
         // Find the main scrollable container and scroll to top
         const main = document.querySelector('main');
@@ -306,6 +308,14 @@ function InvoicingContent() {
 
         if (activeTab === 'drafts' || activeTab === 'issued' || activeTab === 'cancelled') {
             loadDocs();
+
+            // [NEW] Fetch Organization Logo
+            supabaseService.getCurrentUser().then(user => {
+                if (user?.user_metadata?.facturapi_logo_url) {
+                    setOrganizationLogo(user.user_metadata.facturapi_logo_url);
+                }
+            });
+
         }
     }, [activeTab, refreshTrigger]);
 
@@ -649,7 +659,9 @@ function InvoicingContent() {
     const handlePremiumDownload = async (invoice: any) => {
         const toastId = toast.loading("Generando PDF Premium...");
         try {
-            const blob = await pdf(<InvoiceDocument data={invoice} />).toBlob();
+            // [FIX] Inject Dynamic Logo
+            const pdfData = { ...invoice, logoUrl: organizationLogo };
+            const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
@@ -785,7 +797,7 @@ function InvoicingContent() {
 
             <InvoicePreview
                 isOpen={!!previewInvoice}
-                data={previewInvoice}
+                data={previewInvoice ? { ...previewInvoice, logoUrl: organizationLogo } : null}
                 onClose={() => setPreviewInvoice(null)}
                 onAction={async (action) => {
                     if (action === 'download') {

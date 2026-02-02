@@ -199,7 +199,11 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                             <div className="w-1/3 pt-2">
                                 {/* Logo Area */}
                                 <div className="flex flex-col items-center justify-center p-2 rounded-lg bg-white h-28 w-40">
-                                    <img src="/logo-synaptica.png" alt="Synaptica Logo" className="max-w-full max-h-full object-contain" />
+                                    <img
+                                        src={data.logoUrl || "/logo-synaptica.png"}
+                                        alt="Logo"
+                                        className="max-w-full max-h-full object-contain"
+                                    />
                                 </div>
                             </div>
 
