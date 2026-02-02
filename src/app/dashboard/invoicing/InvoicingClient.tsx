@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from 'react';
+import { pdf } from '@react-pdf/renderer';
+import { InvoiceDocument } from '@/components/Invoicing/InvoicePDF';
 import { toast } from 'sonner';
 import { useConfirm } from '@/context/ConfirmContext';
 import ReactECharts from 'echarts-for-react';
@@ -644,6 +646,29 @@ function InvoicingContent() {
         }
     };
 
+    const handlePremiumDownload = async (invoice: any) => {
+        const toastId = toast.loading("Generando PDF Premium...");
+        try {
+            const blob = await pdf(<InvoiceDocument data={invoice} />).toBlob();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const filename = `Factura_${invoice.folio || 'CFDI'}_${invoice.uuid?.slice(0, 8) || 'PRE'}.pdf`;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            URL.revokeObjectURL(url);
+
+            toast.dismiss(toastId);
+            toast.success("PDF generado exitosamente");
+        } catch (e: any) {
+            console.error("PDF generation error:", e);
+            toast.dismiss(toastId);
+            toast.error("Error al generar PDF: " + e.message, { id: toastId });
+        }
+    };
+
     const sendEmail = async (invoice: any) => {
         // 1. Get Email
         const email = prompt("Ingrese el correo del cliente para enviar la factura:", "cliente@ejemplo.com");
@@ -764,17 +789,7 @@ function InvoicingContent() {
                 onClose={() => setPreviewInvoice(null)}
                 onAction={async (action) => {
                     if (action === 'download') {
-                        const toastId = toast.loading("Descargando PDF...");
-                        try {
-                            const satService = await import('@/services/satService').then(m => m.satService);
-                            const id = previewInvoice.details?.id || previewInvoice.id;
-                            await satService.downloadPDF(id, previewInvoice.folio);
-                            toast.dismiss(toastId);
-                            toast.success("PDF Descargado");
-                        } catch (e: any) {
-                            console.error(e);
-                            toast.error("Error: " + e.message, { id: toastId });
-                        }
+                        handlePremiumDownload(previewInvoice);
                     } else if (action === 'print') {
                         window.print();
                     } else if (action === 'cancel') {
@@ -836,16 +851,7 @@ function InvoicingContent() {
                 onDownload={async () => {
                     const inv = invoices.find(i => i.uuid === successModalData?.uuid);
                     if (inv) {
-                        const toastId = toast.loading("Descargando PDF...");
-                        try {
-                            const satService = await import('@/services/satService').then(m => m.satService);
-                            const id = inv.details?.id || inv.id;
-                            await satService.downloadPDF(id, inv.folio);
-                            toast.dismiss(toastId);
-                            toast.success("PDF Descargado");
-                        } catch (e: any) {
-                            toast.error("Error: " + e.message, { id: toastId });
-                        }
+                        handlePremiumDownload(inv);
                     }
                 }}
                 onEmail={() => {
