@@ -762,8 +762,8 @@ function InvoicingContent() {
             iframe.style.width = '100vw';
             iframe.style.height = '100vh';
             iframe.style.border = 'none';
-            iframe.style.zIndex = '-9999';
-            iframe.style.opacity = '0.001'; // Critical: Must be slightly visible for preview gen
+            iframe.style.zIndex = '9999';
+            iframe.style.backgroundColor = '#ffffff';
             iframe.src = url;
             document.body.appendChild(iframe);
 
@@ -775,11 +775,10 @@ function InvoicingContent() {
                     iframe.contentWindow?.print();
                     toast.dismiss(toastId);
 
-                    // Cleanup after print dialog usage (give user time)
-                    setTimeout(() => {
-                        document.body.removeChild(iframe);
-                        URL.revokeObjectURL(url);
-                    }, 60000);
+                    // Cleanup immediately
+                    toast.dismiss(toastId);
+                    document.body.removeChild(iframe);
+                    URL.revokeObjectURL(url);
                 }, 1000); // 1s delay for full render
             };
 
