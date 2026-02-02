@@ -151,6 +151,7 @@ const styles = StyleSheet.create({
         padding: 5,
         alignItems: 'flex-start'
     },
+    tableText: { fontSize: 7, color: '#334155' },
     // Column Widths
     wQty: { width: '8%', textAlign: 'center' },
     wUnit: { width: '12%' },
@@ -238,12 +239,15 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                 <View style={styles.headerContainer}>
                     {/* Logo */}
                     <View style={styles.headerLeft}>
-                        {hasLogo ? (
+                        {/* 
+                         [DEBUG] Image Disabled to prevent Print Crash.
+                         If this works, we know the issue is the Image network fetch.
+                        */}
+                        {/* {hasLogo ? (
                             <Image src={logoUrl} style={styles.logoImage} />
-                        ) : (
-                            // Fallback visual if no logo
-                            <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#cbd5e1' }}>SYNAPTICA</Text>
-                        )}
+                        ) : ( */}
+                        <Text style={{ fontSize: 14, fontWeight: 'bold', color: '#cbd5e1' }}>SYNAPTICA</Text>
+                        {/* )} */}
                     </View>
 
                     {/* Issuer */}
