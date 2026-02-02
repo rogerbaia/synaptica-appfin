@@ -383,8 +383,8 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         </div>
 
                         {/* Amount in Letters & Layout */}
-                        <div className="flex flex-col md:flex-row gap-8 items-start">
-                            <div className="flex-1 space-y-4">
+                        <div className="flex flex-col md:flex-row gap-8 items-stretch">
+                            <div className="flex-1 flex flex-col justify-end space-y-4">
 
 
                                 <div className="p-3 bg-slate-50 rounded-lg border border-slate-100">
