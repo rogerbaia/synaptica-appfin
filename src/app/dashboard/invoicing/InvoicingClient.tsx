@@ -740,6 +740,11 @@ function InvoicingContent() {
 
         const toastId = toast.loading("Generando PDF Premium...");
         try {
+            // [NEW] Get Current User for Reply-To
+            const user = await supabaseService.getCurrentUser();
+            const replyTo = user?.email || '';
+            const senderName = user?.user_metadata?.full_name || user?.user_metadata?.name || 'Dr. Usuario';
+
             // [FIX] Generate PDF Blob on Client
             const pdfData = { ...invoice, logoUrl: organizationLogo };
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
@@ -759,7 +764,9 @@ function InvoicingContent() {
                         invoiceId: invoice.uuid || invoice.details?.id || invoice.id,
                         email,
                         pdfBase64: base64data,
-                        filename: `Factura_${invoice.folio || 'CFDI'}.pdf`
+                        filename: `Factura_${invoice.folio || 'CFDI'}.pdf`,
+                        replyTo,      // [NEW]
+                        senderName    // [NEW]
                     })
                 });
 
