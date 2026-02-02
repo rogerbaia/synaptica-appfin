@@ -682,46 +682,20 @@ function InvoicingContent() {
     };
 
     const handlePremiumPrint = async (invoice: any) => {
-        const toastId = toast.loading("Preparando impresión...");
+        const toastId = toast.loading("Preparando documento...");
         try {
             // [FIX] Inject Dynamic Logo
             const pdfData = { ...invoice, logoUrl: organizationLogo };
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
             const url = URL.createObjectURL(blob);
 
-            // Create an invisible iframe
-            const iframe = document.createElement('iframe');
-            iframe.style.position = 'fixed';
-            iframe.style.right = '0';
-            iframe.style.bottom = '0';
-            iframe.style.width = '0';
-            iframe.style.height = '0';
-            iframe.style.border = '0';
-            iframe.src = url;
+            // [FIX] Open in New Tab for true "Preview" before printing
+            // This leverages the browser's native PDF viewer which has the best Print UX
+            window.open(url, '_blank');
 
-            // Add to document
-            document.body.appendChild(iframe);
-
-            // Wait for load then print
-            iframe.onload = () => {
-                setTimeout(() => {
-                    try {
-                        iframe.contentWindow?.focus();
-                        iframe.contentWindow?.print();
-                    } catch (e) {
-                        console.error("Print frame error", e);
-                        // Fallback
-                        window.open(url, '_blank');
-                    }
-                }, 500);
-            };
-
-            // Cleanup logic
+            // Cleanup after a delay (enough time for browser to load)
             setTimeout(() => {
-                try {
-                    document.body.removeChild(iframe);
-                    URL.revokeObjectURL(url);
-                } catch (e) { }
+                URL.revokeObjectURL(url);
             }, 60000);
 
             toast.dismiss(toastId);
@@ -1262,7 +1236,12 @@ function InvoicingContent() {
 
                                                     <div className="flex gap-2 pl-2 border-l border-slate-200 dark:border-slate-700">
                                                         <button className="text-slate-400"><FileText size={18} /></button>
-                                                        <button className={inv.sent ? 'text-blue-500' : 'text-slate-300'}><Mail size={18} /></button>
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); sendEmail(inv); }}
+                                                            className={inv.sent ? 'text-blue-500' : 'text-slate-300'}
+                                                        >
+                                                            <Mail size={18} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
