@@ -419,7 +419,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.fullResponse?.original_chain || details?.fullResponse?.original_string || details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                                        {details?.complement_string || details?.originalChain || details?.fullResponse?.original_chain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -432,7 +432,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.fullResponse?.stamp?.sello_cfdi || details?.fullResponse?.stamp?.signature || details?.selloCFDI || '---'}
+                                                        {details?.signature || details?.selloCFDI || details?.fullResponse?.stamp?.sello_cfdi || '---'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -445,7 +445,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                                 </div>
                                                 <div className="bg-slate-50 p-2 border border-slate-100 rounded">
                                                     <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.fullResponse?.stamp?.sello_sat || details?.fullResponse?.stamp?.sat_seal || details?.selloSAT || '---'}
+                                                        {details?.sat_signature || details?.selloSAT || details?.fullResponse?.stamp?.sello_sat || '---'}
                                                     </p>
                                                 </div>
                                             </div>
@@ -454,7 +454,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                             <div className="grid grid-cols-2 gap-4 pt-2">
                                                 <div>
                                                     <p className="font-bold text-slate-500 text-[9px] uppercase">No. de Serie del Certificado del SAT</p>
-                                                    <p className="font-mono text-slate-800 text-[10px]">{details?.fullResponse?.stamp?.sat_cert_number || details?.satCertificateNumber || '---'}</p>
+                                                    <p className="font-mono text-slate-800 text-[10px]">{details?.sat_cert_number || details?.satCertificateNumber || details?.fullResponse?.stamp?.sat_cert_number || '---'}</p>
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-slate-500 text-[9px] uppercase">Fecha y Hora de Certificación</p>

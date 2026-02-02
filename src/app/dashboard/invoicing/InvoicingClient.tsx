@@ -281,11 +281,15 @@ function InvoicingContent() {
                         xml: t.details?.xml || '',
                         details: {
                             ...t.details,
-                            // [FIX] Ensure Original Chain is mapped (Check all possible variants)
-                            originalChain: t.details?.fullResponse?.original_chain || t.details?.fullResponse?.original_string || t.details?.originalChain || t.details?.original_chain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                            certificateNumber: t.details?.fullResponse?.certificate_number || t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
+                            // [REF] Prioritize Facturapi snake_case keys (DB) -> CamelCase (UI Prop)
+                            originalChain: t.details?.complement_string || t.details?.original_chain || t.details?.fullResponse?.original_chain || t.details?.originalChain || '|| CADENA NO DISPONIBLE ||',
+                            certificateNumber: t.details?.certificate_number || t.details?.fullResponse?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
                             expeditionPlace: t.details?.expedition_place || t.details?.expeditionPlace || '67510',
-                            certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
+                            certDate: t.details?.cert_date || t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
+                            selloCFDI: t.details?.signature || t.details?.sello_cfdi || t.details?.fullResponse?.stamp?.sello_cfdi || t.details?.selloCFDI || '',
+                            selloSAT: t.details?.sat_signature || t.details?.sello_sat || t.details?.fullResponse?.stamp?.sello_sat || t.details?.selloSAT || '',
+                            satCertificateNumber: t.details?.sat_cert_number || t.details?.fullResponse?.stamp?.sat_cert_number || t.details?.satCertificateNumber || '',
+                            verificationUrl: t.details?.verification_url || t.details?.verificationUrl,
                             // Ensure description is also in details for table
                             description: t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description))
                         },
@@ -577,14 +581,16 @@ function InvoicingContent() {
                 xml: typeof t.details?.xml === 'object' ? '' : (t.details?.xml || ''),
                 details: {
                     ...t.details,
-                    originalChain: t.details?.fullResponse?.original_chain || t.details?.fullResponse?.original_string || t.details?.originalChain || t.details?.original_chain || t.details?.original_string || '|| CADENA NO DISPONIBLE ||',
-                    certificateNumber: t.details?.fullResponse?.certificate_number || t.details?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
+                    // [REF] Prioritize Facturapi snake_case keys (DB) -> CamelCase (UI Prop)
+                    // We support both for backward compatibility
+                    originalChain: t.details?.complement_string || t.details?.original_chain || t.details?.fullResponse?.original_chain || t.details?.originalChain || '|| CADENA NO DISPONIBLE ||',
+                    certificateNumber: t.details?.certificate_number || t.details?.fullResponse?.certificate_number || t.details?.certificateNumber || '30001000000500003421',
                     expeditionPlace: typeof (t.details?.expedition_place || t.details?.expeditionPlace) === 'object' ? '67510' : (t.details?.expedition_place || t.details?.expeditionPlace || '67510'),
-                    certDate: t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
-                    selloCFDI: t.details?.fullResponse?.stamp?.sello_cfdi || t.details?.selloCFDI || t.details?.sello_cfdi || '',
-                    selloSAT: t.details?.fullResponse?.stamp?.sello_sat || t.details?.selloSAT || t.details?.sello_sat || '',
-                    satCertificateNumber: t.details?.fullResponse?.stamp?.sat_cert_number || t.details?.satCertificateNumber || t.details?.sat_cert_number || '',
-                    verificationUrl: t.details?.verificationUrl || t.details?.verification_url,
+                    certDate: t.details?.cert_date || t.details?.certDate || t.details?.stamp?.date || t.details?.date || new Date().toISOString(),
+                    selloCFDI: t.details?.signature || t.details?.sello_cfdi || t.details?.fullResponse?.stamp?.sello_cfdi || t.details?.selloCFDI || '',
+                    selloSAT: t.details?.sat_signature || t.details?.sello_sat || t.details?.fullResponse?.stamp?.sello_sat || t.details?.selloSAT || '',
+                    satCertificateNumber: t.details?.sat_cert_number || t.details?.fullResponse?.stamp?.sat_cert_number || t.details?.satCertificateNumber || '',
+                    verificationUrl: t.details?.verification_url || t.details?.verificationUrl,
                     description: typeof (t.details?.description || t.description) === 'object' ? 'Descripción inválida' : (t.details?.description || (t.description.includes(' - ') && t.description.split(' - ')[1].trim() ? t.description.split(' - ')[1].trim() : (t.description.includes(' - ') ? 'Honorarios Médicos' : t.description)))
                 }
             });

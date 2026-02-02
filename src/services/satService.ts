@@ -152,20 +152,61 @@ export const satService = {
     // [FIX] Map Facturapi Response to StampedInvoice Interface
     const stampData = json.stamp || {};
 
+    // [CRITICAL FIX] Attempt to get Issuer Certificate from XML if missing in JSON
+    // Facturapi V4 often omits this in the JSON response
+    let issuerCert = json.certificate_number || json.att_certificate_number || json.cert_number;
+
+    if (!issuerCert && json.id) {
+      console.log("[stampInvoice] Issuer Certificate missing. Fetching XML to extract...");
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const apiToken = session?.access_token; // Rename to avoid conflict if any
+        if (apiToken) {
+          const xmlRes = await fetch(`/api/sat/invoice-xml?id=${json.id}`, {
+            headers: { 'Authorization': `Bearer ${apiToken}` }
+          });
+          if (xmlRes.ok) {
+            const xmlText = await xmlRes.text();
+            // Look for NoCertificado attribute in the first few lines to avoid performance hit
+            const match = xmlText.match(/NoCertificado="(\d+)"/);
+            if (match) {
+              issuerCert = match[1];
+              console.log("[stampInvoice] Recovered Issuer Cert:", issuerCert);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("[stampInvoice] Failed to extract cert from XML:", e);
+      }
+    }
+
     return {
-      id: json.id, // [NEW] Return Facturapi ID
+      id: json.id,
       uuid: json.uuid,
       folio: json.folio_number ? `${json.series || ''}${json.folio_number}` : '',
       date: json.date || new Date().toISOString(),
-      selloSAT: stampData.sello_sat || stampData.sat_seal || '',
+
+      // [REF] Dual-Write: Snake_case for DB (Facturapi Standard)
+      sat_signature: stampData.sello_sat || stampData.sat_seal || stampData.sat_signature || '',
+      signature: stampData.sello_cfdi || stampData.signature || '',
+      certificate_number: issuerCert || '30001000000500003421',
+      sat_cert_number: stampData.sat_cert_number || '',
+      complement_string: json.original_chain || json.original_string || stampData.complement_string || '',
+      cert_date: stampData.date || new Date().toISOString(),
+
+      // [FIX] CamelCase Aliases for UI/Interface Compatibility
+      selloSAT: stampData.sello_sat || stampData.sat_seal || stampData.sat_signature || '',
       selloCFDI: stampData.sello_cfdi || stampData.signature || '',
-      certificateNumber: json.certificate_number || json.att_certificate_number || json.cert_number || '', // [FIX] Issuer CSD Certificate
-      satCertificateNumber: stampData.sat_cert_number || '', // [NEW] SAT Certificate
-      originalChain: json.original_chain || json.original_string || '',
-      certDate: stampData.date || new Date().toISOString(), // [FIX] Certification Date
+      certificateNumber: issuerCert || '30001000000500003421',
+      satCertificateNumber: stampData.sat_cert_number || '',
+      originalChain: json.original_chain || json.original_string || stampData.complement_string || '',
+      certDate: stampData.date || new Date().toISOString(),
+
+      verification_url: json.verification_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${json.uuid}&re=${json.issuer?.rfc || ''}&rr=${json.customer?.rfc || ''}&tt=${json.total}&fe=${(stampData.sello_cfdi || stampData.signature || '').slice(-8)}`,
       verificationUrl: json.verification_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${json.uuid}&re=${json.issuer?.rfc || ''}&rr=${json.customer?.rfc || ''}&tt=${json.total}&fe=${(stampData.sello_cfdi || stampData.signature || '').slice(-8)}`,
+
       xml: json.xml || '',
-      fullResponse: json // [NEW] Store complete raw response for absolute truth
+      fullResponse: { ...json, recoveredCert: issuerCert }
     };
   },
 
@@ -356,16 +397,14 @@ export const satService = {
       const newDetails = {
         ...currentDetails,
         fullResponse: invoiceData,
-        // Patch Helper Fields
-        // [FIX] Map 'complement_string' to originalChain (Facturapi specific)
-        originalChain: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.originalChain,
-        // [FIX] Map 'sat_signature' to selloSAT
-        selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.selloSAT,
-        selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
-        satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
-        certificateNumber: issuerCert || currentDetails.certificateNumber,
-        certDate: invoiceData.stamp?.date || currentDetails.certDate,
-        verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl,
+        // [REF] User requested Facturapi-native keys in Supabase
+        complement_string: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.complement_string || currentDetails.originalChain,
+        sat_signature: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.sat_signature || currentDetails.selloSAT,
+        signature: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.signature || currentDetails.selloCFDI,
+        sat_cert_number: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.sat_cert_number || currentDetails.satCertificateNumber,
+        certificate_number: issuerCert || currentDetails.certificate_number || currentDetails.certificateNumber,
+        cert_date: invoiceData.stamp?.date || currentDetails.cert_date || currentDetails.certDate,
+        verification_url: invoiceData.verification_url || currentDetails.verification_url || currentDetails.verificationUrl,
         uuid: invoiceData.uuid || currentDetails.uuid
       };
 
