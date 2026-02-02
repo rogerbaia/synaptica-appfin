@@ -4,14 +4,7 @@ import { SAT_PAYMENT_FORMS, PAYMENT_METHODS, SAT_CFDI_USES, FISCAL_REGIMES } fro
 import { numberToLetters } from '@/utils/numberToLetters';
 
 // Register Fonts (Standard Fonts for PDF)
-Font.register({
-    family: 'Helvetica',
-    fonts: [
-        { src: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica.ttf' }, // Fallback/Standard
-        { src: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica-Bold.ttf', fontWeight: 'bold' },
-        { src: 'https://cdn.jsdelivr.net/npm/@canvas-fonts/helvetica@1.0.4/Helvetica-Oblique.ttf', fontStyle: 'italic' }
-    ]
-});
+// Font.register removed to prevent loading errors. utilizing standard PDF fonts.
 
 const styles = StyleSheet.create({
     page: {
