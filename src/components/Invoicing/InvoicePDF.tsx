@@ -1,7 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { numberToLetters } from '@/utils/numberToLetters';
-import { SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
+import { SAT_CFDI_USES, FISCAL_REGIMES, SAT_PAYMENT_FORMS, PAYMENT_METHODS } from '@/data/satCatalogs';
 
 // Register standard fonts if needed, or use Helvetica by default
 // Font.register({ family: 'Roboto', src: '...' });
@@ -106,10 +106,11 @@ const styles = StyleSheet.create({
     },
     sectionHeader: {
         backgroundColor: '#f8fafc', // slate-50
-        padding: 5,
+        paddingVertical: 5,
+        paddingHorizontal: 8, // Match row padding
         borderBottomWidth: 1,
         borderBottomColor: '#e2e8f0',
-        alignItems: 'center',
+        alignItems: 'flex-start', // Left align title
     },
     sectionTitle: {
         fontSize: 9,
@@ -134,7 +135,7 @@ const styles = StyleSheet.create({
         width: '65%',
         fontSize: 8,
         color: '#1e293b', // slate-800
-        textAlign: 'right',
+        textAlign: 'left', // Changed from right to left per user request
     },
     tableHeader: {
         flexDirection: 'row',
@@ -238,6 +239,20 @@ const getUseDesc = (code: string) => {
     return found ? `${code} - ${found.name}` : code;
 };
 
+const getPaymentFormDesc = (code: string) => {
+    if (!code) return '03'; // Default to Transferencia
+    if (!SAT_PAYMENT_FORMS) return code;
+    const found = SAT_PAYMENT_FORMS.find((f: any) => f.code === code);
+    return found ? `${code} - ${found.name}` : code;
+};
+
+const getPaymentMethodDesc = (code: string) => {
+    if (!code) return 'PUE';
+    if (!PAYMENT_METHODS) return code;
+    const found = PAYMENT_METHODS.find((m: any) => m.code === code);
+    return found ? `${code} - ${found.name}` : code;
+};
+
 const formatDate = (dateString: string) => {
     if (!dateString) return '---';
     try {
@@ -338,6 +353,18 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                             <Text style={[styles.value, { fontSize: 6 }]}>{data.uuid || (isStamped ? '---' : 'NO DISPONIBLE')}</Text>
                         </View>
                         <View style={styles.row}>
+                            <Text style={styles.label}>Serie CSD Emisor:</Text>
+                            <Text style={styles.value}>{details?.certificateNumber || '---'}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Fecha/Hora Emisión:</Text>
+                            <Text style={styles.value}>{formatDate(data.rawDate || data.date)}</Text>
+                        </View>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Fecha/Hora Cert.:</Text>
+                            <Text style={styles.value}>{formatDate(details?.certDate)}</Text>
+                        </View>
+                        <View style={styles.row}>
                             <Text style={styles.label}>Tipo CFDI:</Text>
                             <Text style={styles.value}>I - Ingreso</Text>
                         </View>
@@ -345,13 +372,9 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                             <Text style={styles.label}>Versión:</Text>
                             <Text style={styles.value}>4.0</Text>
                         </View>
-                        <View style={styles.row}>
+                        <View style={{ ...styles.row, borderBottomWidth: 0 }}>
                             <Text style={styles.label}>Lugar Exp.:</Text>
                             <Text style={styles.value}>{details?.expeditionPlace || '67510'}</Text>
-                        </View>
-                        <View style={{ ...styles.row, borderBottomWidth: 0 }}>
-                            <Text style={styles.label}>Certificación:</Text>
-                            <Text style={styles.value}>{formatDate(details?.certDate)}</Text>
                         </View>
                     </View>
                 </View>
@@ -383,8 +406,8 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                         <Text style={{ fontSize: 9, color: '#334155' }}>*** {numberToLetters(data.total)} ***</Text>
 
                         <View style={{ marginTop: 10 }}>
-                            <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#64748b' }}>Forma de Pago: <Text style={{ fontWeight: 'normal' }}>{details?.paymentForm || '03'}</Text></Text>
-                            <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#64748b' }}>Método de Pago: <Text style={{ fontWeight: 'normal' }}>{details?.paymentMethod || 'PUE'}</Text></Text>
+                            <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#64748b' }}>Forma de Pago: <Text style={{ fontWeight: 'normal' }}>{getPaymentFormDesc(details?.paymentForm)}</Text></Text>
+                            <Text style={{ fontSize: 8, fontWeight: 'bold', color: '#64748b' }}>Método de Pago: <Text style={{ fontWeight: 'normal' }}>{getPaymentMethodDesc(details?.paymentMethod)}</Text></Text>
                         </View>
                     </View>
 
@@ -426,6 +449,19 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                                 <Text style={{ fontSize: 8, color: '#cbd5e1' }}>QR NO DISPONIBLE</Text>
                             </View>
                         )}
+                        {details?.verificationUrl ? (
+                            <Image
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(details.verificationUrl)}`}
+                                style={{ width: 100, height: 100 }}
+                            />
+                        ) : (
+                            <View style={{ width: 100, height: 100, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' }}>
+                                <Text style={{ fontSize: 8, color: '#cbd5e1' }}>QR NO DISPONIBLE</Text>
+                            </View>
+                        )}
+                        <Text style={{ fontSize: 6, color: '#64748b', marginTop: 4, textAlign: 'center' }}>
+                            Representación impresa de un CFDI 4.0
+                        </Text>
                     </View>
 
                     <View style={styles.sealsContainer}>
@@ -450,8 +486,15 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                             </Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 }}>
-                            <Text style={{ fontSize: 7, color: '#64748b' }}>No. de Serie del Certificado del SAT: <Text style={{ fontFamily: 'Helvetica-Bold' }}>{details?.satCertificateNumber || '---'}</Text></Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                            <View style={{ width: '48%' }}>
+                                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>No. de Serie del Certificado del SAT</Text>
+                                <Text style={{ fontSize: 7, fontFamily: 'Helvetica' }}>{details?.satCertificateNumber || '---'}</Text>
+                            </View>
+                            <View style={{ width: '48%' }}>
+                                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>Fecha y Hora de Certificación</Text>
+                                <Text style={{ fontSize: 7, fontFamily: 'Helvetica' }}>{formatDate(details?.certDate)}</Text>
+                            </View>
                         </View>
                     </View>
                 </View>
