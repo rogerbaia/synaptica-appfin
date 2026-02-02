@@ -41,6 +41,14 @@ export interface StampedInvoice {
   verificationUrl?: string; // [NEW] - URL for QR Code
   xml: string;
   fullResponse?: any; // [NEW] - Raw Facturapi Response
+  // [NEW] Legacy / Facturapi Aliases (optional to avoid breaking strict typing)
+  sat_signature?: string;
+  signature?: string;
+  certificate_number?: string;
+  sat_cert_number?: string;
+  complement_string?: string;
+  cert_date?: string;
+  verification_url?: string;
 }
 
 export const satService = {
@@ -352,8 +360,9 @@ export const satService = {
     try {
       const invoiceData = await this.getInvoice(facturapiId);
 
-      if (!invoiceData || invoiceData.error) {
-        throw new Error(invoiceData.error || 'Failed to fetch from Facturapi');
+      // [FIX] Check for 'message' property which indicates an error from our proxy or Facturapi
+      if (!invoiceData || invoiceData.error || invoiceData.message) {
+        throw new Error(invoiceData.error || invoiceData.message || 'Failed to fetch from Facturapi');
       }
 
       console.log("Fetched Fresh Data:", invoiceData);
@@ -430,6 +439,23 @@ export const satService = {
             console.log("Recovered SelloSAT from XML");
             // We can inject it into our "flattened" details
             invoiceData.stamp = { ...invoiceData.stamp, sello_sat: selloSatMatch[1] };
+          }
+
+          // [FIX] Fallback: Reconstruct Cadena Original from TFD XML if missing
+          if (!invoiceData.original_string && !invoiceData.original_chain && !invoiceData.stamp?.complement_string) {
+            console.log("Cadena Original missing. Reconstructing from XML...");
+            const version = xmlContent.match(/Version="([^"]+)"/)?.[1] || "1.1";
+            const uuid = xmlContent.match(/UUID="([^"]+)"/)?.[1];
+            const date = xmlContent.match(/FechaTimbrado="([^"]+)"/)?.[1];
+            const rfcProv = xmlContent.match(/RfcProvCertif="([^"]+)"/)?.[1];
+            const selloCfd = xmlContent.match(/SelloCFD="([^"]+)"/)?.[1];
+            const noCertSat = xmlContent.match(/NoCertificadoSAT="([^"]+)"/)?.[1];
+
+            if (uuid && date && rfcProv && selloCfd && noCertSat) {
+              const reconstructedChain = `||${version}|${uuid}|${date}|${rfcProv}|${selloCfd}|${noCertSat}||`;
+              console.log("Reconstructed Cadena Original:", reconstructedChain);
+              invoiceData.original_string = reconstructedChain; // Inject into Facturapi object
+            }
           }
         }
       }

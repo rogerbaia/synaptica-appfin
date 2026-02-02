@@ -6,7 +6,13 @@ const KEY_PART_1 = 'sk_live_';
 const KEY_PART_2 = 'N8NW3LtbUGBvmLZQd1LPDikpxUHyNUrBH61g5WU8Mq';
 const FALLBACK_KEY = KEY_PART_1 + KEY_PART_2;
 
-const FACTURAPI_KEY = process.env.FACTURAPI_KEY || FALLBACK_KEY;
+// LOGIC: Use Env Key ONLY if it's the correct type (sk_live), otherwise use Fallback
+let ENV_KEY = process.env.FACTURAPI_KEY;
+if (ENV_KEY && ENV_KEY.startsWith('sk_user_')) {
+    ENV_KEY = undefined; // Ignore restricted user keys
+}
+
+const FACTURAPI_KEY = ENV_KEY || FALLBACK_KEY;
 
 const getAuthHeader = () => {
     const cleanKey = FACTURAPI_KEY.trim();
