@@ -369,6 +369,8 @@ export const satService = {
 
       // [FIX] XML Fallback for Missing Certificate
       let issuerCert = invoiceData.certificate_number;
+      let debugXmlMatch = "No XML Fetch Needed";
+
       // Also fetch if it matches the generic mock certificate "30001000000500003421"
       if (!issuerCert || issuerCert === '30001000000500003421') {
         console.log("Issuer Certificate missing in JSON. Attempting XML fetch...");
@@ -386,12 +388,18 @@ export const satService = {
               const match = xmlText.match(/NoCertificado\s*=\s*["']([^"']+)["']/);
               if (match) {
                 issuerCert = match[1];
+                debugXmlMatch = `MATCH FOUND: ${match[0]}`;
                 console.log("Recovered Issuer Cert from XML:", issuerCert);
+              } else {
+                debugXmlMatch = `REGEX FAILED. XML HEAD: ${xmlText.substring(0, 200)}...`;
               }
+            } else {
+              debugXmlMatch = `XML FETCH FAILED: ${xmlRes.status}`;
             }
           }
-        } catch (err) {
+        } catch (err: any) {
           console.warn("Failed to recover cert from XML:", err);
+          debugXmlMatch = `XML ERROR: ${err.message}`;
         }
       }
 
@@ -408,6 +416,8 @@ export const satService = {
 
 
       // [FIX] XML Fallback for Missing SelloSAT
+      // ... (code continues for SelloSAT logic, usually untouched unless I move xmlContent up)
+
       if (!invoiceData.stamp?.sello_sat && !invoiceData.stamp?.sat_seal && !invoiceData.stamp?.sat_signature) {
         console.log("SelloSAT missing in JSON. Attempting XML extraction...");
         // If we already have XML in invoiceData, use it
@@ -464,60 +474,64 @@ export const satService = {
 
       const newDetails = {
         ...currentDetails,
-        fullResponse: invoiceData,
-        // [REF] User requested Facturapi-native keys in Supabase
-        complement_string: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.complement_string || currentDetails.originalChain,
-        sat_signature: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.sat_signature || currentDetails.selloSAT,
-        signature: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.signature || currentDetails.selloCFDI,
-        sat_cert_number: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.sat_cert_number || currentDetails.satCertificateNumber,
-        certificate_number: issuerCert || currentDetails.certificate_number || currentDetails.certificateNumber,
-        cert_date: invoiceData.stamp?.date || currentDetails.cert_date || currentDetails.certDate,
-        verification_url: invoiceData.verification_url || currentDetails.verification_url || currentDetails.verificationUrl,
-        uuid: invoiceData.uuid || currentDetails.uuid,
+        const newDetails = {
+          ...currentDetails,
+          fullResponse: invoiceData,
+          // [DEBUG] Reveal XML Match Logic to User
+          debug_xml_match: debugXmlMatch,
+          // [REF] User requested Facturapi-native keys in Supabase
+          complement_string: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.complement_string || currentDetails.originalChain,
+          sat_signature: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.sat_signature || currentDetails.selloSAT,
+          signature: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.signature || currentDetails.selloCFDI,
+          sat_cert_number: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.sat_cert_number || currentDetails.satCertificateNumber,
+          certificate_number: issuerCert || currentDetails.certificate_number || currentDetails.certificateNumber,
+          cert_date: invoiceData.stamp?.date || currentDetails.cert_date || currentDetails.certDate,
+          verification_url: invoiceData.verification_url || currentDetails.verification_url || currentDetails.verificationUrl,
+          uuid: invoiceData.uuid || currentDetails.uuid,
 
-        // [FIX] Ensure camelCase aliases are ALSO saved for UI consistency
-        originalChain: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.originalChain,
-        selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.selloSAT,
-        selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
-        satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
-        certificateNumber: issuerCert || currentDetails.certificateNumber,
-        certDate: invoiceData.stamp?.date || currentDetails.certDate,
-        verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl
-      };
+          // [FIX] Ensure camelCase aliases are ALSO saved for UI consistency
+          originalChain: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.originalChain,
+          selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.selloSAT,
+          selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
+          satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
+          certificateNumber: issuerCert || currentDetails.certificateNumber,
+          certDate: invoiceData.stamp?.date || currentDetails.certDate,
+          verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl
+        };
 
-      const { error: updateError } = await supabase
-        .from('transactions')
-        .update({ details: newDetails })
-        .eq('id', txId);
+        const { error: updateError } = await supabase
+          .from('transactions')
+          .update({ details: newDetails })
+          .eq('id', txId);
 
-      if (updateError) throw updateError;
+        if(updateError) throw updateError;
 
-      return newDetails;
+        return newDetails;
 
-    } catch (e) {
-      console.error("Recovery Failed:", e);
-      throw e;
+      } catch (e) {
+        console.error("Recovery Failed:", e);
+        throw e;
+      }
+    },
+
+    // [NEW] 24h Time Formatter Helper
+    formatDate24h(dateStr: string | Date | undefined) {
+      if (!dateStr) return '---';
+      try {
+        const d = new Date(dateStr);
+        if (isNaN(d.getTime())) return '---';
+
+        // Manual 24h Formatting: DD/MM/YYYY, HH:mm:ss
+        const day = d.getDate().toString().padStart(2, '0');
+        const month = (d.getMonth() + 1).toString().padStart(2, '0');
+        const year = d.getFullYear();
+        const hours = d.getHours().toString().padStart(2, '0');
+        const minutes = d.getMinutes().toString().padStart(2, '0');
+        const seconds = d.getSeconds().toString().padStart(2, '0');
+
+        return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
+      } catch (e) {
+        return '---';
+      }
     }
-  },
-
-  // [NEW] 24h Time Formatter Helper
-  formatDate24h(dateStr: string | Date | undefined) {
-    if (!dateStr) return '---';
-    try {
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return '---';
-
-      // Manual 24h Formatting: DD/MM/YYYY, HH:mm:ss
-      const day = d.getDate().toString().padStart(2, '0');
-      const month = (d.getMonth() + 1).toString().padStart(2, '0');
-      const year = d.getFullYear();
-      const hours = d.getHours().toString().padStart(2, '0');
-      const minutes = d.getMinutes().toString().padStart(2, '0');
-      const seconds = d.getSeconds().toString().padStart(2, '0');
-
-      return `${day}/${month}/${year}, ${hours}:${minutes}:${seconds}`;
-    } catch (e) {
-      return '---';
-    }
-  }
-};
+  };
