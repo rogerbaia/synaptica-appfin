@@ -1,9 +1,8 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
-import { SAT_PAYMENT_FORMS, PAYMENT_METHODS, SAT_CFDI_USES, FISCAL_REGIMES } from '../../data/satCatalogs';
+import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
+import { SAT_PAYMENT_FORMS, PAYMENT_METHODS, SAT_CFDI_USES, FISCAL_REGIMES } from '@/data/satCatalogs';
 import { numberToLetters } from '@/utils/numberToLetters';
 
-// Register Fonts (Standard Fonts for PDF)
 // Font.register removed to prevent loading errors. utilizing standard PDF fonts.
 
 const styles = StyleSheet.create({
@@ -249,7 +248,8 @@ const styles = StyleSheet.create({
     },
     totalRowValue: {
         fontSize: 7,
-        fontFamily: 'Helvetica-Bold', // Ensure mono-like alignment
+        fontFamily: 'Helvetica',
+        fontWeight: 'bold',
         color: '#334155'
     },
     grandTotalRow: {
@@ -321,14 +321,17 @@ const styles = StyleSheet.create({
 });
 
 // Helper Functions
-const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(amount);
+const formatCurrency = (amount: any) => {
+    const value = Number(amount) || 0;
+    return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(value);
 };
 
 const formatDate = (dateString: string) => {
     if (!dateString) return '---';
     try {
-        return new Date(dateString).toLocaleString('es-MX', {
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString;
+        return d.toLocaleString('es-MX', {
             year: 'numeric', month: '2-digit', day: '2-digit',
             hour: '2-digit', minute: '2-digit', second: '2-digit'
         });
@@ -540,10 +543,10 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                 <View style={styles.footer}>
                     <View style={styles.qrContainer}>
                         {details.verificationUrl ? (
-                            <Image
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(details.verificationUrl)}`}
-                                style={styles.qrImage}
-                            />
+                            // Safe placeholder to avoid network blocks
+                            <View style={[styles.qrImage, { backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' }]}>
+                                <Text style={{ fontSize: 6, color: '#94a3b8' }}>QR Code</Text>
+                            </View>
                         ) : (
                             <View style={[styles.qrImage, { backgroundColor: '#f1f5f9' }]} />
                         )}
