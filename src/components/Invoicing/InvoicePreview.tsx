@@ -214,7 +214,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         </div>
 
                         {/* [NEW] Recovery Alert for Missing Data */}
-                        {isStamped && !details?.originalChain && (
+                        {isStamped && (!details?.originalChain || details?.originalChain === '|| CADENA NO DISPONIBLE ||') && (
                             <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
                                 <div className="flex items-center gap-2 text-amber-700 text-xs">
                                     <AlertTriangle size={16} />
