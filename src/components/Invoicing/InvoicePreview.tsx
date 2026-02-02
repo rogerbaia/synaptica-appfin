@@ -161,7 +161,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
 
             {/* Main Preview Area */}
             <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center bg-slate-100/50">
-                <div className="bg-white text-slate-800 w-full max-w-[850px] shadow-2xl min-h-[1100px] relative flex flex-col mb-10 print:shadow-none print:w-full print:max-w-none">
+                <div className="bg-white text-slate-800 w-full max-w-[850px] shadow-2xl min-h-[1100px] h-fit relative flex flex-col mb-10 print:shadow-none print:w-full print:max-w-none overflow-hidden">
 
                     {/* Status Ribbon (Screen Only) */}
                     <div className="bg-gradient-to-r from-slate-50 to-white p-3 border-b border-slate-100 print:hidden flex justify-between items-center">
