@@ -321,7 +321,7 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                 <View style={styles.gridContainer}>
                     {/* Left Column - Recipient Data Stacked */}
                     <View style={styles.columnLeft}>
-                        <View style={styles.sectionHeader}>
+                        <View style={[styles.sectionHeader, { alignItems: 'center' }]}>
                             <Text style={styles.sectionTitle}>Datos del Receptor</Text>
                         </View>
                         <View style={{ padding: 8 }}>
