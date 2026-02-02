@@ -76,6 +76,43 @@ export const satService = {
     }
   },
 
+  // [NEW] Download PDF Helper
+  async downloadPDF(id: string, folio?: string) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) throw new Error("No hay sesión activa");
+
+    const toastId = "downloading-pdf"; // Use specific ID or passed from caller? better let caller handle toast or do generic here.
+    // For simplicity, let's just do the fetch. Caller usually wraps to toast.
+
+    const response = await fetch(`/api/sat/invoice-pdf?id=${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+      const json = await response.json().catch(() => ({}));
+      throw new Error(json.message || 'Error al descargar PDF');
+    }
+
+    // Convert to Blob
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+
+    // Trigger Link Click
+    const link = document.createElement('a');
+    link.href = url;
+    // Filename convention: Factura_{FOLIO}_{ID}.pdf
+    const filename = `Factura_${folio || 'CFDI'}_${id.slice(-6)}.pdf`;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+
+    // Cleanup
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  },
+
+
   /**
    * Stamps Invoice via API Route (Real or Mock handled server-side)
    */

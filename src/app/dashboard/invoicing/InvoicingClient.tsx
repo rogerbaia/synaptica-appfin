@@ -763,7 +763,19 @@ function InvoicingContent() {
                 data={previewInvoice}
                 onClose={() => setPreviewInvoice(null)}
                 onAction={async (action) => {
-                    if (action === 'download' || action === 'print') {
+                    if (action === 'download') {
+                        const toastId = toast.loading("Descargando PDF...");
+                        try {
+                            const satService = await import('@/services/satService').then(m => m.satService);
+                            const id = previewInvoice.details?.id || previewInvoice.id;
+                            await satService.downloadPDF(id, previewInvoice.folio);
+                            toast.dismiss(toastId);
+                            toast.success("PDF Descargado");
+                        } catch (e: any) {
+                            console.error(e);
+                            toast.error("Error: " + e.message, { id: toastId });
+                        }
+                    } else if (action === 'print') {
                         window.print();
                     } else if (action === 'cancel') {
                         const isConfirmed = await confirmAction({
@@ -821,7 +833,21 @@ function InvoicingContent() {
                 isOpen={!!successModalData}
                 data={successModalData}
                 onClose={() => setSuccessModalData(null)}
-                onDownload={() => handlePreview(invoices.find(i => i.uuid === successModalData?.uuid))}
+                onDownload={async () => {
+                    const inv = invoices.find(i => i.uuid === successModalData?.uuid);
+                    if (inv) {
+                        const toastId = toast.loading("Descargando PDF...");
+                        try {
+                            const satService = await import('@/services/satService').then(m => m.satService);
+                            const id = inv.details?.id || inv.id;
+                            await satService.downloadPDF(id, inv.folio);
+                            toast.dismiss(toastId);
+                            toast.success("PDF Descargado");
+                        } catch (e: any) {
+                            toast.error("Error: " + e.message, { id: toastId });
+                        }
+                    }
+                }}
                 onEmail={() => {
                     const inv = invoices.find(i => i.uuid === successModalData?.uuid);
                     if (inv) sendEmail(inv);
