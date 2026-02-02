@@ -753,17 +753,13 @@ function InvoicingContent() {
             const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
             const url = URL.createObjectURL(blob);
 
-            // [FIX] DIRECT PRINT via Invisible Iframe (Improved UX)
+            // [REVERT] DIRECT PRINT via Invisible Iframe (Standard)
+            // User prefers seamlessness over Preview. Browser will say "Preview not supported".
             const iframe = document.createElement('iframe');
             iframe.style.position = 'fixed';
-            // Use Z-Index/Opacity to hide it while keeping it "on screen" for the renderer
-            iframe.style.left = '0';
-            iframe.style.top = '0';
-            iframe.style.width = '100vw';
-            iframe.style.height = '100vh';
+            iframe.style.width = '0px';
+            iframe.style.height = '0px';
             iframe.style.border = 'none';
-            iframe.style.zIndex = '9999';
-            iframe.style.backgroundColor = '#ffffff';
             iframe.src = url;
             document.body.appendChild(iframe);
 
@@ -775,19 +771,13 @@ function InvoicingContent() {
                     iframe.contentWindow?.print();
                     toast.dismiss(toastId);
 
-                    // DO NOT remove immediately, as it closes the dialog in non-blocking browsers.
-                    // Instead, hide it so user can interact with App, but keep DOM element alive.
-                    iframe.style.zIndex = '-9999';
-                    iframe.style.opacity = '0';
-                    toast.dismiss(toastId);
-
-                    // Real cleanup after enough time for user to print/cancel
+                    // Cleanup (keep alive briefly ensuring dialog registers content)
                     setTimeout(() => {
                         if (document.body.contains(iframe)) {
                             document.body.removeChild(iframe);
                         }
                         URL.revokeObjectURL(url);
-                    }, 60000); // 1 minute keep-alive
+                    }, 5000);
                 }, 1000); // 1s delay for full render
             };
 
