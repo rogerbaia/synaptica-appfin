@@ -498,7 +498,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
 
                                     {/* Cadena Original */}
                                     <div>
-                                        <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                                        <div className="flex items-center gap-2 text-slate-600 mb-1">
                                             <Zap size={12} />
                                             <span className="text-[9px] font-bold uppercase">Cadena Original del Complemento de Certificación Digital del SAT</span>
                                         </div>
