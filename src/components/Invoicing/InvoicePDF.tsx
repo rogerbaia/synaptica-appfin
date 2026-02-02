@@ -268,11 +268,13 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
     const details = data.details || {};
     const isStamped = !!data.uuid || ['paid', 'pending', 'cancelled'].includes(data.status);
 
+    // 1. Split address in issuer object
     const issuer = {
         name: 'ROGERIO MARTINS BAIA',
         rfc: 'MABR750116P78',
         regime: '626 Régimen Simplificado de Confianza',
-        address: 'MATAMOROS 514 MATAMOROS, MONTEMORELOS, NUEVO LEÓN. Mexico.',
+        addressLine1: 'MATAMOROS 514',
+        addressLine2: 'MONTEMORELOS, NUEVO LEÓN, MÉXICO.',
         contact: 'Tel: 81 20227181 | C.P. 67510'
     };
 
@@ -299,7 +301,8 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                     <View style={styles.issuerInfo}>
                         <Text style={styles.issuerName}>{issuer.name}</Text>
                         <Text style={styles.issuerDetails}>RFC: {issuer.rfc}</Text>
-                        <Text style={styles.issuerDetails}>{issuer.address}</Text>
+                        <Text style={styles.issuerDetails}>{issuer.addressLine1}</Text>
+                        <Text style={styles.issuerDetails}>{issuer.addressLine2}</Text>
                         <Text style={styles.issuerDetails}>{issuer.contact}</Text>
                         <View style={styles.regimeBadge}>
                             <Text>{issuer.regime}</Text>
@@ -318,12 +321,14 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                 <View style={styles.gridContainer}>
                     {/* Left Column */}
                     <View style={styles.columnLeft}>
-                        <View style={styles.sectionHeader}>
+                        {/* Centered Title */}
+                        <View style={[styles.sectionHeader, { alignItems: 'center' }]}>
                             <Text style={styles.sectionTitle}>Datos del Receptor</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>Razón Social:</Text>
-                            <Text style={styles.value}>{data.client || '---'}</Text>
+                            {/* Bold Name */}
+                            <Text style={[styles.value, { fontWeight: 'bold' }]}>{data.client || '---'}</Text>
                         </View>
                         <View style={styles.row}>
                             <Text style={styles.label}>RFC:</Text>
@@ -345,7 +350,8 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
 
                     {/* Right Column */}
                     <View style={styles.columnRight}>
-                        <View style={styles.sectionHeader}>
+                        {/* Centered Title */}
+                        <View style={[styles.sectionHeader, { alignItems: 'center' }]}>
                             <Text style={styles.sectionTitle}>Datos Fiscales</Text>
                         </View>
                         <View style={styles.row}>
@@ -357,11 +363,11 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                             <Text style={styles.value}>{details?.certificateNumber || '---'}</Text>
                         </View>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Fecha/Hora Emisión:</Text>
+                            <Text style={styles.label}>Emisión:</Text>
                             <Text style={styles.value}>{formatDate(data.rawDate || data.date)}</Text>
                         </View>
                         <View style={styles.row}>
-                            <Text style={styles.label}>Fecha/Hora Cert.:</Text>
+                            <Text style={styles.label}>Certificación:</Text>
                             <Text style={styles.value}>{formatDate(details?.certDate)}</Text>
                         </View>
                         <View style={styles.row}>
@@ -449,16 +455,7 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                                 <Text style={{ fontSize: 8, color: '#cbd5e1' }}>QR NO DISPONIBLE</Text>
                             </View>
                         )}
-                        {details?.verificationUrl ? (
-                            <Image
-                                src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(details.verificationUrl)}`}
-                                style={{ width: 100, height: 100 }}
-                            />
-                        ) : (
-                            <View style={{ width: 100, height: 100, backgroundColor: '#f1f5f9', justifyContent: 'center', alignItems: 'center' }}>
-                                <Text style={{ fontSize: 8, color: '#cbd5e1' }}>QR NO DISPONIBLE</Text>
-                            </View>
-                        )}
+                        {/* Duplicate QR code removed here */}
                         <Text style={{ fontSize: 6, color: '#64748b', marginTop: 4, textAlign: 'center' }}>
                             Representación impresa de un CFDI 4.0
                         </Text>
