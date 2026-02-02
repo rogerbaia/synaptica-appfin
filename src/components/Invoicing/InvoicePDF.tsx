@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Image, Font, Svg, Path, Polygon } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Image, Font } from '@react-pdf/renderer';
 import { numberToLetters } from '@/utils/numberToLetters';
 import { SAT_CFDI_USES, FISCAL_REGIMES, SAT_PAYMENT_FORMS, PAYMENT_METHODS } from '@/data/satCatalogs';
 
@@ -460,76 +460,36 @@ export const InvoiceDocument = ({ data }: { data: any }) => {
                     </View>
 
                     <View style={styles.sealsContainer}>
-                        {/* Right: Fiscal Strings & Seals */}
-                        <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#475569', marginBottom: 2 }}>Cadena Original del Complemento de Certificación Digital del SAT</Text>
+                        <View style={styles.sealBox}>
+                            <Text style={styles.sealText}>
+                                {details?.originalChain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                            </Text>
+                        </View>
 
-                            {/* Cadena Original */}
-                            <View style={{ marginBottom: 4 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
-                                        <Polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                    </Svg>
-                                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#475569', textTransform: 'uppercase' }}>
-                                        Cadena Original del Complemento de Certificación Digital del SAT
-                                    </Text>
-                                </View>
-                                <View style={{ backgroundColor: '#F8FAFC', padding: 4, borderRadius: 2, border: '0.5px solid #F1F5F9' }}>
-                                    <Text style={{ fontSize: 6, color: '#64748B', fontFamily: 'Courier', textAlign: 'justify' }}>
-                                        {data.details?.complement_string || data.details?.originalChain || data.details?.fullResponse?.original_chain || '|| CADENA NO DISPONIBLE ||'}
-                                    </Text>
-                                </View>
+                        <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#475569', marginBottom: 2 }}>Sello Digital del CFDI</Text>
+                        <View style={styles.sealBox}>
+                            <Text style={styles.sealText}>
+                                {details?.selloCFDI || details?.signature || '---'}
+                            </Text>
+                        </View>
+
+                        <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#475569', marginBottom: 2 }}>Sello Digital del SAT</Text>
+                        <View style={styles.sealBox}>
+                            <Text style={styles.sealText}>
+                                {details?.selloSAT || details?.sat_signature || '---'}
+                            </Text>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
+                            <View style={{ width: '48%' }}>
+                                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>No. de Serie del Certificado del SAT</Text>
+                                <Text style={{ fontSize: 7, fontFamily: 'Helvetica' }}>{details?.satCertificateNumber || '---'}</Text>
                             </View>
-
-                            {/* Sello Digital CFDI */}
-                            <View style={{ marginBottom: 4 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
-                                        <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                        <Path d="m9 12 2 2 4-4" />
-                                    </Svg>
-                                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#475569', textTransform: 'uppercase' }}>
-                                        Sello Digital del CFDI
-                                    </Text>
-                                </View>
-                                <View style={{ backgroundColor: '#F8FAFC', padding: 4, borderRadius: 2, border: '0.5px solid #F1F5F9' }}>
-                                    <Text style={{ fontSize: 6, color: '#64748B', fontFamily: 'Courier', textAlign: 'justify' }}>
-                                        {data.details?.signature || data.details?.selloCFDI || data.details?.fullResponse?.stamp?.sello_cfdi || '---'}
-                                    </Text>
-                                </View>
+                            <View style={{ width: '48%' }}>
+                                <Text style={{ fontSize: 7, color: '#64748b', fontWeight: 'bold' }}>Fecha y Hora de Certificación</Text>
+                                <Text style={{ fontSize: 7, fontFamily: 'Helvetica' }}>{formatDate(details?.certDate)}</Text>
                             </View>
-
-                            {/* Sello Digital SAT */}
-                            <View style={{ marginBottom: 4 }}>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
-                                    <Svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
-                                        <Path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                                        <Path d="m9 12 2 2 4-4" />
-                                    </Svg>
-                                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#475569', textTransform: 'uppercase' }}>
-                                        Sello Digital del SAT
-                                    </Text>
-                                </View>
-                                <View style={{ backgroundColor: '#F8FAFC', padding: 4, borderRadius: 2, border: '0.5px solid #F1F5F9' }}>
-                                    <Text style={{ fontSize: 6, color: '#64748B', fontFamily: 'Courier', textAlign: 'justify' }}>
-                                        {data.details?.sat_signature || data.details?.selloSAT || data.details?.fullResponse?.stamp?.sello_sat || '---'}
-                                    </Text>
-                                </View>
-                            </View>
-
-                            {/* SAT Cert & Dates */}
-                            <View style={{ flexDirection: 'row', paddingTop: 4 }}>
-                                <View style={{ width: '50%' }}>
-                                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#64748B', textTransform: 'uppercase' }}>No. de Serie del Certificado del SAT</Text>
-                                    <Text style={{ fontSize: 8, color: '#1E293B', fontFamily: 'Courier' }}>{data.details?.sat_cert_number || data.details?.satCertificateNumber || data.details?.fullResponse?.stamp?.sat_cert_number || '---'}</Text>
-                                </View>
-                                <View style={{ width: '50%' }}>
-                                    <Text style={{ fontSize: 7, fontWeight: 'bold', color: '#64748B', textTransform: 'uppercase' }}>Fecha y Hora de Certificación</Text>
-                                    <Text style={{ fontSize: 8, color: '#1E293B', fontFamily: 'Courier' }}>
-                                        {formatDate(data.details?.certDate)}
-                                    </Text>
-                                </View>
-                            </View>
-
                         </View>
                     </View>
                 </View>
