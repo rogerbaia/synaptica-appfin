@@ -214,44 +214,45 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                         </div>
 
                         {/* [NEW] Recovery Alert for Missing Data */}
-                        <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-2">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-amber-700 text-xs">
-                                    <AlertTriangle size={16} />
-                                    <span>Algunos datos fiscales (Cadena Original) no se guardaron correctamente.</span>
-                                </div>
-                                <button
-                                    onClick={async (e) => {
-                                        e.stopPropagation();
-                                        const toastId = toast.loading("Recuperando datos...");
-                                        try {
-                                            const facturapiId = details?.id || data.details?.id;
-                                            if (!facturapiId) throw new Error("ID de Facturapi no encontrado");
+                        {isStamped && (!details?.originalChain || details?.originalChain === '|| CADENA NO DISPONIBLE ||') && (
+                            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-lg p-3 flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2 text-amber-700 text-xs">
+                                        <AlertTriangle size={16} />
+                                        <span>Algunos datos fiscales (Cadena Original) no se guardaron correctamente.</span>
+                                    </div>
+                                    <button
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            const toastId = toast.loading("Recuperando datos...");
+                                            try {
+                                                const facturapiId = details?.id || data.details?.id;
+                                                if (!facturapiId) throw new Error("ID de Facturapi no encontrado");
 
-                                            // Call Recovery
-                                            await satService.recoverInvoice(data.id || data.txId, facturapiId);
-                                            toast.success("Datos recuperados exitosamente. Recarga la vista.", { id: toastId });
-                                            // Ideally we trigger a reload here
-                                            window.location.reload();
-                                        } catch (err: any) {
-                                            toast.error("Error al recuperar: " + err.message, { id: toastId });
-                                        }
-                                    }}
-                                    className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded transition-colors"
-                                >
-                                    Reparar Datos
-                                </button>
-                            </div>
-                            <details className="group">
-                                <summary className="text-[9px] text-amber-600/70 cursor-pointer list-none flex items-center gap-1 hover:text-amber-800 transition-colors">
-                                    <span className="font-bold underline decoration-dotted">Ver respuesta técnica RAW</span> (Para Soporte)
-                                </summary>
-                                <div className="mt-2 text-[8px] font-mono bg-white p-2 rounded border border-amber-100 overflow-x-auto max-h-[150px] shadow-inner text-slate-600">
-                                    <p className="font-bold mb-1">// Details Dump:</p>
-                                    {JSON.stringify(details, null, 2)}
+                                                // Call Recovery
+                                                await satService.recoverInvoice(data.id || data.txId, facturapiId);
+                                                toast.success("Datos recuperados exitosamente. Recarga la vista.", { id: toastId });
+                                                // Ideally we trigger a reload here
+                                                window.location.reload();
+                                            } catch (err: any) {
+                                                toast.error("Error al recuperar: " + err.message, { id: toastId });
+                                            }
+                                        }}
+                                        className="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-bold px-3 py-1.5 rounded transition-colors"
+                                    >
+                                        Reparar Datos
+                                    </button>
                                 </div>
-                            </details>
-                        </div>
+                                <details className="group">
+                                    <summary className="text-[9px] text-amber-600/70 cursor-pointer list-none flex items-center gap-1 hover:text-amber-800 transition-colors">
+                                        <span className="font-bold underline decoration-dotted">Ver respuesta técnica RAW</span> (Para Soporte)
+                                    </summary>
+                                    <div className="mt-2 text-[8px] font-mono bg-white p-2 rounded border border-amber-100 overflow-x-auto max-h-[150px] shadow-inner text-slate-600">
+                                        <p className="font-bold mb-1">// Details Dump:</p>
+                                        {JSON.stringify(details, null, 2)}
+                                    </div>
+                                </details>
+                            </div>
                         )}
 
                         {/* Client & Fiscal Data Grid (Side-by-Side) */}
