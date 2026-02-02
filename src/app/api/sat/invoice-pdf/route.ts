@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,12 +11,21 @@ export async function GET(req: NextRequest) {
     }
 
     try {
-        // 1. Auth Check
-        const supabase = createRouteHandlerClient({ cookies });
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session) {
+        // [SECURITY] Verify User Session
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader) {
             return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+        }
+
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+        const { data: { user }, error } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+
+        if (error || !user) {
+            return NextResponse.json({ message: 'Invalid Session' }, { status: 401 });
         }
 
         // 2. API Key Logic (Fallback Mechanism)
