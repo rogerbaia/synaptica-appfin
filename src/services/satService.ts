@@ -369,7 +369,8 @@ export const satService = {
 
       // [FIX] XML Fallback for Missing Certificate
       let issuerCert = invoiceData.certificate_number;
-      if (!issuerCert) {
+      // Also fetch if it matches the generic mock certificate "30001000000500003421"
+      if (!issuerCert || issuerCert === '30001000000500003421') {
         console.log("Issuer Certificate missing in JSON. Attempting XML fetch...");
         try {
           // Call refined Proxy for XML
