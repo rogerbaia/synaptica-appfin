@@ -681,36 +681,103 @@ function InvoicingContent() {
         }
     };
 
+    const handlePremiumPrint = async (invoice: any) => {
+        const toastId = toast.loading("Preparando impresión...");
+        try {
+            // [FIX] Inject Dynamic Logo
+            const pdfData = { ...invoice, logoUrl: organizationLogo };
+            const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
+            const url = URL.createObjectURL(blob);
+
+            // Create an invisible iframe
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            iframe.src = url;
+
+            // Add to document
+            document.body.appendChild(iframe);
+
+            // Wait for load then print
+            iframe.onload = () => {
+                setTimeout(() => {
+                    try {
+                        iframe.contentWindow?.focus();
+                        iframe.contentWindow?.print();
+                    } catch (e) {
+                        console.error("Print frame error", e);
+                        // Fallback
+                        window.open(url, '_blank');
+                    }
+                }, 500);
+            };
+
+            // Cleanup logic
+            setTimeout(() => {
+                try {
+                    document.body.removeChild(iframe);
+                    URL.revokeObjectURL(url);
+                } catch (e) { }
+            }, 60000);
+
+            toast.dismiss(toastId);
+        } catch (e: any) {
+            console.error("Print generation error:", e);
+            toast.dismiss(toastId);
+            toast.error("Error al preparar impresión: " + e.message, { id: toastId });
+        }
+    };
+
     const sendEmail = async (invoice: any) => {
         // 1. Get Email
-        const email = prompt("Ingrese el correo del cliente para enviar la factura:", "cliente@ejemplo.com");
+        const defaultEmail = invoice.details?.email || invoice.details?.customer?.email || '';
+        const email = prompt("Ingrese el correo del cliente para enviar la factura:", defaultEmail || "cliente@ejemplo.com");
         if (!email) return;
 
-        const toastId = toast.loading("Enviando factura por correo...");
+        const toastId = toast.loading("Generando PDF Premium...");
         try {
-            const res = await fetch('/api/sat/email', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    invoiceId: invoice.uuid || invoice.details?.id || invoice.id,
-                    email
-                })
-            });
+            // [FIX] Generate PDF Blob on Client
+            const pdfData = { ...invoice, logoUrl: organizationLogo };
+            const blob = await pdf(<InvoiceDocument data={pdfData} />).toBlob();
 
-            if (!res.ok) {
-                const err = await res.json();
-                throw new Error(err.message || 'Error al enviar');
-            }
+            // Convert to Base64
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = async () => {
+                const base64data = reader.result as string;
 
-            toast.success("✅ Enviado al Cliente (y copia a ti)", { id: toastId });
+                toast.loading("Enviando factura por correo...", { id: toastId });
 
-            // Update State (Optimistic)
-            setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, sent: true } : inv));
+                const res = await fetch('/api/sat/email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        invoiceId: invoice.uuid || invoice.details?.id || invoice.id,
+                        email,
+                        pdfBase64: base64data,
+                        filename: `Factura_${invoice.folio || 'CFDI'}.pdf`
+                    })
+                });
 
-            // Persist
-            await supabaseService.updateTransaction(invoice.id, {
-                details: { ...invoice.details, sent: true }
-            });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || 'Error al enviar');
+                }
+
+                toast.success("✅ Enviado al Cliente (y copia a ti)", { id: toastId });
+
+                // Update State (Optimistic)
+                setInvoices(prev => prev.map(inv => inv.id === invoice.id ? { ...inv, sent: true } : inv));
+
+                // Persist
+                await supabaseService.updateTransaction(invoice.id, {
+                    details: { ...invoice.details, sent: true }
+                });
+            };
 
         } catch (error: any) {
             console.error(error);
@@ -803,7 +870,7 @@ function InvoicingContent() {
                     if (action === 'download') {
                         handlePremiumDownload(previewInvoice);
                     } else if (action === 'print') {
-                        window.print();
+                        handlePremiumPrint(previewInvoice);
                     } else if (action === 'cancel') {
                         const isConfirmed = await confirmAction({
                             title: "Cancelar Factura",
@@ -1126,7 +1193,11 @@ function InvoicingContent() {
                                                                 className="text-slate-400 hover:text-blue-500 transition" title="Descargar XML">
                                                                 <Download size={18} />
                                                             </button>
-                                                            <button className={`transition ${inv.sent ? 'text-blue-500' : 'text-slate-300 hover:text-blue-500'}`} title={inv.sent ? "Enviado por correo" : "Enviar por correo"}>
+                                                            <button
+                                                                onClick={(e) => { e.stopPropagation(); sendEmail(inv); }}
+                                                                className={`transition ${inv.sent ? 'text-blue-500' : 'text-slate-300 hover:text-blue-500'}`}
+                                                                title={inv.sent ? "Enviado por correo" : "Enviar por correo"}
+                                                            >
                                                                 <Mail size={18} />
                                                             </button>
                                                             {/* [NEW] Delete Button for Cancelled Invoices */}
