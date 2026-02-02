@@ -359,12 +359,16 @@ interface InvoiceDocumentProps {
 
 export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
     const details = data.details || {};
+    // Fallback for items: use details.items array OR single item from root data
+    const items = details.items && Array.isArray(details.items) && details.items.length > 0
+        ? details.items
+        : [data];
 
     // Logic for Stamped Status
     const isStamped = !!data.uuid || ['paid', 'pending', 'cancelled'].includes(data.status);
 
-    // [FIX] Logo Loading Logic - Isomorphic
-    const logoUrl = data.logoUrl || (typeof window !== 'undefined' ? `${window.location.origin}/logo-synaptica.png` : '/logo-synaptica.png');
+    // [FIX] Logo Loading Logic - Disabled to prevent potential hang
+    // const logoUrl = data.logoUrl || (typeof window !== 'undefined' ? `${window.location.origin}/logo-synaptica.png` : '/logo-synaptica.png');
 
     // Default Issuer Data (Matches InvoicePreview)
     const issuer = {
@@ -388,7 +392,10 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                 {/* Header */}
                 <View style={styles.header}>
                     <View style={styles.logoContainer}>
-                        {logoUrl && <Image src={logoUrl} style={styles.logo} />}
+                        {/* 
+                         <Image src={logoUrl} style={styles.logo} /> 
+                         Commented out Logo to prevent possible network hang on print 
+                        */}
                     </View>
                     <View style={styles.issuerContainer}>
                         <Text style={styles.issuerName}>{issuer.name}</Text>
@@ -467,7 +474,7 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                     </View>
                 </View>
 
-                {/* Items Table */}
+                {/* Items Table - Iterating over items */}
                 <View style={styles.table}>
                     <View style={styles.tableHeaderBase}>
                         <Text style={[styles.tableHeaderText, styles.colQty]}>Cant.</Text>
@@ -477,19 +484,21 @@ export const InvoiceDocument: React.FC<InvoiceDocumentProps> = ({ data }) => {
                         <Text style={[styles.tableHeaderText, styles.colPrice]}>Valor Unit.</Text>
                         <Text style={[styles.tableHeaderText, styles.colTotal]}>Importe</Text>
                     </View>
-                    <View style={styles.tableRow}>
-                        <Text style={[styles.tableTextBold, styles.colQty]}>{data.quantity || 1}</Text>
-                        <View style={styles.colUnit}>
-                            <Text style={styles.tableTextBold}>{data.satUnitKey || 'E48'}</Text>
-                            <Text style={[styles.tableText, { fontSize: 6 }]}>Unidad de servicio</Text>
+                    {items.map((item: any, index: number) => (
+                        <View key={index} style={styles.tableRow}>
+                            <Text style={[styles.tableTextBold, styles.colQty]}>{item.quantity || 1}</Text>
+                            <View style={styles.colUnit}>
+                                <Text style={styles.tableTextBold}>{item.satUnitKey || 'E48'}</Text>
+                                <Text style={[styles.tableText, { fontSize: 6 }]}>Unidad de servicio</Text>
+                            </View>
+                            <Text style={[styles.tableText, styles.colKey]}>{item.satProductKey || '85121600'}</Text>
+                            <View style={styles.colDesc}>
+                                <Text style={[styles.tableTextBold, { textTransform: 'uppercase' }]}>{item.description}</Text>
+                            </View>
+                            <Text style={[styles.tableText, styles.colPrice]}>{formatCurrency(item.unitValue)}</Text>
+                            <Text style={[styles.tableTextBold, styles.colTotal]}>{formatCurrency(item.subtotal || (Number(item.quantity || 1) * Number(item.unitValue || 0)))}</Text>
                         </View>
-                        <Text style={[styles.tableText, styles.colKey]}>{data.satProductKey || '85121600'}</Text>
-                        <View style={styles.colDesc}>
-                            <Text style={[styles.tableTextBold, { textTransform: 'uppercase' }]}>{data.description}</Text>
-                        </View>
-                        <Text style={[styles.tableText, styles.colPrice]}>{formatCurrency(data.unitValue)}</Text>
-                        <Text style={[styles.tableTextBold, styles.colTotal]}>{formatCurrency(data.subtotal)}</Text>
-                    </View>
+                    ))}
                 </View>
 
                 {/* Footer Totals */}
