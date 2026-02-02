@@ -394,90 +394,7 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
 
 
 
-                                {/* [NEW] Fiscal Footer Grid */}
-                                <div className="mt-8 border-t border-slate-200 pt-6">
-                                    <div className="flex flex-col md:flex-row gap-6">
 
-                                        {/* Left: QR Code & Validation */}
-                                        <div className="md:w-48 flex flex-col items-center justify-center space-y-2">
-                                            <div className="p-2 bg-white border border-slate-200 rounded-lg">
-                                                {details?.verificationUrl ? (
-                                                    <QRCodeSVG
-                                                        value={details.verificationUrl}
-                                                        size={140}
-                                                        level="M"
-                                                    />
-                                                ) : (
-                                                    <div className="w-[140px] h-[140px] bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 text-center p-2 flex-col gap-2">
-                                                        <span>QR NO DISPONIBLE</span>
-                                                        <span className="text-[8px] text-slate-300">(Genere una nueva factura)</span>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <p className="text-[9px] text-slate-400 text-center leading-tight">
-                                                Representación impresa de un CFDI 4.0
-                                            </p>
-                                        </div>
-
-                                        {/* Right: Fiscal Strings & Seals */}
-                                        <div className="flex-1 space-y-3">
-
-                                            {/* Cadena Original */}
-                                            <div>
-                                                <div className="flex items-center gap-2 text-indigo-600 mb-1">
-                                                    <Zap size={12} />
-                                                    <span className="text-[9px] font-bold uppercase">Cadena Original del Complemento de Certificación Digital del SAT</span>
-                                                </div>
-                                                <div className="bg-slate-50 p-2 border border-slate-100 rounded">
-                                                    <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.complement_string || details?.originalChain || details?.fullResponse?.original_chain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Sello Digital CFDI */}
-                                            <div>
-                                                <div className="flex items-center gap-2 text-slate-600 mb-1">
-                                                    <ShieldCheck size={12} />
-                                                    <span className="text-[9px] font-bold uppercase">Sello Digital del CFDI</span>
-                                                </div>
-                                                <div className="bg-slate-50 p-2 border border-slate-100 rounded">
-                                                    <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.signature || details?.selloCFDI || details?.fullResponse?.stamp?.sello_cfdi || '---'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* Sello Digital SAT */}
-                                            <div>
-                                                <div className="flex items-center gap-2 text-slate-600 mb-1">
-                                                    <ShieldCheck size={12} />
-                                                    <span className="text-[9px] font-bold uppercase">Sello Digital del SAT</span>
-                                                </div>
-                                                <div className="bg-slate-50 p-2 border border-slate-100 rounded">
-                                                    <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
-                                                        {details?.sat_signature || details?.selloSAT || details?.fullResponse?.stamp?.sello_sat || '---'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            {/* SAT Cert & Dates */}
-                                            <div className="grid grid-cols-2 gap-4 pt-2">
-                                                <div>
-                                                    <p className="font-bold text-slate-500 text-[9px] uppercase">No. de Serie del Certificado del SAT</p>
-                                                    <p className="font-mono text-slate-800 text-[10px]">{details?.sat_cert_number || details?.satCertificateNumber || details?.fullResponse?.stamp?.sat_cert_number || '---'}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-slate-500 text-[9px] uppercase">Fecha y Hora de Certificación</p>
-                                                    <p className="font-mono text-slate-800 text-[10px]">
-                                                        {satService.formatDate24h(details?.certDate)}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
 
                             {/* Totals Column (Sidebar) */}
@@ -524,6 +441,91 @@ export default function InvoicePreview({ isOpen, onClose, data, onAction }: Invo
                                             <span className="text-xl font-bold text-indigo-600 font-mono">${finalTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* [MOVED] Fiscal Footer Grid - Full Width */}
+                        <div className="mt-8 border-t border-slate-200 pt-6">
+                            <div className="flex flex-col md:flex-row gap-6 items-start">
+
+                                {/* Left: QR Code & Validation */}
+                                <div className="md:w-48 flex flex-col items-center justify-start space-y-2">
+                                    <div className="p-2 bg-white border border-slate-200 rounded-lg">
+                                        {details?.verificationUrl ? (
+                                            <QRCodeSVG
+                                                value={details.verificationUrl}
+                                                size={140}
+                                                level="M"
+                                            />
+                                        ) : (
+                                            <div className="w-[140px] h-[140px] bg-slate-100 flex items-center justify-center text-[10px] text-slate-400 text-center p-2 flex-col gap-2">
+                                                <span>QR NO DISPONIBLE</span>
+                                                <span className="text-[8px] text-slate-300">(Genere una nueva factura)</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <p className="text-[9px] text-slate-400 text-center leading-tight">
+                                        Representación impresa de un CFDI 4.0
+                                    </p>
+                                </div>
+
+                                {/* Right: Fiscal Strings & Seals */}
+                                <div className="flex-1 space-y-3 w-full">
+
+                                    {/* Cadena Original */}
+                                    <div>
+                                        <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                                            <Zap size={12} />
+                                            <span className="text-[9px] font-bold uppercase">Cadena Original del Complemento de Certificación Digital del SAT</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-2 border border-slate-100 rounded">
+                                            <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                {details?.complement_string || details?.originalChain || details?.fullResponse?.original_chain || (isStamped ? '|| CADENA NO DISPONIBLE ||' : '||1.1|UUID|FECHA|SAT970701NN3|SELLO|CERT||')}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Sello Digital CFDI */}
+                                    <div>
+                                        <div className="flex items-center gap-2 text-slate-600 mb-1">
+                                            <ShieldCheck size={12} />
+                                            <span className="text-[9px] font-bold uppercase">Sello Digital del CFDI</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-2 border border-slate-100 rounded">
+                                            <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                {details?.signature || details?.selloCFDI || details?.fullResponse?.stamp?.sello_cfdi || '---'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Sello Digital SAT */}
+                                    <div>
+                                        <div className="flex items-center gap-2 text-slate-600 mb-1">
+                                            <ShieldCheck size={12} />
+                                            <span className="text-[9px] font-bold uppercase">Sello Digital del SAT</span>
+                                        </div>
+                                        <div className="bg-slate-50 p-2 border border-slate-100 rounded">
+                                            <p className="text-[8px] text-slate-500 font-mono break-all leading-tight text-justify">
+                                                {details?.sat_signature || details?.selloSAT || details?.fullResponse?.stamp?.sello_sat || '---'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* SAT Cert & Dates */}
+                                    <div className="grid grid-cols-2 gap-4 pt-2">
+                                        <div>
+                                            <p className="font-bold text-slate-500 text-[9px] uppercase">No. de Serie del Certificado del SAT</p>
+                                            <p className="font-mono text-slate-800 text-[10px]">{details?.sat_cert_number || details?.satCertificateNumber || details?.fullResponse?.stamp?.sat_cert_number || '---'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="font-bold text-slate-500 text-[9px] uppercase">Fecha y Hora de Certificación</p>
+                                            <p className="font-mono text-slate-800 text-[10px]">
+                                                {satService.formatDate24h(details?.certDate)}
+                                            </p>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                         </div>
