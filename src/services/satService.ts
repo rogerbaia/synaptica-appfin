@@ -357,8 +357,10 @@ export const satService = {
         ...currentDetails,
         fullResponse: invoiceData,
         // Patch Helper Fields
-        originalChain: invoiceData.original_string || invoiceData.original_chain || currentDetails.originalChain,
-        selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || currentDetails.selloSAT,
+        // [FIX] Map 'complement_string' to originalChain (Facturapi specific)
+        originalChain: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.originalChain,
+        // [FIX] Map 'sat_signature' to selloSAT
+        selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.selloSAT,
         selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
         satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
         certificateNumber: issuerCert || currentDetails.certificateNumber,
