@@ -70,7 +70,7 @@ export default function LoginPage() {
             setShowOtpInput(true);
         } catch (error: any) {
             console.error(error);
-            setMsg('Error al enviar enlace.');
+            setMsg(`Error: ${error.message || 'Error desconocido'}`);
         } finally {
             setLoading(false);
         }
