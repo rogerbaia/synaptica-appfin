@@ -105,6 +105,14 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [titheEnabled, setTitheEnabledState] = useState(false);
     const [titheConfig, setTitheConfigState] = useState<TitheConfig>(DEFAULT_TITHE_CONFIG);
 
+    // [MOVED] Permissions & API Key (Top-level State)
+    const [permissions, setPermissionsState] = useState({
+        geo: false,
+        mic: true,
+        camera: true
+    });
+    const [geminiApiKey, setGeminiApiKeyState] = useState('');
+
     useEffect(() => {
         // Load from localStorage
         const savedTheme = localStorage.getItem('synaptica_theme') as Theme;
@@ -139,6 +147,18 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
             localStorage.setItem('synaptica_country', detected);
         }
 
+        // Permissions
+        const savedPerms = localStorage.getItem('synaptica_permissions');
+        if (savedPerms) {
+            try {
+                setPermissionsState(JSON.parse(savedPerms));
+            } catch (e) { console.error(e); }
+        }
+
+        // Gemini Key
+        const savedKey = localStorage.getItem('synaptica_gemini_key');
+        if (savedKey) setGeminiApiKeyState(savedKey);
+
         setBiometricEnabledState(savedBio);
 
         // Load Tithe
@@ -152,37 +172,50 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         }
     }, []);
 
-    // [NEW] Sync from Cloud on Mount (if user exists)
+    // [NEW] Sync from Cloud on Mount (Force Refresh for Mobile)
     useEffect(() => {
-        if (user?.user_metadata) {
-            const meta = user.user_metadata;
+        const fetchLatestMetadata = async () => {
+            if (!user) return;
 
-            // 1. Sync Country/Currency
-            if (meta.country) setCountryState(meta.country);
-            if (meta.currency) setCurrencyState(meta.currency);
+            try {
+                // Force fetch from server to bypass stale session
+                const meta = await supabaseService.getUserMetadata();
+                if (!meta) return;
 
-            // 2. Sync Tithe
-            if (meta.tithe_enabled !== undefined) setTitheEnabledState(meta.tithe_enabled);
-            if (meta.tithe_config) {
-                try {
-                    // Handle both stringified and object formats from Supabase
+                console.log("☁️ Syncing Settings from Cloud...", meta);
+
+                // 1. Sync Country/Currency
+                if (meta.country) setCountryState(meta.country);
+                if (meta.currency) setCurrencyState(meta.currency);
+
+                // 2. Sync Tithe
+                if (meta.tithe_enabled !== undefined) setTitheEnabledState(meta.tithe_enabled);
+                if (meta.tithe_config) {
                     const config = typeof meta.tithe_config === 'string'
                         ? JSON.parse(meta.tithe_config)
                         : meta.tithe_config;
                     setTitheConfigState(config);
-                } catch (e) { console.error("Error syncing tithe config", e); }
-            }
+                }
 
-            // 3. Sync Permissions
-            if (meta.permissions) {
-                try {
+                // 3. Sync Permissions
+                if (meta.permissions) {
                     const perms = typeof meta.permissions === 'string'
                         ? JSON.parse(meta.permissions)
                         : meta.permissions;
                     setPermissionsState(perms);
-                } catch (e) { console.error("Error syncing permissions", e); }
+                }
+
+                // 4. Sync Gemini Key
+                if (meta.gemini_api_key) {
+                    setGeminiApiKeyState(meta.gemini_api_key);
+                }
+
+            } catch (error) {
+                console.error("Error force-syncing metadata:", error);
             }
-        }
+        };
+
+        fetchLatestMetadata();
     }, [user]);
 
     useEffect(() => {
@@ -241,27 +274,7 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         supabaseService.updateUserMetadata({ tithe_config: c }).catch(console.error);
     }
 
-    // Permissions
-    const [permissions, setPermissionsState] = useState({
-        geo: false,
-        mic: true,
-        camera: true
-    });
 
-    // API Keys
-    const [geminiApiKey, setGeminiApiKeyState] = useState('');
-
-    useEffect(() => {
-        const savedPerms = localStorage.getItem('synaptica_permissions');
-        const savedKey = localStorage.getItem('synaptica_gemini_key');
-
-        if (savedPerms) {
-            try {
-                setPermissionsState(JSON.parse(savedPerms));
-            } catch (e) { console.error(e); }
-        }
-        if (savedKey) setGeminiApiKeyState(savedKey);
-    }, []);
 
     const setPermissions = (p: { geo: boolean, mic: boolean, camera: boolean }) => {
         setPermissionsState(p);
