@@ -70,7 +70,11 @@ export default function LoginPage() {
             setShowOtpInput(true);
         } catch (error: any) {
             console.error(error);
-            setMsg(`Error: ${error.message || 'Error desconocido'}`);
+            let errorMessage = error.message || 'Error desconocido';
+            if (errorMessage.includes('rate limit')) {
+                errorMessage = 'Demasiados intentos. Espera 60s.';
+            }
+            setMsg(`Error: ${errorMessage}`);
         } finally {
             setLoading(false);
         }
