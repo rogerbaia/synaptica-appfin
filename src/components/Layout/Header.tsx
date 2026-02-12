@@ -143,7 +143,7 @@ export default function Header({ onMenuClick, onProfileClick }: HeaderProps) {
     };
 
     return (
-        <header className="h-20 md:h-16 flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 transition-colors duration-300 backdrop-blur-md bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800">
+        <header className="min-h-[5rem] h-auto md:min-h-[4rem] md:h-16 pt-[env(safe-area-inset-top)] flex items-center justify-between px-4 md:px-6 sticky top-0 z-50 transition-colors duration-300 backdrop-blur-md bg-white/90 dark:bg-gray-900/90 border-b border-gray-200 dark:border-gray-800">
 
             {/* LEFTSIDE: Branding & Mobile Menu */}
             <div className="flex items-center gap-4">
