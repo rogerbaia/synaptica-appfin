@@ -45,7 +45,9 @@ next-env.d.ts
 /release
 /win-unpacked
 public/downloads/*.exe
-public/downloads/*.apk
+public/downloads/*.exe
+# public/downloads/*.apk
+public/downloads/*.dmg
 public/downloads/*.dmg
 
 # Large Assets
