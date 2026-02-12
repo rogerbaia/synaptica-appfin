@@ -6,7 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'out',
   server: {
     url: 'https://synaptica-appfin.vercel.app', // [MOD] Live Update Strategy
-    cleartext: true
+    cleartext: true,
+    androidScheme: 'https'
   },
   plugins: {
     StatusBar: {
