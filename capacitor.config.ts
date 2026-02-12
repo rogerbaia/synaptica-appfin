@@ -9,6 +9,10 @@ const config: CapacitorConfig = {
     cleartext: true
   },
   plugins: {
+    StatusBar: {
+      style: 'DEFAULT', // Follows native styles (our styles.xml)
+      backgroundColor: '#ffffff', // Fallback
+    },
     // PushNotifications disabled until google-services.json is provided
   }
 };
