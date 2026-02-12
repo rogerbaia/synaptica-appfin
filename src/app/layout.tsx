@@ -15,23 +15,17 @@ export const viewport: Viewport = {
 };
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";
-import { SettingsProvider } from "@/context/SettingsContext";
-
+import { SettingsProvider } from "@/context/SettingsContext"; // Restore
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
-import NotificationInitializer from "@/components/NotificationInitializer";
 import { ConfirmProvider } from "@/context/ConfirmContext";
+import StatusbarController from "@/components/StatusbarController";
+import SmartDownloadBanner from "@/components/SmartDownloadBanner"; // Restore
+import { Toaster } from 'sonner'; // Restore
 
 export const metadata: Metadata = {
   title: "Aurea - Gestión Financiera Inteligente",
   description: "Plataforma de bienestar financiero impulsada por Gabi AI.",
-
 };
-
-import { Toaster } from 'sonner';
-
-import SmartDownloadBanner from "@/components/SmartDownloadBanner";
-
-// ... (Metadata stays same)
 
 export default function RootLayout({
   children,
@@ -46,6 +40,7 @@ export default function RootLayout({
             <SettingsProvider>
               <SubscriptionProvider>
                 <ConfirmProvider>
+                  <StatusbarController />
                   {/* <NotificationInitializer /> Disabled until firebase config is ready */}
                   {children}
                   <SmartDownloadBanner />
