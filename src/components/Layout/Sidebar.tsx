@@ -274,7 +274,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                     })}
                 </nav>
 
-                <div className="shrink-0 w-full p-4 border-t border-[#e5e7eb] dark:border-[#2d3748] bg-[var(--sidebar-bg)]">
+                <div className="shrink-0 w-full p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] border-t border-[#e5e7eb] dark:border-[#2d3748] bg-[var(--sidebar-bg)]">
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center gap-3">
                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>

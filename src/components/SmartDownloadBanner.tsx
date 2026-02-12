@@ -2,12 +2,20 @@
 
 import React, { useEffect, useState } from 'react';
 import { Download, Monitor, Smartphone, Tablet } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
+// ...
 
 export default function SmartDownloadBanner() {
     const [os, setOs] = useState<'windows' | 'android' | 'ios' | 'mac' | 'unknown'>('unknown');
     const [isVisible, setIsVisible] = useState(true);
 
     useEffect(() => {
+        // [NEW] Hide entirely on native app
+        if (Capacitor.isNativePlatform()) {
+            setIsVisible(false);
+            return;
+        }
+
         const userAgent = window.navigator.userAgent.toLowerCase();
 
         // [NEW] Detect Electron (Custom UA) to hide banner automatically

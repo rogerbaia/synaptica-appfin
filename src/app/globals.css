@@ -112,7 +112,7 @@ body::before {
 @media (max-width: 768px) {
   .main-content {
     margin-left: 0;
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
     /* Space for mobile nav */
   }
 }
