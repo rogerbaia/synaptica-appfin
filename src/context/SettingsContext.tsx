@@ -3,6 +3,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { COLOR_THEMES } from '@/config/themes';
+import { supabaseService } from '@/services/supabaseService';
+import { useAuth } from '@/context/AuthContext';
 
 type Theme = 'light' | 'dark' | 'auto';
 
@@ -96,6 +98,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const [biometricEnabled, setBiometricEnabledState] = useState(false);
     const [country, setCountryState] = useState('MX');
 
+    // [NEW] Auth for Sync
+    const { user } = useAuth();
+
     // Tithe State
     const [titheEnabled, setTitheEnabledState] = useState(false);
     const [titheConfig, setTitheConfigState] = useState<TitheConfig>(DEFAULT_TITHE_CONFIG);
@@ -147,6 +152,39 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         }
     }, []);
 
+    // [NEW] Sync from Cloud on Mount (if user exists)
+    useEffect(() => {
+        if (user?.user_metadata) {
+            const meta = user.user_metadata;
+
+            // 1. Sync Country/Currency
+            if (meta.country) setCountryState(meta.country);
+            if (meta.currency) setCurrencyState(meta.currency);
+
+            // 2. Sync Tithe
+            if (meta.tithe_enabled !== undefined) setTitheEnabledState(meta.tithe_enabled);
+            if (meta.tithe_config) {
+                try {
+                    // Handle both stringified and object formats from Supabase
+                    const config = typeof meta.tithe_config === 'string'
+                        ? JSON.parse(meta.tithe_config)
+                        : meta.tithe_config;
+                    setTitheConfigState(config);
+                } catch (e) { console.error("Error syncing tithe config", e); }
+            }
+
+            // 3. Sync Permissions
+            if (meta.permissions) {
+                try {
+                    const perms = typeof meta.permissions === 'string'
+                        ? JSON.parse(meta.permissions)
+                        : meta.permissions;
+                    setPermissionsState(perms);
+                } catch (e) { console.error("Error syncing permissions", e); }
+            }
+        }
+    }, [user]);
+
     useEffect(() => {
         // Apply Theme to DOM
         const root = window.document.documentElement;
@@ -173,6 +211,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const setCurrency = (c: string) => {
         setCurrencyState(c);
         localStorage.setItem('synaptica_currency', c);
+        // Sync to Cloud
+        supabaseService.updateUserMetadata({ currency: c }).catch(console.error);
     };
 
     const setBiometricEnabled = (b: boolean) => {
@@ -183,16 +223,22 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const setCountry = (c: string) => {
         setCountryState(c);
         localStorage.setItem('synaptica_country', c);
+        // Sync to Cloud
+        supabaseService.updateUserMetadata({ country: c }).catch(console.error);
     }
 
     const setTitheEnabled = (e: boolean) => {
         setTitheEnabledState(e);
         localStorage.setItem('synaptica_tithe_enabled', String(e));
+        // Sync to Cloud
+        supabaseService.updateUserMetadata({ tithe_enabled: e }).catch(console.error);
     }
 
     const setTitheConfig = (c: TitheConfig) => {
         setTitheConfigState(c);
         localStorage.setItem('synaptica_tithe_config', JSON.stringify(c));
+        // Sync to Cloud
+        supabaseService.updateUserMetadata({ tithe_config: c }).catch(console.error);
     }
 
     // Permissions
@@ -220,6 +266,8 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     const setPermissions = (p: { geo: boolean, mic: boolean, camera: boolean }) => {
         setPermissionsState(p);
         localStorage.setItem('synaptica_permissions', JSON.stringify(p));
+        // Sync to Cloud
+        supabaseService.updateUserMetadata({ permissions: p }).catch(console.error);
     };
 
     const setGeminiApiKey = (key: string) => {
