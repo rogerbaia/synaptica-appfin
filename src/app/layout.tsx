@@ -7,7 +7,11 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: "cover", // Critical for safe-area-inset
-  themeColor: "#ffffff",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#111827" }, // Gray-900 to match dark mode header
+  ],
+  colorScheme: "light dark", // Helps browser determine default scrollbar/system UI
 };
 import { AuthProvider } from "@/context/AuthContext";
 import { LanguageProvider } from "@/context/LanguageContext";

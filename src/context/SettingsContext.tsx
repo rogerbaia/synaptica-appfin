@@ -236,6 +236,22 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
         root.setAttribute('data-color-theme', colorTheme);
         localStorage.setItem('synaptica_color_theme', colorTheme);
 
+        // 3. Status Bar Color Sync (Dynamic Meta Tag)
+        // This ensures status bar matches the app theme even if system theme differs
+        const resolvedTheme = theme === 'auto'
+            ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+            : theme;
+
+        const metaColor = resolvedTheme === 'dark' ? '#111827' : '#ffffff';
+        let metaThemeColor = document.querySelector("meta[name='theme-color']");
+
+        if (!metaThemeColor) {
+            metaThemeColor = document.createElement('meta');
+            metaThemeColor.setAttribute('name', 'theme-color');
+            document.head.appendChild(metaThemeColor);
+        }
+        metaThemeColor.setAttribute('content', metaColor);
+
     }, [theme, colorTheme]);
 
     const setTheme = (t: Theme) => setThemeState(t);
