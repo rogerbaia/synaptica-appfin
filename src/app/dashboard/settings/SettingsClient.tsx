@@ -69,8 +69,38 @@ export default function SettingsPage() {
 
         setSavingGemini(true);
         try {
+
             // 0. VERIFY KEY
-            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localGeminiKey.trim()}`;
+            // Dynamic Model Discovery to avoid "Model Not Found" errors
+            let modelToTest = 'gemini-1.5-flash';
+
+            try {
+                const listUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${localGeminiKey.trim()}`;
+                const listResp = await fetch(listUrl);
+
+                if (listResp.ok) {
+                    const listData = await listResp.json();
+                    const models = listData.models || [];
+                    // Find a model that supports generateContent, preferring 1.5-flash
+                    const validModels = models.filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'));
+
+                    const flash = validModels.find((m: any) => m.name.includes('gemini-1.5-flash'));
+                    const anyFlash = validModels.find((m: any) => m.name.includes('flash'));
+                    const pro = validModels.find((m: any) => m.name.includes('pro'));
+                    const fallback = validModels[0];
+
+                    if (flash) modelToTest = flash.name.replace('models/', '');
+                    else if (anyFlash) modelToTest = anyFlash.name.replace('models/', '');
+                    else if (pro) modelToTest = pro.name.replace('models/', '');
+                    else if (fallback) modelToTest = fallback.name.replace('models/', '');
+
+                    console.log("Saving Gemini: Detected efficient model:", modelToTest);
+                }
+            } catch (e) {
+                console.warn("Could not list models, falling back to default", e);
+            }
+
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToTest}:generateContent?key=${localGeminiKey.trim()}`;
             const testPayload = { contents: [{ parts: [{ text: "Test" }] }] };
             const response = await fetch(testUrl, {
                 method: 'POST',
@@ -86,7 +116,7 @@ export default function SettingsPage() {
                     if (json.error?.message) errMsg = json.error.message;
                 } catch (e) { }
 
-                alert(`⚠️ La llave no funcionó:\n\n"${errMsg}"\n\nAsegúrate de que la llave esté activa y sin restricciones en Google AI Studio.`);
+                alert(`⚠️ La llave no funcionó con el modelo ${modelToTest}:\n\n"${errMsg}"\n\nAsegúrate de que la llave esté activa en Google AI Studio.`);
                 setSavingGemini(false);
                 return;
             }
