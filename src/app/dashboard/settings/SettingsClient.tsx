@@ -52,14 +52,17 @@ export default function SettingsPage() {
     const [isEditingGemini, setIsEditingGemini] = useState(false);
     const [savingGemini, setSavingGemini] = useState(false);
     const [showGeminiKey, setShowGeminiKey] = useState(false);
+    // [FIX] Local state to prevent auto-revert during sync
+    const [localGeminiKey, setLocalGeminiKey] = useState('');
 
     const handleSaveGemini = async () => {
         if (!isEditingGemini) {
+            setLocalGeminiKey(geminiApiKey || '');
             setIsEditingGemini(true);
             return;
         }
 
-        if (!geminiApiKey.trim()) {
+        if (!localGeminiKey.trim()) {
             toast.error("La API Key no puede estar vacía.");
             return;
         }
@@ -67,7 +70,7 @@ export default function SettingsPage() {
         setSavingGemini(true);
         try {
             // 0. VERIFY KEY
-            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey.trim()}`;
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${localGeminiKey.trim()}`;
             const testPayload = { contents: [{ parts: [{ text: "Test" }] }] };
             const response = await fetch(testUrl, {
                 method: 'POST',
@@ -90,11 +93,11 @@ export default function SettingsPage() {
 
             // 1. Save to Supabase Metadata (Persistence)
             await supabaseService.updateUserMetadata({
-                gemini_api_key: geminiApiKey.trim()
+                gemini_api_key: localGeminiKey.trim()
             });
 
             // 2. Save to Local Context (Instant Access)
-            setGeminiApiKey(geminiApiKey.trim());
+            setGeminiApiKey(localGeminiKey.trim());
 
             toast.success("✅ Llave verificada y guardada exitosamente.");
             setIsEditingGemini(false);
@@ -512,16 +515,16 @@ export default function SettingsPage() {
                                 <input
                                     type={showGeminiKey ? "text" : "password"}
                                     placeholder="Pegar nueva API Key..."
-                                    value={geminiApiKey || ''}
+                                    value={isEditingGemini ? localGeminiKey : (geminiApiKey || '')}
                                     disabled={!isEditingGemini}
-                                    onChange={(e) => setGeminiApiKey(e.target.value)}
+                                    onChange={(e) => setLocalGeminiKey(e.target.value)}
                                     className={`w-full p-3 pr-20 border border-gray-200 dark:border-gray-700 rounded-xl dark:text-white dark:placeholder-gray-400 text-sm outline-none transition-all font-mono ${!isEditingGemini ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-slate-800' : 'bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500'}`}
                                 />
                                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                                    {isEditingGemini && geminiApiKey && (
+                                    {isEditingGemini && localGeminiKey && (
                                         <button
                                             type="button"
-                                            onClick={() => setGeminiApiKey('')}
+                                            onClick={() => setLocalGeminiKey('')}
                                             className="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition"
                                             title="Borrar llave"
                                         >
