@@ -88,8 +88,17 @@ export const gabiVisionService = {
             if (response.status === 429) {
                 throw new Error("Límite de uso de IA alcanzado. Por favor, espera 1 minuto antes de intentar de nuevo.");
             }
-            const err = await response.text();
-            throw new Error(`Gemini Vision Error: ${response.status} - ${err}`);
+            const errText = await response.text();
+            let errMsg = `Gemini Vision Error (${response.status})`;
+            try {
+                const errJson = JSON.parse(errText);
+                if (errJson.error && errJson.error.message) {
+                    errMsg = errJson.error.message;
+                }
+            } catch (e) {
+                errMsg += `: ${errText}`;
+            }
+            throw new Error(errMsg);
         }
 
         const data = await response.json();

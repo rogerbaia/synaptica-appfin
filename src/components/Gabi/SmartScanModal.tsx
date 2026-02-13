@@ -179,9 +179,9 @@ export default function SmartScanModal({ isOpen, onClose, onSuccess, onScanCompl
             const eMsg = (err.message || "").toLowerCase();
 
             if (eMsg.includes("api key") || eMsg.includes("invalid") || eMsg.includes("400") || eMsg.includes("403")) {
-                alert("⚠️ Revisar API Key\n\nGoogle rechazó tu llave (API_KEY_INVALID). Verifica que la hayas copiado bien en Configuración.");
+                alert(`⚠️ Revisar API Key\n\nGoogle dice: "${err.message}".\n\nVerifica que la hayas copiado completa y sin espacios.`);
             } else {
-                alert("Error al analizar (" + (err.message || "desconocido") + "). Asegúrate que el ticket sea legible.");
+                alert("Error al analizar (" + (err.message || "desconocido") + "). Intenta de nuevo.");
             }
             setProcessing(false);
         }

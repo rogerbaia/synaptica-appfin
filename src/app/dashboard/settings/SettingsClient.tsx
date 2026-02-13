@@ -66,6 +66,28 @@ export default function SettingsPage() {
 
         setSavingGemini(true);
         try {
+            // 0. VERIFY KEY
+            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey.trim()}`;
+            const testPayload = { contents: [{ parts: [{ text: "Test" }] }] };
+            const response = await fetch(testUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(testPayload)
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                let errMsg = `Error ${response.status}`;
+                try {
+                    const json = JSON.parse(errText);
+                    if (json.error?.message) errMsg = json.error.message;
+                } catch (e) { }
+
+                alert(`⚠️ La llave no funcionó:\n\n"${errMsg}"\n\nAsegúrate de que la llave esté activa y sin restricciones en Google AI Studio.`);
+                setSavingGemini(false);
+                return;
+            }
+
             // 1. Save to Supabase Metadata (Persistence)
             await supabaseService.updateUserMetadata({
                 gemini_api_key: geminiApiKey.trim()
@@ -74,11 +96,11 @@ export default function SettingsPage() {
             // 2. Save to Local Context (Instant Access)
             setGeminiApiKey(geminiApiKey.trim());
 
-            toast.success("API Key de Gemini guardada correctamente.");
+            toast.success("✅ Llave verificada y guardada exitosamente.");
             setIsEditingGemini(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error("Error al guardar la API Key.");
+            toast.error("Error de conexión al verificar llave.");
         } finally {
             setSavingGemini(false);
         }
