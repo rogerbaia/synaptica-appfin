@@ -1,21 +1,18 @@
 import { ImageResponse } from 'next/og';
 
-// Image metadata
 export const size = {
     width: 32,
     height: 32,
 };
 export const contentType = 'image/png';
 
-// Image generation
 export default function Icon() {
     return new ImageResponse(
         (
-            // ImageResponse JSX element
             <div
                 style={{
                     fontSize: 24,
-                    background: 'transparent', // Transparent background
+                    background: 'transparent',
                     width: '100%',
                     height: '100%',
                     display: 'flex',
@@ -23,8 +20,6 @@ export default function Icon() {
                     justifyContent: 'center',
                 }}
             >
-                {/* We use an SVG inside the ImageResponse to render our gradient path */}
-                {/* Next.js OG generation handles gradients much better than raw ICO/SVG in tabs */}
                 <svg
                     width="32"
                     height="32"
@@ -49,7 +44,6 @@ export default function Icon() {
                 </svg>
             </div>
         ),
-        // ImageResponse options
         {
             ...size,
         }
