@@ -91,11 +91,6 @@ export default function SettingsPage() {
             setPhone(user.user_metadata.phone || '');
             setAddress(user.user_metadata.address || '');
             setUseAddressForBilling(user.user_metadata.use_address_for_billing || false);
-
-            // [FIX] Sync Gemini Key from Metadata (Cloud -> Local)
-            if (user.user_metadata.gemini_api_key) {
-                setGeminiApiKey(user.user_metadata.gemini_api_key);
-            }
         }
     }, [user, setGeminiApiKey]);
 
