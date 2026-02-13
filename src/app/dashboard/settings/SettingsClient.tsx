@@ -5,7 +5,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
     Settings, Globe, Moon, Database, Shield, Bell, Church, Calendar, Repeat,
-    Lock, Key, MapPin, Mic, Camera, Sparkles, FileText, Save, Users, Smartphone, Eye, EyeOff
+    Lock, Key, MapPin, Mic, Camera, Sparkles, FileText, Save, Users, Smartphone, Eye, EyeOff, Trash2
 } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -489,24 +489,36 @@ export default function SettingsPage() {
                             <div className="relative">
                                 <input
                                     type={showGeminiKey ? "text" : "password"}
-                                    placeholder="Pega tu API Key de Google Gemini aquí..."
+                                    placeholder="Pegar nueva API Key..."
                                     value={geminiApiKey || ''}
                                     disabled={!isEditingGemini}
                                     onChange={(e) => setGeminiApiKey(e.target.value)}
-                                    className={`w-full p-3 pr-10 border border-gray-200 dark:border-gray-700 rounded-xl dark:text-white dark:placeholder-gray-400 text-sm outline-none transition-all font-mono ${!isEditingGemini ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-slate-800' : 'bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500'}`}
+                                    className={`w-full p-3 pr-20 border border-gray-200 dark:border-gray-700 rounded-xl dark:text-white dark:placeholder-gray-400 text-sm outline-none transition-all font-mono ${!isEditingGemini ? 'bg-gray-100 text-gray-500 cursor-not-allowed dark:bg-slate-800' : 'bg-white dark:bg-slate-900 focus:ring-2 focus:ring-blue-500'}`}
                                 />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowGeminiKey(!showGeminiKey)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                                >
-                                    {showGeminiKey ? <EyeOff size={18} /> : <Eye size={18} />}
-                                </button>
+                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                                    {isEditingGemini && geminiApiKey && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setGeminiApiKey('')}
+                                            className="p-1.5 text-red-400 hover:text-red-600 dark:hover:text-red-300 transition"
+                                            title="Borrar llave"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowGeminiKey(!showGeminiKey)}
+                                        className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                                    >
+                                        {showGeminiKey ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="flex justify-between items-center">
                                 <p className="text-xs text-gray-400">
-                                    Obtén tu clave gratis en <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-blue-500 hover:underline">Google AI Studio</a>.
+                                    ¿Llave rechazada? Crea una <span className="font-bold text-blue-500">NUEVA</span> en <a href="https://aistudio.google.com/app/apikey" target="_blank" className="underline hover:text-blue-600">Google AI Studio</a>.
                                 </p>
                                 <button
                                     onClick={handleSaveGemini}
