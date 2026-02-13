@@ -24,6 +24,7 @@ const getAuthHeader = () => {
 };
 
 export const runtime = 'nodejs'; // FORCE NODE RUNTIME
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
     // DIAGNOSTICS: Inspect the key and header actually being generated

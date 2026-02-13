@@ -25,6 +25,7 @@ const getAuthHeader = () => {
 };
 
 export const runtime = 'nodejs'; // FORCE NODE RUNTIME
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
     if (!FACTURAPI_KEY || FACTURAPI_KEY.includes('placeholder')) {

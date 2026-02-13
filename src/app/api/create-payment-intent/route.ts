@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe-server';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: Request) {
     try {
         const { amount, currency = 'usd' } = await request.json();

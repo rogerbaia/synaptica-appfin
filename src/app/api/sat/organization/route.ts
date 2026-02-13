@@ -18,6 +18,7 @@ const getAuthHeader = () => {
 };
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 // [Fix V33] User Key Discovery & Zombie Logic Hybrid
 // 1. User Key (!isOrgKey):

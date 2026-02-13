@@ -25,6 +25,7 @@ const getAuthHeader = () => {
 };
 
 export const runtime = 'nodejs'; // FORCE NODE RUNTIME
+export const dynamic = 'force-dynamic';
 
 // ... (imports remain same)
 

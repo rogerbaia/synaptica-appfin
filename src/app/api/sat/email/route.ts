@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
 export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
 
 const KEY_PART_1 = 'sk_live_';
 const KEY_PART_2 = 'N8NW3LtbUGBvmLZQd1LPDikpxUHyNUrBH61g5WU8Mq';

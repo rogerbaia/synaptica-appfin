@@ -2,16 +2,19 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 // Super Admin Only
-const supabaseAdmin = createClient(
+// Lazy initialization inside handler to avoid build-time errors
+const getSupabaseAdmin = () => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
     try {
-        // In real app, check session cookie / Authorization header 
-        // For now, we assume the client-side check protects the route access, 
-        // or we can verify the session if headers are passed (optional for critical sections)
+        const supabaseAdmin = getSupabaseAdmin();
+        // In real app ...
+        // ... (rest of logic) ...
 
         const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
 

@@ -26,12 +26,19 @@ const getAuthHeader = () => {
 };
 
 export const runtime = 'nodejs'; // FORCE NODE RUNTIME
+export const dynamic = 'force-dynamic';
 
 // Initialize Supabase Client
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+// const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 export async function GET(req: NextRequest) {
     try {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY!
+        );
+
         // 1. Auth Check
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) {

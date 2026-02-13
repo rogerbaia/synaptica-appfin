@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 // Initialize Supabase Admin Client (Service Role)
-const supabaseAdmin = createClient(
+const getSupabaseAdmin = () => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
@@ -15,6 +17,7 @@ const supabaseAdmin = createClient(
 
 export async function DELETE(req: NextRequest) {
     try {
+        const supabaseAdmin = getSupabaseAdmin();
         // 1. Auth Check (Must be Super Admin)
         const authHeader = req.headers.get('Authorization');
         if (!authHeader) {

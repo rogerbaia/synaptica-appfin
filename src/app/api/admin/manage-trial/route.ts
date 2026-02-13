@@ -1,14 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const dynamic = 'force-dynamic';
+
 // Admin client to update user_metadata (server-side only)
-const supabaseAdmin = createClient(
+// Lazy initialization to avoid build-time errors
+const getSupabaseAdmin = () => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function POST(req: Request) {
     try {
+        const supabaseAdmin = getSupabaseAdmin();
         const body = await req.json();
         const { userId, action, email } = body;
 

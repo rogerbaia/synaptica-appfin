@@ -3,13 +3,17 @@ import { stripe } from '@/lib/stripe-server';
 import { createClient } from '@supabase/supabase-js';
 
 // Admin client to update user_metadata (server-side only)
-const supabaseAdmin = createClient(
+// Lazy init
+const getSupabaseAdmin = () => createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
+        const supabaseAdmin = getSupabaseAdmin();
         const body = await req.json();
         const { folios, amount } = body; // amount in MXN (dollars/pesos not cents yet)
 
