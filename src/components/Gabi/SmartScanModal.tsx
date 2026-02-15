@@ -179,7 +179,10 @@ export default function SmartScanModal({ isOpen, onClose, onSuccess, onScanCompl
             const eMsg = (err.message || "").toLowerCase();
 
             if (eMsg.includes("api key") || eMsg.includes("invalid") || eMsg.includes("400") || eMsg.includes("403")) {
-                alert(`⚠️ Revisar API Key\n\nGoogle dice: "${err.message}".\n\nVerifica que la hayas copiado completa y sin espacios.`);
+                const key = localStorage.getItem('synaptica_gemini_key') || "";
+                const keyHint = key.length > 5 ? `...${key.slice(-4)}` : "???";
+
+                alert(`⚠️ Revisar API Key (Termina en ${keyHint})\n\nGoogle rechaza la llave con el mensaje: "${err.message}".\n\nPosibles causas:\n1. Restricciones de Dominio (Referer) en Google Cloud (la app corre en ${window.location.hostname}).\n2. Espacios en blanco al copiar.\n3. Llave equivocada (Debe ser de AI Studio, no Vertex).`);
             } else {
                 alert("Error al analizar (" + (err.message || "desconocido") + "). Intenta de nuevo.");
             }

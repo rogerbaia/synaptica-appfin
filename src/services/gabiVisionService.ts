@@ -20,10 +20,12 @@ export const gabiVisionService = {
      * @param mimeType e.g. "image/jpeg"
      */
     analyzeTicket: async (base64Image: string, mimeType: string = 'image/jpeg'): Promise<ExtractedTicketData> => {
-        const savedKey = localStorage.getItem('synaptica_gemini_key');
-        if (!savedKey) {
-            throw new Error("No API Key configured");
+
+        const rawKey = localStorage.getItem('synaptica_gemini_key');
+        if (!rawKey) {
+            throw new Error("No hay API Key configurada. Ve a Ajustes > Integración con Gemini AI.");
         }
+        const savedKey = rawKey.trim();
 
         // 1. Discover Model (Flash preferred)
         let modelToUse = 'gemini-1.5-flash';
@@ -35,6 +37,14 @@ export const gabiVisionService = {
                 // Prefer Flash for speed and vision capabilities
                 const flash = models.find((m: any) => m.name.toLowerCase().includes('flash') && m.name.toLowerCase().includes('gemini'));
                 if (flash) modelToUse = flash.name.replace('models/', '');
+            } else {
+                // If listing fails, it might be the key. Check status.
+                if (listResp.status === 400) {
+                    const errText = await listResp.text();
+                    console.error("Model List Error:", errText);
+                    // Allow it to fail downstream for consistent error message, 
+                    // OR throw here if we are sure it's the key.
+                }
             }
         } catch (e) {
             console.warn("Model discovery failed, using default", e);

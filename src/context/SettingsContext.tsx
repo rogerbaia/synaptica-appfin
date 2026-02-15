@@ -300,8 +300,9 @@ export const SettingsProvider = ({ children }: { children: React.ReactNode }) =>
     };
 
     const setGeminiApiKey = (key: string) => {
-        setGeminiApiKeyState(key);
-        localStorage.setItem('synaptica_gemini_key', key);
+        const cleanKey = key.trim();
+        setGeminiApiKeyState(cleanKey);
+        localStorage.setItem('synaptica_gemini_key', cleanKey);
     };
 
     return (
