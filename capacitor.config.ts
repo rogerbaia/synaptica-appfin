@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.synaptica.app',
   appName: 'Synaptica',
-  webDir: 'out',
+  webDir: 'public',
   server: {
     url: 'https://synaptica-appfin.vercel.app', // [MOD] Live Update Strategy
     cleartext: true,
