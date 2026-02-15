@@ -550,7 +550,7 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, initialDa
                             id="isPaid"
                             checked={isPaid}
                             onChange={e => setIsPaid(e.target.checked)}
-                            className={`w-4 h-4 rounded border-gray-300 focus:ring-blue-500 ${isPaid ? 'text-green-600' : 'text-gray-400'}`}
+                            className={`w-4 h-4 rounded border-gray-300 focus:ring-blue-500 bg-white dark:bg-slate-700 accent-green-600 ${isPaid ? 'text-green-600' : 'text-gray-400'}`}
                         />
                         <label htmlFor="isPaid" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer flex items-center gap-2">
                             {isPaid ? (
@@ -594,7 +594,7 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, initialDa
                                             if (!isNaN(d.getDate())) setDayOfMonth(d.getDate());
                                         }
                                     }}
-                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-700 accent-indigo-600"
                                 />
                                 <label htmlFor="isRecurring" className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200 cursor-pointer select-none">
                                     <Repeat size={16} className={isRecurring ? "text-indigo-500" : "text-gray-400"} />
@@ -686,7 +686,7 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, initialDa
                                     id="hasInvoice"
                                     checked={hasInvoice}
                                     onChange={e => setHasInvoice(e.target.checked)}
-                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 accent-blue-600"
                                 />
                                 <label htmlFor="hasInvoice" className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                                     Emitir Factura
@@ -794,7 +794,7 @@ export default function TransactionModal({ isOpen, onClose, onSuccess, initialDa
                                                 id="includesIva"
                                                 checked={includesIva}
                                                 onChange={e => setIncludesIva(e.target.checked)}
-                                                className="mt-1 w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                                className="mt-1 w-3.5 h-3.5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-white dark:bg-slate-700 accent-blue-600"
                                             />
                                             <label htmlFor="includesIva" className="text-xs text-gray-600 dark:text-gray-300 leading-tight">
                                                 Monto incluye IVA (16%)

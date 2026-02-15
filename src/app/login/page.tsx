@@ -40,6 +40,9 @@ export default function LoginPage() {
             }
 
             // 2. Verify Identity
+            // Add slight delay to ensure UI is stable and prevent immediate dismissal
+            await new Promise(resolve => setTimeout(resolve, 500));
+
             await NativeBiometric.verifyIdentity({
                 reason: "Por favor autentícate",
                 title: "Acceso Seguro Synaptica",
