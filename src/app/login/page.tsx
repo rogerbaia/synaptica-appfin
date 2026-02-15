@@ -33,11 +33,8 @@ export default function LoginPage() {
                 return;
             }
 
-            // 1. Race Condition Check (If user loaded in background)
-            if (user) {
-                router.push('/dashboard');
-                return;
-            }
+            // 1. Race Condition Check (removed to force bio check)
+            // if (user) { ... }
 
             // 2. Verify Identity
             // Add slight delay to ensure UI is stable and prevent immediate dismissal
