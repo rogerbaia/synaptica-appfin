@@ -37,8 +37,8 @@ export default function LoginPage() {
             // if (user) { ... }
 
             // 2. Verify Identity
-            // Add slight delay to ensure UI is stable and prevent immediate dismissal
-            await new Promise(resolve => setTimeout(resolve, 500));
+            // Add 2s delay to ensure UI is stable and user can read the prompt
+            await new Promise(resolve => setTimeout(resolve, 2000));
 
             await NativeBiometric.verifyIdentity({
                 reason: "Por favor autentícate",
