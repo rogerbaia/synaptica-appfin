@@ -1,10 +1,10 @@
 import React, { Suspense } from 'react';
-import CalendarClient from './CalendarClient';
+import ArchiveClient from './ArchiveClient';
 
-export default function CalendarPage() {
+export default function ArchivePage() {
     return (
         <Suspense fallback={<div>Cargando...</div>}>
-            <CalendarClient />
+            <ArchiveClient />
         </Suspense>
     );
 }

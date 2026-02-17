@@ -1,10 +1,10 @@
 import React, { Suspense } from 'react';
-import CalendarClient from './CalendarClient';
+import BillingClient from './BillingClient';
 
-export default function CalendarPage() {
+export default function BillingPage() {
     return (
         <Suspense fallback={<div>Cargando...</div>}>
-            <CalendarClient />
+            <BillingClient />
         </Suspense>
     );
 }

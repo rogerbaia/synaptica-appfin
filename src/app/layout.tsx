@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   description: "Plataforma de bienestar financiero impulsada por Gabi AI.",
 };
 
-export const dynamic = 'force-dynamic';
+
 
 export default function RootLayout({
   children,

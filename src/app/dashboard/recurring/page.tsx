@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import RecurringClient from './RecurringClient';
 
-export const dynamic = 'force-dynamic';
-
 export default function RecurringPage() {
-    return <RecurringClient />;
+    return (
+        <Suspense fallback={<div>Cargando...</div>}>
+            <RecurringClient />
+        </Suspense>
+    );
 }
