@@ -10,7 +10,7 @@ import AureaLogo from '@/components/Layout/AureaLogo';
 
 export default function LoginPage() {
     const router = useRouter();
-    const { user, signInWithGoogle, signInWithEmail, verifyOtp, signInWithBiometrics } = useAuth();
+    const { user, signInWithGoogle, signInWithEmail, verifyOtp, signInWithBiometrics, signOut } = useAuth();
     const [email, setEmail] = React.useState('');
     const [otp, setOtp] = React.useState('');
     const [showOtpInput, setShowOtpInput] = React.useState(false);
@@ -144,7 +144,7 @@ export default function LoginPage() {
                             </button>
                         </div>
                         <button
-                            onClick={() => window.location.reload()}
+                            onClick={() => signOut()}
                             className="mt-6 text-xs text-white/40 hover:text-white underline"
                         >
                             No soy yo (Cerrar Sesión)
