@@ -699,8 +699,18 @@ export const useGabi = () => {
                     try {
                         const listModelsUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${savedKey}`;
                         const listResp = await fetch(listModelsUrl);
+
                         if (listResp.ok) {
-                            const listData = await listResp.json();
+                            // Safe Parse
+                            const text = await listResp.text();
+                            let listData;
+                            try {
+                                listData = JSON.parse(text);
+                            } catch (e) {
+                                console.warn("Gemini Debug: List models returned non-JSON");
+                                listData = { models: [] }; // Fallback
+                            }
+
                             const models = listData.models || [];
                             const validModels = models.filter((m: any) => m.supportedGenerationMethods?.includes('generateContent'));
 
@@ -795,21 +805,42 @@ export const useGabi = () => {
                     console.log("Gemini Debug: Response Status", response.status);
 
                     if (!response.ok) {
-                        const errData = await response.text();
-                        console.error("Gemini Debug: API Error Body", errData);
+                        const errText = await response.text();
+                        console.error("Gemini Debug: API Error Body", errText);
+                        // Fallback message
+                        speak("Lo siento, mis servicios cognitivos no responden. Intenta más tarde.");
+                        setResponse(`<div class="text-red-500 text-xs">Error API: ${response.status}</div>`);
                         throw new Error(`Gemini API Error: ${response.status}`);
                     }
 
-                    const data = await response.json();
-                    if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
-                        const answer = data.candidates[0].content.parts[0].text.trim();
+                    // SAFE JSON PARSE
+                    let data;
+                    try {
+                        const text = await response.text();
+                        try {
+                            data = JSON.parse(text);
+                        } catch (e) {
+                            console.error("Gemini Debug: Invalid JSON", text.substring(0, 100));
+                            throw new Error("Invalid JSON response from Gemini");
+                        }
+                    } catch (e) {
+                        speak("Hubo un problema de conexión con el cerebro de Gabi.");
+                        setResponse(`<div class="text-red-500 text-xs">Error de Protocolo (HTML recibida).</div>`);
+                        return;
+                    }
 
-                        // Check for SEARCH protocol
-                        if (answer.startsWith('[[SEARCH:') && answer.endsWith(']]')) {
-                            const query = answer.replace('[[SEARCH:', '').replace(']]', '').trim();
+                    if (data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+                        const answer = data.candidates[0].content.parts[0].text;
+                        setResponse(answer.replace(/\n/g, '<br/>'));
+
+                        // Check for SEARCH Tool call
+                        // [[SEARCH: query]]
+                        const searchMatch = answer.match(/\[\[SEARCH: (.*?)\]\]/);
+                        if (searchMatch) {
+                            const query = searchMatch[1];
                             const gUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
 
-                            speak(`No tengo ese dato reciente, pero te lo busco en Google.`);
+                            speak(`Buscando ${query} en Google por ti.`);
                             setResponse(`Buscando: <b>${query}</b>...`);
 
                             setTimeout(() => {
@@ -825,6 +856,7 @@ export const useGabi = () => {
                         return;
                     } else {
                         console.warn("Gemini Debug: No content in response", data);
+                        speak("No entendí la respuesta del servidor.");
                     }
                 } catch (e) {
                     console.error("Gemini Critical Error", e);
