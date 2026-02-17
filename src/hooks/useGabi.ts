@@ -353,8 +353,8 @@ export const useGabi = () => {
 
             // --- INTENT: REGISTER TRANSACTION (PRE-FILL FORM) ---
             // Pattern: "Registra/Nuevo [gasto/ingreso] de [monto] (en/para [descripcion])"
-            // Enhanced to include synonyms
-            const registerPattern = /(registrar|registra|nuevo|agrega|anota).*(gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro).*(\d+)/i;
+            // Enhanced to include synonyms AND direct commands "gasto de 200"
+            const registerPattern = /^(registrar|registra|nuevo|agrega|anota|gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro)/i;
 
             if (registerPattern.test(lowerCmd)) {
 

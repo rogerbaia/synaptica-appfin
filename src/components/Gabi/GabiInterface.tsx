@@ -101,6 +101,7 @@ export default function GabiInterface({ isOpen, onClose, state, transcript, resp
                 <div className="p-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-[#151e2d]">
                     {/* Text Input */}
                     <form
+                        action="javascript:void(0);"
                         onSubmit={(e) => {
                             e.preventDefault();
                             const form = e.target as HTMLFormElement;
@@ -109,6 +110,7 @@ export default function GabiInterface({ isOpen, onClose, state, transcript, resp
                                 onCommand(input.value.trim());
                                 input.value = '';
                             }
+                            return false;
                         }}
                         className="mb-4 flex gap-2"
                     >

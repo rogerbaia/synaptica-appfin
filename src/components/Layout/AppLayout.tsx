@@ -68,10 +68,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
     const handleOpenGabi = () => {
         setIsGabiOpen(true);
-        // Add slight delay to ensure UI is ready before speaking
-        setTimeout(() => {
-            speakWithAutoListen("Hola, ¿en qué puedo ayudarte hoy?", true);
-        }, 100);
+        // Unlock Audio Context (Mobile Policy)
+        if (typeof window !== 'undefined') {
+            window.speechSynthesis.cancel();
+        }
+        // Direct call without timeout to satisfy user interaction requirement
+        speakWithAutoListen("Hola, ¿en qué puedo ayudarte hoy?", true);
     };
 
     const handleCloseGabi = () => {
