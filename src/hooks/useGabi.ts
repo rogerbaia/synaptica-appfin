@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabaseService } from '@/services/supabaseService';
-
-// Add SpeechRecognition types
-interface IWindow extends Window {
-    webkitSpeechRecognition: any;
-    SpeechRecognition: any;
-}
+import { SpeechRecognition } from '@capacitor-community/speech-recognition';
 
 export type GabiState = 'idle' | 'listening' | 'processing' | 'speaking';
 
@@ -39,7 +34,6 @@ export const useGabi = () => {
         category?: string;
     } | null>(null);
 
-    // ... existing refs ...
     // Ref to access state inside stale closures (SpeechRecognition callbacks)
     const conversationRef = useRef(conversation);
 
@@ -49,91 +43,62 @@ export const useGabi = () => {
 
     // Track if we are expecting a response to auto-restart mic
     const expectingResponse = useRef(false);
+    const synthesisRef = useRef<SpeechSynthesis | null>(null);
+    const transcriptRef = useRef('');
 
     // Load Nickname on Mount
     useEffect(() => {
         supabaseService.getUserMetadata().then(meta => {
             if (meta?.nickname) setClientName(meta.nickname);
         });
-        console.log("Gabi Hook v7.6 Loaded - Voice Form Filling");
-    }, []);
 
-    const recognitionRef = useRef<any>(null);
-    const synthesisRef = useRef<SpeechSynthesis | null>(null);
-    const transcriptRef = useRef('');
-    const silenceTimer = useRef<NodeJS.Timeout | null>(null);
+        // Initialize Speech Synthesis
+        if (typeof window !== 'undefined') {
+            synthesisRef.current = window.speechSynthesis;
+        }
+
+        console.log("Gabi Hook v7.7 Loaded - Native Speech Plugin");
+
+        // Setup Native Listeners
+        SpeechRecognition.removeAllListeners();
+
+        SpeechRecognition.addListener('partialResults', (data: any) => {
+            if (data.matches && data.matches.length > 0) {
+                const text = data.matches[0];
+                setTranscript(text);
+                transcriptRef.current = text;
+            }
+        });
+
+        // Some devices don't fire partialResults efficiently, so we also check 'listeningState'
+        // effectively, main results come from the promise resolution of start(), 
+        // OR we might need to rely on partials if the promise doesn't return intermediate.
+        // Actually, the plugin usually returns the final array in the start() promise.
+
+        return () => {
+            SpeechRecognition.removeAllListeners();
+        };
+
+    }, []);
 
     // Ref to hold the latest version of processCommand to avoid stale closures
     const processCommandRef = useRef<(cmd: string) => Promise<void>>(async () => { });
 
+    // Update ref when function changes (if it depends on closure, though here we define it inside too... wait)
+    // Actually `processCommand` is defined BELOW. We need to keep this pattern.
+    // The previous code had `processCommandRef.current = processCommand` but processCommand was defined AFTER.
+    // Wait, in previous code `processCommand` called `processCommandRef`. 
+    // Actually, `processCommand` logic was inside the hook.
+    // Let's modify `startListening` to handle the flow.
+
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const { webkitSpeechRecognition, SpeechRecognition } = window as unknown as IWindow;
-            const SpeechRecognitionConstructor = SpeechRecognition || webkitSpeechRecognition;
-
-            if (SpeechRecognitionConstructor) {
-                const recognition = new SpeechRecognitionConstructor();
-                recognition.continuous = false;
-                recognition.lang = 'es-MX';
-                recognition.interimResults = true;
-
-                recognition.onstart = () => {
-                    setState('listening');
-                    transcriptRef.current = '';
-                };
-
-                recognition.onresult = (event: any) => {
-                    const current = event.resultIndex;
-                    const transcriptText = event.results[current][0].transcript;
-
-                    setTranscript(transcriptText);
-                    transcriptRef.current = transcriptText;
-
-                    // Silence Detection: Reset timer
-                    if (silenceTimer.current) clearTimeout(silenceTimer.current);
-                    silenceTimer.current = setTimeout(() => {
-                        recognition.stop();
-                    }, 1500); // 1.5 seconds silence to stop
-                };
-
-                recognition.onend = () => {
-                    if (silenceTimer.current) clearTimeout(silenceTimer.current);
-
-                    // If we have text, process it using the LATEST function version
-                    if (transcriptRef.current.trim()) {
-                        processCommandRef.current(transcriptRef.current);
-                    } else {
-                        // Silence / No Input Logic
-                        if (expectingResponse.current) {
-                            // Smart Retry Logic
-                            expectingResponse.current = false; // Prevent infinite loop immediately
-                            setState('idle');
-
-                            // Ask to retry
-                            const ctx = conversationRef.current; // Capture current state context
-                            if (ctx.mode === 'CFDI_WIZARD') {
-                                speak("No escuché ninguna respuesta. ¿Quieres volver a intentar ahora?");
-                                // We need to move state to a temporary RETRY_CHECK
-                                setConversation(prev => ({
-                                    ...prev,
-                                    step: 'RETRY_CHECK',
-                                    data: { ...prev.data, previousStep: prev.step }
-                                }));
-                                // Auto-listen for the YES/NO to retry
-                                expectingResponse.current = true;
-                            }
-                        } else {
-                            setState('idle');
-                        }
-                    }
-                };
-
-                recognitionRef.current = recognition;
-            }
-
-            synthesisRef.current = window.speechSynthesis;
-        }
+        // Update ref for the closure used by the native result handler if we move logic there
     }, [clientName]);
+
+    // Define processCommand first so we can use it? No, standard function hosting.
+    // But we need to update the ref.
+
+    // ... we will update `processCommandRef` at the end of the hook or in an effect.
 
     const speak = useCallback((text: string) => {
         if (!synthesisRef.current) return;
@@ -875,24 +840,61 @@ export const useGabi = () => {
         processCommandRef.current = processCommand;
     }, [processCommand]);
 
-    const startListening = () => {
-        if (recognitionRef.current) {
-            setTranscript('');
-            transcriptRef.current = '';
-            setResponse('');
+    const startListening = async () => {
+        setTranscript('');
+        transcriptRef.current = '';
+        setResponse('');
+        setState('listening');
+
+        try {
+            // Check/Request Permissions
+            let hasPerm = false;
             try {
-                recognitionRef.current.start();
+                // Safe check for browser environment just in case
+                const status = await SpeechRecognition.checkPermissions();
+                if (status.speechRecognition === 'granted') {
+                    hasPerm = true;
+                } else {
+                    const req = await SpeechRecognition.requestPermissions();
+                    if (req.speechRecognition === 'granted') hasPerm = true;
+                }
             } catch (e) {
-                console.error("Speech API error usually already started", e);
+                console.log("Permission check failed (likely browser):", e);
+                // Fallback for strict browser testing if needed, or just fail
             }
-        } else {
-            alert("Tu navegador no soporta comandos de voz.");
+
+            // Start Recognition
+            const { matches } = await SpeechRecognition.start({
+                language: "es-MX",
+                maxResults: 1,
+                prompt: "Gabi te escucha...",
+                partialResults: true,
+                popup: false,
+            });
+
+            // If we get here in one await, it means we have final results
+            if (matches && matches.length > 0) {
+                const text = matches[0];
+                setTranscript(text);
+                transcriptRef.current = text;
+
+                // Process immediately
+                processCommand(text);
+                state === 'listening' && setState('idle');
+            }
+
+        } catch (e: any) {
+            console.error("Native Speech Error:", e);
+            setState('idle');
         }
     };
 
-    const stopListening = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
+    const stopListening = async () => {
+        try {
+            await SpeechRecognition.stop();
+            setState('idle');
+        } catch (e) {
+            // ignore
         }
     };
 
@@ -903,6 +905,9 @@ export const useGabi = () => {
         startListening,
         stopListening,
         processCommand,
-        conversation
+        speak,
+        conversation,
+        transactionRequest,
+        setTransactionRequest
     };
 };
