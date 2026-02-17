@@ -64,11 +64,14 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     // Gabi Logic
     const { tier, showUpgradeModal, setShowUpgradeModal } = useSubscription();
     const [isGabiOpen, setIsGabiOpen] = useState(false);
-    const { state, transcript, response, startListening, stopListening, processCommand, conversation, transactionRequest, setTransactionRequest } = useGabi();
+    const { state, transcript, response, startListening, stopListening, processCommand, speakWithAutoListen, conversation, transactionRequest, setTransactionRequest } = useGabi();
 
     const handleOpenGabi = () => {
         setIsGabiOpen(true);
-        startListening();
+        // Add slight delay to ensure UI is ready before speaking
+        setTimeout(() => {
+            speakWithAutoListen("Hola, ¿en qué puedo ayudarte hoy?", true);
+        }, 100);
     };
 
     const handleCloseGabi = () => {

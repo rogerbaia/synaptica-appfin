@@ -25,7 +25,7 @@ export default function GabiInterface({ isOpen, onClose, state, transcript, resp
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none p-4">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pointer-events-none p-4 pb-24">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/40 backdrop-blur-sm pointer-events-auto transition-opacity"
@@ -133,15 +133,20 @@ export default function GabiInterface({ isOpen, onClose, state, transcript, resp
                             <Camera size={24} />
                         </button>
 
-                        <button
-                            onClick={onMicClick}
-                            className={`p-4 rounded-full transition-all duration-300 shadow-lg ${state === 'listening'
-                                ? 'bg-red-500 text-white scale-110 shadow-red-500/40 animate-pulse'
-                                : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 shadow-purple-500/30'
-                                }`}
-                        >
-                            <Mic size={28} />
-                        </button>
+                        <div className="relative">
+                            {state === 'listening' && (
+                                <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-75" />
+                            )}
+                            <button
+                                onClick={onMicClick}
+                                className={`relative z-10 p-4 rounded-full transition-all duration-300 shadow-lg ${state === 'listening'
+                                    ? 'bg-red-500 text-white scale-110 shadow-red-500/40' // Removed animate-pulse here to avoid double movement
+                                    : 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:scale-105 shadow-purple-500/30'
+                                    }`}
+                            >
+                                <Mic size={28} />
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

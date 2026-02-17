@@ -353,12 +353,15 @@ export const useGabi = () => {
 
             // --- INTENT: REGISTER TRANSACTION (PRE-FILL FORM) ---
             // Pattern: "Registra/Nuevo [gasto/ingreso] de [monto] (en/para [descripcion])"
-            const registerPattern = /(registrar|registra|nuevo|agrega).*(gasto|ingreso).*(\d+)/i;
+            // Enhanced to include synonyms
+            const registerPattern = /(registrar|registra|nuevo|agrega|anota).*(gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro).*(\d+)/i;
 
             if (registerPattern.test(lowerCmd)) {
 
                 // Extract Type
-                const type = lowerCmd.includes('ingreso') ? 'income' : 'expense';
+                // Explicit check for income keywords
+                const isIncome = /ingreso|dep[oóò]sito|abono|cobro/i.test(lowerCmd);
+                const type = isIncome ? 'income' : 'expense';
 
                 // Extract Amount
                 const amountMatch = lowerCmd.match(/(\d+)/);
@@ -367,11 +370,11 @@ export const useGabi = () => {
                 // Extract Description (everything after amount or keywords)
                 // Simple heuristic cleaning
                 let description = lowerCmd
-                    .replace(/(registrar|registra|nuevo|agrega)/g, '')
-                    .replace(/(gasto|ingreso)/g, '')
-                    .replace(/(de|por|en|para)/g, '')
+                    .replace(/(registrar|registra|nuevo|agrega|anota)/gi, '')
+                    .replace(/(gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro)/gi, '')
+                    .replace(/(de|por|en|para)/gi, '')
                     .replace(/\d+/, '') // Remove first number (amount)
-                    .replace(/(pesos|dolares|mxn|usd)/g, '')
+                    .replace(/(pesos|dolares|mxn|usd)/gi, '')
                     .trim();
 
                 if (!description) description = type === 'expense' ? "Gasto por voz" : "Ingreso por voz";
@@ -906,6 +909,7 @@ export const useGabi = () => {
         stopListening,
         processCommand,
         speak,
+        speakWithAutoListen,
         conversation,
         transactionRequest,
         setTransactionRequest
