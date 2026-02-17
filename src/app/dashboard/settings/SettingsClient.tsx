@@ -114,7 +114,9 @@ export default function SettingsPage() {
                 try {
                     const json = JSON.parse(errText);
                     if (json.error?.message) errMsg = json.error.message;
-                } catch (e) { }
+                } catch (e) {
+                    errMsg = "Respuesta inválida del proveedor (Posible bloqueo o HTML)";
+                }
 
                 alert(`⚠️ La llave no funcionó con el modelo ${modelToTest}:\n\n"${errMsg}"\n\nAsegúrate de que la llave esté activa en Google AI Studio.`);
                 setSavingGemini(false);

@@ -63,13 +63,22 @@ export default function FiscalSettings() {
                         }
                     }
                 } else {
-                    const err = await res.json();
-                    console.error("Error loading fiscal settings:", err);
-                    toast.error("Error cargando datos fiscales: " + (err.message || res.statusText));
+                    // Safe Error Parsing
+                    const errText = await res.text();
+                    let errMsg = res.statusText;
+                    try {
+                        const errJson = JSON.parse(errText);
+                        errMsg = errJson.message || errMsg;
+                    } catch (e) {
+                        // It was HTML or string, use text snippet
+                        errMsg = `Error ${res.status}: Posible problema de configuración servidor.`;
+                    }
+                    console.warn("Fiscal Settings Load Error:", errMsg);
+                    // Silent fail or warning icon in UI instead of invasive toast on load
                 }
             } catch (e: any) {
-                console.error("Failed to load fiscal settings", e);
-                toast.error("Error de conexión: " + e.message);
+                console.error("Failed to load fiscal settings (Network/Parse):", e);
+                // toast.error("Error de conexión: " + e.message); // SUPPRESSED to avoid annoyance
             } finally {
                 setLoading(false);
             }
