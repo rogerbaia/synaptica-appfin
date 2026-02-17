@@ -31,6 +31,15 @@ export const useGabi = () => {
         };
     }>({ mode: null, step: 'ASK_CLIENT', data: {} });
 
+    // --- UI REQUESTS (New v7.6) ---
+    const [transactionRequest, setTransactionRequest] = useState<{
+        type: 'income' | 'expense';
+        amount: number;
+        description: string;
+        category?: string;
+    } | null>(null);
+
+    // ... existing refs ...
     // Ref to access state inside stale closures (SpeechRecognition callbacks)
     const conversationRef = useRef(conversation);
 
@@ -46,7 +55,7 @@ export const useGabi = () => {
         supabaseService.getUserMetadata().then(meta => {
             if (meta?.nickname) setClientName(meta.nickname);
         });
-        console.log("Gabi Hook v4.3 Loaded - State Ref Fixed");
+        console.log("Gabi Hook v7.6 Loaded - Voice Form Filling");
     }, []);
 
     const recognitionRef = useRef<any>(null);
@@ -377,7 +386,7 @@ export const useGabi = () => {
                 return;
             }
 
-            // --- INTENT: REGISTER TRANSACTION ---
+            // --- INTENT: REGISTER TRANSACTION (PRE-FILL FORM) ---
             // Pattern: "Registra/Nuevo [gasto/ingreso] de [monto] (en/para [descripcion])"
             const registerPattern = /(registrar|registra|nuevo|agrega).*(gasto|ingreso).*(\d+)/i;
 
@@ -404,17 +413,16 @@ export const useGabi = () => {
                 description = description.charAt(0).toUpperCase() + description.slice(1);
 
                 if (amount > 0) {
-                    await supabaseService.addTransaction({
-                        amount,
+                    // NEW BEHAVIOR: Pre-fill Form (Do NOT Save)
+                    setTransactionRequest({
                         type,
-                        category: type === 'expense' ? 'Otros' : 'Salario',
-                        date: new Date().toISOString(),
+                        amount,
                         description,
-                        recurring: false
+                        category: type === 'expense' ? 'Otros' : 'Salario' // Default, user can change
                     });
 
                     const typeText = type === 'income' ? 'ingreso' : 'gasto';
-                    speak(`Listo. Registré un ${typeText} de ${amount} pesos para ${description}.`);
+                    speak(`Abriendo ventana de ${typeText} por ${amount} pesos. Por favor confirma los datos.`);
                 } else {
                     speak("Entendí que quieres registrar algo, pero no escuché el monto.");
                 }

@@ -10,6 +10,7 @@ import GabiFab from '@/components/Gabi/GabiFab';
 import GabiInterface from '@/components/Gabi/GabiInterface';
 import UpgradeModal from '@/components/Modals/UpgradeModal';
 import SmartScanModal from '@/components/Gabi/SmartScanModal';
+import TransactionModal from '@/components/Transactions/TransactionModal';
 import OnboardingModal from '@/components/Modals/OnboardingModal';
 import { useAuth } from '@/context/AuthContext';
 
@@ -63,7 +64,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
     // Gabi Logic
     const { tier, showUpgradeModal, setShowUpgradeModal } = useSubscription();
     const [isGabiOpen, setIsGabiOpen] = useState(false);
-    const { state, transcript, response, startListening, stopListening, processCommand, conversation } = useGabi();
+    const { state, transcript, response, startListening, stopListening, processCommand, conversation, transactionRequest, setTransactionRequest } = useGabi();
 
     const handleOpenGabi = () => {
         setIsGabiOpen(true);
@@ -143,6 +144,25 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                             window.speechSynthesis.speak(utterance);
                         }}
                     />
+
+                    {/* Voice Triggered Transaction (Invisible until requested) */}
+                    {transactionRequest && (
+                        <TransactionModal
+                            isOpen={true}
+                            onClose={() => setTransactionRequest(null)}
+                            onSuccess={() => {
+                                setTransactionRequest(null);
+                                // Optional: Feedback? Gabi already spoke.
+                            }}
+                            type={transactionRequest.type}
+                            initialData={{
+                                amount: transactionRequest.amount,
+                                description: transactionRequest.description,
+                                category: transactionRequest.category,
+                                date: new Date().toISOString()
+                            }}
+                        />
+                    )}
                 </>
             )}
 
