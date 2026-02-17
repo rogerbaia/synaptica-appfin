@@ -100,6 +100,13 @@ export const useGabi = () => {
 
     // ... we will update `processCommandRef` at the end of the hook or in an effect.
 
+    // Forward declare startListening so speak can use it?
+    // Actually, we can use a ref for startListening if we want to avoid circular deps, or just rely on hoisting if not using useCallback for startListening?
+    // Better: Define startListening first or use a ref.
+    // Issue: speak uses startListening, startListening uses setState/processCommand.
+    // Let's use a ref for startListening to break the cycle in useCallback dependencies.
+    const startListeningRef = useRef<() => Promise<void>>(async () => { });
+
     const speak = useCallback((text: string) => {
         if (!synthesisRef.current) return;
 
@@ -122,10 +129,17 @@ export const useGabi = () => {
             // Auto-Listen Logic with small delay to prevent "already started" errors
             if (expectingResponse.current) {
                 setTimeout(() => {
-                    startListening();
+                    console.log("Auto-listening triggered via Ref...");
+                    startListeningRef.current(); // Use Ref to avoid stale closure
                 }, 300);
             }
         };
+
+        const handleError = () => {
+            setState('idle');
+            expectingResponse.current = false;
+        };
+        utterance.onerror = handleError;
 
         synthesisRef.current.speak(utterance);
     }, []);
@@ -134,7 +148,7 @@ export const useGabi = () => {
     const speakWithAutoListen = useCallback((text: string, shouldListen: boolean = false) => {
         expectingResponse.current = shouldListen;
         speak(text);
-    }, [speak]);
+    }, [speak]); // Safe dependency
 
     const matchIntent = (text: string, patterns: RegExp[]): boolean => {
         return patterns.some(pattern => pattern.test(text));
@@ -844,6 +858,9 @@ export const useGabi = () => {
     }, [processCommand]);
 
     const startListening = async () => {
+        // Force stop first to clear any stuck native state
+        try { await SpeechRecognition.stop(); } catch (e) { /* ignore */ }
+
         setTranscript('');
         transcriptRef.current = '';
         setResponse('');
@@ -883,7 +900,8 @@ export const useGabi = () => {
 
                 // Process immediately
                 processCommand(text);
-                state === 'listening' && setState('idle');
+                // Only reset to idle if we are still listening (avoid race conditions)
+                setState(prev => prev === 'listening' ? 'idle' : prev);
             }
 
         } catch (e: any) {
@@ -891,6 +909,11 @@ export const useGabi = () => {
             setState('idle');
         }
     };
+
+    // Keep Ref updated for speak callback
+    useEffect(() => {
+        startListeningRef.current = startListening;
+    }, [startListening]);
 
     const stopListening = async () => {
         try {
