@@ -904,75 +904,74 @@ export const useGabi = () => {
         setResponse('');
         setState('listening');
 
-        try {
-            // Check/Request Permissions
-            let hasPerm = false;
-            try {
-                // Safe check for browser environment just in case
-                const status = await SpeechRecognition.checkPermissions();
-                if (status.speechRecognition === 'granted') {
-                    hasPerm = true;
-                } else {
-                    const req = await SpeechRecognition.requestPermissions();
-                    if (req.speechRecognition === 'granted') hasPerm = true;
-                }
-            } catch (e) {
-                console.log("Permission check failed (likely browser):", e);
-                // Fallback for strict browser testing if needed, or just fail
-            }
-
-            // Start Recognition
-            const { matches } = await SpeechRecognition.start({
-                language: "es-MX",
-                maxResults: 1,
-                prompt: "Gabi te escucha...",
-                partialResults: true,
-                popup: false,
-            });
-
-            // If we get here in one await, it means we have final results
-            if (matches && matches.length > 0) {
-                const text = matches[0];
-                setTranscript(text);
-                transcriptRef.current = text;
-
-                // Process immediately
-                processCommand(text);
-                // Only reset to idle if we are still listening (avoid race conditions)
-                setState(prev => prev === 'listening' ? 'idle' : prev);
-            }
-
-        } catch (e: any) {
-            console.error("Native Speech Error:", e);
-            setState('idle');
+        // Verify Browser Support (Web)
+        if (typeof window !== 'undefined' && !window.SpeechRecognition && !(window as any).webkitSpeechRecognition) {
+            // Check if it's native (Capacitor) - if not, fail
+            // Simply assume if plugin fails, it's not supported
         }
-    };
 
-    // Keep Ref updated for speak callback
-    useEffect(() => {
-        startListeningRef.current = startListening;
-    }, [startListening]);
+        // Start Recognition
+        const { matches } = await SpeechRecognition.start({
+            language: "es-MX",
+            maxResults: 1,
+            prompt: "Gabi te escucha...",
+            partialResults: true,
+            popup: false,
+        });
 
-    const stopListening = async () => {
-        try {
-            await SpeechRecognition.stop();
-            setState('idle');
-        } catch (e) {
-            // ignore
+        // If we get here in one await, it means we have final results
+        if (matches && matches.length > 0) {
+            const text = matches[0];
+            setTranscript(text);
+            transcriptRef.current = text;
+
+            // Process immediately
+            processCommand(text);
+            // Only reset to idle if we are still listening (avoid race conditions)
+            setState(prev => prev === 'listening' ? 'idle' : prev);
         }
-    };
 
-    return {
-        state,
-        transcript,
-        response,
-        startListening,
-        stopListening,
-        processCommand,
-        speak,
-        speakWithAutoListen,
-        conversation,
-        transactionRequest,
-        setTransactionRequest
-    };
+    } catch (e: any) {
+        console.error("Native Speech Error:", e);
+        setState('idle');
+
+        // User Feedback for Errors
+        if (e.message?.includes('not allowed') || e.message?.includes('permission')) {
+            speak("Necesito permiso para usar el micrófono. Verifícalo en tu navegador.");
+        } else if (e.message?.includes('not supported') || e.message?.includes('implement')) {
+            speak("Tu navegador no soporta reconocimiento de voz. Intenta con Google Chrome.");
+        } else {
+            // Generic error - maybe just didn't hear anything
+            // speak("No te escuché bien, intenta de nuevo."); // Optional, can be annoying if loop
+        }
+    }
+};
+
+// Keep Ref updated for speak callback
+useEffect(() => {
+    startListeningRef.current = startListening;
+}, [startListening]);
+
+const stopListening = async () => {
+    try {
+        await SpeechRecognition.stop();
+        setState('idle');
+    } catch (e) {
+        // ignore
+    }
+};
+
+return {
+    state,
+    transcript,
+    response,
+    startListening,
+    stopListening,
+    processCommand,
+    speak,
+    speakWithAutoListen,
+    conversation,
+    transactionRequest,
+    setTransactionRequest
+};
 };
