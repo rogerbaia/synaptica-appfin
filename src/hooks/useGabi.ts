@@ -311,6 +311,54 @@ export const useGabi = () => {
         }
     };
 
+    // --- TRANSACTION WIZARD LOGIC (New v7.9.13) ---
+    const handleTransactionFlow = async (command: string) => {
+        const { step, data } = conversationRef.current;
+        const lower = command.toLowerCase();
+
+        // Universal Cancel
+        if (lower.includes('cancelar') || lower.includes('olvídalo') || lower.includes('salir')) {
+            setConversation({ mode: null, step: 'ASK_CLIENT', data: {} });
+            speakWithAutoListen("Cancelado.", false);
+            return;
+        }
+
+        if (step === 'ASK_DESCRIPTION') {
+            // Whatever the user says is the description
+            // Clean it slightly (remove "es", "el concepto es")
+            let description = lower
+                .replace(/^(es|el concepto es|la descripción es|ponle|digamos|que sea)/i, '')
+                .replace(/(quiero|necesito|deseo|voy|a|para|por|en|el|la|los|las|un|una|unos|unas)/gi, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+
+            if (!description || description.length < 2) {
+                description = "Sin descripción";
+            }
+
+            // Capitalize
+            description = description.charAt(0).toUpperCase() + description.slice(1);
+
+            // EXECUTE: Open Modal
+            // Wrap in timeout to ensure state update decouples from speech loop (v7.9.14 Fix)
+            setTimeout(() => {
+                setTransactionRequest({
+                    type: data.type || 'expense',
+                    amount: data.amount || 0,
+                    description: description,
+                    category: data.type === 'expense' ? 'Otros' : 'Salario'
+                });
+            }, 100);
+
+            const typeText = data.type === 'income' ? 'ingreso' : 'gasto';
+            speak(`Listo. Abriendo formulario de ${typeText} por ${data.amount} pesos con concepto ${description}.`);
+
+            // Reset
+            setConversation({ mode: null, step: 'ASK_CLIENT', data: {} });
+            return;
+        }
+    };
+
     const processCommand = async (command: string) => {
         setState('processing');
         let lowerCmd = command.toLowerCase()
