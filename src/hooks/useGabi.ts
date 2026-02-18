@@ -934,16 +934,53 @@ export const useGabi = () => {
 
         } catch (e: any) {
             console.error("Native Speech Error:", e);
+
+            // --- FALLBACK: Direct Web API (Bypass Plugin) ---
+            if (typeof window !== 'undefined' && (window as any).webkitSpeechRecognition) {
+                console.log("Attempting Native Web Fallback...");
+                try {
+                    const NativeSpeech = (window as any).webkitSpeechRecognition;
+                    const recognition = new NativeSpeech();
+                    recognition.lang = 'es-MX';
+                    recognition.continuous = false;
+                    recognition.interimResults = false; // Simpler for now
+
+                    recognition.onstart = () => setState('listening');
+
+                    recognition.onresult = (event: any) => {
+                        const last = event.results.length - 1;
+                        const text = event.results[last][0].transcript;
+                        setTranscript(text);
+                        transcriptRef.current = text;
+                        processCommand(text);
+                        setState('idle');
+                    };
+
+                    recognition.onerror = (err: any) => {
+                        console.error("Web Fallback Error:", err);
+                        setState('idle');
+                        if (err.error === 'not-allowed' || err.error === 'permission-denied') {
+                            speak("Acceso al micrófono bloqueado. Revisa la configuración del sitio.");
+                        }
+                    };
+
+                    // recognition.onend handled by logic above or auto-close
+
+                    recognition.start();
+                    return; // Exit function, fallback took over
+
+                } catch (errFallback) {
+                    console.error("Fallback failed:", errFallback);
+                }
+            }
+
             setState('idle');
 
-            // User Feedback for Errors
+            // User Feedback for Errors (if fallback didn't run)
             if (e.message?.includes('not allowed') || e.message?.includes('permission')) {
                 speak("Necesito permiso para usar el micrófono. Verifícalo en tu navegador.");
             } else if (e.message?.includes('not supported') || e.message?.includes('implement')) {
                 speak("Tu navegador no soporta reconocimiento de voz. Intenta con Google Chrome.");
-            } else {
-                // Generic error - maybe just didn't hear anything
-                // speak("No te escuché bien, intenta de nuevo."); // Optional, can be annoying if loop
             }
         }
     };
