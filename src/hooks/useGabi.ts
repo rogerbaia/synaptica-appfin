@@ -331,8 +331,8 @@ export const useGabi = () => {
         }
 
         // --- TRIGGER: START CFDI FLOW ---
-        // Enhanced regex to be more permissive
-        const cfdiPattern = /(generar|crear|hacer|enviar|emitir|timbrar|regálame|quiero|necesito|nueva|iniciar).*(cfdi|factura|ingreso)/i;
+        // Enhanced regex to be more permissive but STRICTER on intent (Active Voice)
+        const cfdiPattern = /(generar|crear|hacer|enviar|emitir|timbrar|regálame|quiero|necesito|nueva|iniciar).*(cfdi|factura|fiscal)/i;
         if (cfdiPattern.test(lowerCmd) && !lowerCmd.includes('gasto')) { // Avoid "Factura de gasto"
             speakWithAutoListen("Claro. ¿A nombre de quién debo generar la factura?", true);
             setConversation({ mode: 'CFDI_WIZARD', step: 'ASK_CLIENT', data: {} });
