@@ -11,8 +11,9 @@ export const useGabi = () => {
     const [clientName, setClientName] = useState<string | null>(null);
 
     // --- CONVERSATION STATE (Voice Wizard) ---
-    type ConversationMode = 'CFDI_WIZARD' | null;
-    type CFDIStep = 'ASK_CLIENT' | 'CONFIRM_DATA' | 'ASK_AMOUNT' | 'ASK_CONCEPT' | 'FINAL_CONFIRM' | 'RETRY_CHECK';
+    type ConversationMode = 'CFDI_WIZARD' | 'TRANSACTION_WIZARD' | null;
+    type CFDIStep = 'ASK_CLIENT' | 'CONFIRM_DATA' | 'ASK_AMOUNT' | 'ASK_CONCEPT' | 'FINAL_CONFIRM' | 'RETRY_CHECK'
+        | 'ASK_DESCRIPTION'; // Added for Transaction Wizard
 
     const [conversation, setConversation] = useState<{
         mode: ConversationMode;
@@ -21,6 +22,7 @@ export const useGabi = () => {
             clientName?: string;
             amount?: number;
             concept?: string;
+            type?: 'income' | 'expense'; // Added for Transaction Wizard
             lastInvoice?: any;
             previousStep?: CFDIStep; // For retry logic
         };
@@ -336,8 +338,13 @@ export const useGabi = () => {
         console.log("Procesando comando:", lowerCmd);
 
         // --- PRIORITY: ACTIVE CONVERSATION ---
+        // --- PRIORITY: ACTIVE CONVERSATION ---
         if (conversationRef.current.mode === 'CFDI_WIZARD') {
             await handleCFDIFlow(command); // Pass original case for names
+            return;
+        }
+        if (conversationRef.current.mode === 'TRANSACTION_WIZARD') {
+            await handleTransactionFlow(command);
             return;
         }
 
@@ -393,31 +400,16 @@ export const useGabi = () => {
                 const amountMatch = lowerCmd.match(/(\d+)/);
                 const amount = amountMatch ? parseFloat(amountMatch[0]) : 0;
 
-                // Extract Description (everything after amount or keywords)
-                // Intelligent cleaning of conversational fillers
-                let description = lowerCmd
-                    .replace(/(quiero|necesito|deseo|voy|a|para|por|en|el|la|los|las|un|una|unos|unas)/gi, ' ') // Remove fillers globally first
-                    .replace(/(registrar|registra|nuevo|agrega|anota)/gi, '')
-                    .replace(/(gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro)/gi, '')
-                    .replace(/\d+/, '') // Remove first number (amount)
-                    .replace(/(pesos|dolares|mxn|usd)/gi, '')
-                    .replace(/\s+/g, ' ') // Collapse multiple spaces
-                    .trim();
-
-                if (!description) description = type === 'expense' ? "Gasto por voz" : "Ingreso por voz";
-                description = description.charAt(0).toUpperCase() + description.slice(1);
-
                 if (amount > 0) {
-                    // NEW BEHAVIOR: Pre-fill Form (Do NOT Save)
-                    setTransactionRequest({
-                        type,
-                        amount,
-                        description,
-                        category: type === 'expense' ? 'Otros' : 'Salario' // Default, user can change
-                    });
+                    // NEW BEHAVIOR v7.9.13: Interactive Wizard
+                    // Don't guess description. Ask for it.
+                    speakWithAutoListen(`Entendido, ${type === 'income' ? 'ingreso' : 'gasto'} de ${amount} pesos. ¿Cuál es el concepto?`, true);
 
-                    const typeText = type === 'income' ? 'ingreso' : 'gasto';
-                    speak(`Abriendo ventana de ${typeText} por ${amount} pesos. Por favor confirma los datos.`);
+                    setConversation({
+                        mode: 'TRANSACTION_WIZARD',
+                        step: 'ASK_DESCRIPTION',
+                        data: { type, amount }
+                    });
                 } else {
                     speak("Entendí que quieres registrar algo, pero no escuché el monto.");
                 }
