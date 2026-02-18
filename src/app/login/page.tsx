@@ -23,6 +23,15 @@ export default function LoginPage() {
         setShowBiometric(bioEnabled);
     }, []);
 
+    // [FIX] Auto-Redirect if Session Exists (Persistent Login)
+    React.useEffect(() => {
+        if (user) {
+            console.log("Session active, redirecting to Dashboard...");
+            router.replace('/dashboard');
+        }
+    }, [user, router]);
+
+
     const handleBiometricLogin = async () => {
         setLoading(true);
         try {
