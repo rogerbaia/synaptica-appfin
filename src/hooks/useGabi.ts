@@ -745,6 +745,17 @@ export const useGabi = () => {
                                 Tono: Profesional, amable y conciso (max 2 oraciones).
                                 Contexto: Estás en una app de finanzas llamada Synaptica.
                                 
+                                REGLAS CRÍTICAS:
+                                1. MONEDA: Tu moneda por defecto es SIEMPRE PESOS MEXICANOS (MXN). Nunca asumas dólares. Di "pesos" explícitamente.
+                                2. INTENCIÓN DE GASTO/INGRESO:
+                                    - Si el usuario dice "registrar gasto", "nuevo ingreso", "agrega una compra": NO es una factura fiscal. Es un registro interno.
+                                    - Responde con el formato: [[TRANSACTION: TIPO | MONTO | CONCEPTO]]
+                                    - Ejemplo: "Gasto de 500 en comida" -> [[TRANSACTION: expense | 500 | comida]]
+                                    - Ejemplo: "Ingreso de 1000 por venta" -> [[TRANSACTION: income | 1000 | venta]]
+                                3. FACTURACIÓN:
+                                    - Solo si el usuario dice explícitamente "Generar factura", "Timbrar", "Necesito factura", inicia el proceso fiscal.
+                                    - En ese caso responde con texto normal preguntando datos.
+                                
                                 IMPORTANTE: Tu conocimiento general tiene una fecha de corte. Si te preguntan por hechos recientes (política, noticias) o información que desconoces, NO inventes. En su lugar, responde ÚNICAMENTE con el siguiente formato, poniendo la búsqueda óptima dentro:
                                 [[SEARCH: términos de búsqueda]]
                                 
@@ -849,6 +860,29 @@ export const useGabi = () => {
                                     speak("El navegador bloqueó la ventana. Revisa los permisos.");
                                 }
                             }, 1500);
+                            return;
+                        }
+
+                        // Check for TRANSACTION Tool call
+                        // [[TRANSACTION: type | amount | description]]
+                        const transMatch = answer.match(/\[\[TRANSACTION: (.*?)\|(.*?)\|(.*?)\]\]/);
+                        if (transMatch) {
+                            const typeRaw = transMatch[1].trim().toLowerCase();
+                            const amount = parseFloat(transMatch[2].trim());
+                            const desc = transMatch[3].trim();
+
+                            const type = (typeRaw.includes('ingreso') || typeRaw === 'income') ? 'income' : 'expense';
+
+                            setTransactionRequest({
+                                type: type as 'income' | 'expense',
+                                amount: amount,
+                                description: desc,
+                                category: 'Otros'
+                            });
+
+                            const label = type === 'income' ? 'Ingreso' : 'Gasto';
+                            speak(`Abriendo formulario de ${label} por ${amount} pesos.`);
+                            setResponse(`Prepared transaction: ${label} $${amount}`);
                             return;
                         }
 
