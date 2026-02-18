@@ -322,6 +322,17 @@ export const useGabi = () => {
             lowerCmd = questionMatch[0];
         }
 
+        // --- FORCE RESET IF INTENT IS CLEARLY TRANSACTION ---
+        // This prevents getting stuck in CFDI Wizard if user changes mind
+        if (/(registrar|nuevo|gasto|ingreso|compra|pago)/i.test(lowerCmd) && !lowerCmd.includes('factura')) {
+            if (conversationRef.current.mode === 'CFDI_WIZARD') {
+                console.log("Breaking out of CFDI Wizard for Transaction Intent");
+                setConversation({ mode: null, step: 'ASK_CLIENT', data: {} });
+                // Update ref immediately for this execution
+                conversationRef.current = { mode: null, step: 'ASK_CLIENT', data: {} };
+            }
+        }
+
         console.log("Procesando comando:", lowerCmd);
 
         // --- PRIORITY: ACTIVE CONVERSATION ---
@@ -368,7 +379,8 @@ export const useGabi = () => {
             // --- INTENT: REGISTER TRANSACTION (PRE-FILL FORM) ---
             // Pattern: "Registra/Nuevo [gasto/ingreso] de [monto] (en/para [descripcion])"
             // Enhanced to include synonyms AND direct commands "gasto de 200"
-            const registerPattern = /^(registrar|registra|nuevo|agrega|anota|gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro)/i;
+            // REMOVED ^ anchor to allow "Quiero registrar..."
+            const registerPattern = /(registrar|registra|nuevo|agrega|anota|gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro)/i;
 
             if (registerPattern.test(lowerCmd)) {
 
