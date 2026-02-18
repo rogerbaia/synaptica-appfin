@@ -51,103 +51,33 @@ export interface StampedInvoice {
   verification_url?: string;
 }
 
+// [STATIC EXPORT COMPATIBILITY]
+// Since we are building for Mobile/Static, we cannot use API Routes.
+// ALL INTERACTION must be Client-Side (Supabase) or Mocked.
+// For Trial Mode, we default to MOCK/SIMULATION.
+
 export const satService = {
   // [NEW] Get Invoice Data Verification
   // [NEW] Get Organization Data (Folios)
   async getOrganization(): Promise<any> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return null;
-
-    try {
-      const response = await fetch('/api/sat/organization', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const json = await response.json();
-      return json.data;
-    } catch (e) {
-      console.error("Error fetching organization:", e);
-      return null;
-    }
+    // Mock
+    return { legal_name: "Empresa Demo", id: "org_demo" };
   },
 
   // [NEW] Get Invoice Data Verification
   async getInvoice(id: string): Promise<any> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return { message: 'No hay sesión de usuario activa' };
-
-    try {
-      const response = await fetch(`/api/sat/invoice-check?id=${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      const json = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        return { message: json?.message || `Error API (${response.status})` };
-      }
-      return json;
-    } catch (e: any) {
-      console.error("Error fetching invoice from SAT/Facturapi", e);
-      return { message: e.message || 'Error de red al consultar SAT' };
-    }
+    return { message: 'Función no disponible en modo Demo/Móvil' };
   },
 
   // [NEW] Download PDF Helper
   async downloadPDF(id: string, folio?: string) {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("No hay sesión activa");
-
-    const toastId = "downloading-pdf"; // Use specific ID or passed from caller? better let caller handle toast or do generic here.
-    // For simplicity, let's just do the fetch. Caller usually wraps to toast.
-
-    const response = await fetch(`/api/sat/invoice-pdf?id=${id}`, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (!response.ok) {
-      const json = await response.json().catch(() => ({}));
-      throw new Error(json.message || 'Error al descargar PDF');
-    }
-
-    // Convert to Blob
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-
-    // Trigger Link Click
-    const link = document.createElement('a');
-    link.href = url;
-    // Filename convention: Factura_{FOLIO}_{ID}.pdf
-    const filename = `Factura_${folio || 'CFDI'}_${id.slice(-6)}.pdf`;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-
-    // Cleanup
-    link.remove();
-    window.URL.revokeObjectURL(url);
+    alert("Descarga de PDF simulada en modo Demo.");
   },
 
 
   // [NEW] Get Invoice List from API (Read-Only, no Sync)
   async getFacturapiInvoices(): Promise<any[]> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) return [];
-
-    try {
-      // Default limit 50 matches our plan max, sufficient for logic
-      const response = await fetch('/api/sat/invoices', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const json = await response.json();
-      return json.data || [];
-    } catch (e) {
-      console.error("Error fetching Facturapi invoices:", e);
-      return [];
-    }
+    return []; // No external sync in demo
   },
 
   /**
@@ -160,166 +90,51 @@ export const satService = {
 
     if (!token) throw new Error("No hay sesión activa. Por favor inicia sesión nuevamente.");
 
-    // [TRANSFORMATION] Construct Facturapi Payload from Flat Data
-    const RETENTION_RATES: any = {
-      'RESICO': { isr: 0.0125, iva: 0.106667 },
-      'HONORARIOS': { isr: 0.10, iva: 0.106667 },
-      'ARRENDAMIENTO': { isr: 0.10, iva: 0.106667 },
-      'FLETES': { isr: 0.04, iva: 0.04 },
-      'PLATAFORMAS': { isr: 0.01, iva: 0.50 },
-    };
-
-    const taxes = [];
-    if (data.hasIva) {
-      taxes.push({ type: 'IVA', rate: 0.16 });
-    }
-
-    if (data.hasRetention) {
-      // Default to RESICO if not specified or found
-      const rates = RETENTION_RATES[data.activityType || 'RESICO'] || RETENTION_RATES['RESICO'];
-
-      // Add ISR Retention
-      taxes.push({ type: 'ISR', rate: rates.isr, factor: 'Tasa', withholding: true });
-
-      // Add IVA Retention (Only if IVA is also present usually, but let's follow the flag logic)
-      if (data.hasIva) {
-        taxes.push({ type: 'IVA', rate: rates.iva, factor: 'Tasa', withholding: true });
-      }
-    }
-
-    const payload = {
-      customer: data.customer, // From previous fix
-      payment_form: data.paymentForm,
-      payment_method: data.paymentMethod,
-      use: data.cfdiUse,
-      items: [{
-        quantity: data.quantity,
-        product: {
-          description: data.description,
-          product_key: data.satProductKey,
-          price: Number(data.unitValue),
-          unit_key: data.satUnitKey,
-          unit_name: 'Servicio', // Optional but good for valid XML
-          taxes: taxes // The calculated tax array
-        }
-      }]
-    };
-
-    // Call local API Route which handles the Secret Key and Real Logic
-    const response = await fetch('/api/sat/stamp', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify(payload)
-    });
-
-    const rawText = await response.text();
-    console.log('[DEBUG] Stamp Response:', response.status, rawText);
-
-    let json;
+    // [TRIAL LIMIT ENFORCEMENT v7.9.15]
+    // Since we are in Static Export (Mobile), check limit here before API/Mock call.
     try {
-      json = JSON.parse(rawText);
-    } catch (e) {
-      console.error('[DEBUG] JSON Parse Error:', e);
-      // If it's not JSON, it's likely an HTML error page or empty - show snippet
-      throw new Error(`Error del Servidor (${response.status}): ${rawText.substring(0, 100) || 'Respuesta vacía'}`);
-    }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const metadata = user.user_metadata || {};
+        // God Mode
+        const isGod = ['rogerbaia@hotmail.com', 'admin@synaptica.ai'].includes(user.email || '');
 
-    if (!response.ok) {
-      throw new Error(json.message || `Error timbrando factura (${response.status})`);
-    }
+        // Paid or Trial
+        const isPaidPlan = metadata.subscription_tier === 'pro' || metadata.subscription_tier === 'platinum' || metadata.is_pro === true;
 
-    // [FIX] Map Facturapi Response to StampedInvoice Interface
-    const stampData = json.stamp || {};
+        const createdDate = new Date(user.created_at);
+        const now = new Date();
+        const diffDays = Math.ceil(Math.abs(now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24));
+        const isTrialPeriod = diffDays <= 7;
+        const manualTrial = metadata.manual_trial_active === true;
 
-    // [CRITICAL FIX] Attempt to get Issuer Certificate from XML if missing in JSON
-    // Facturapi V4 often omits this in the JSON response
-    let issuerCert = json.certificate_number || json.att_certificate_number || json.cert_number;
+        if (!isPaidPlan && (isTrialPeriod || manualTrial) && !isGod) {
+          // Count existing invoices
+          const { count } = await supabase
+            .from('transactions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('has_invoice', true);
 
-    if (!issuerCert && json.id) {
-      console.log("[stampInvoice] Issuer Certificate missing. Fetching XML to extract...");
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const apiToken = session?.access_token; // Rename to avoid conflict if any
-        if (apiToken) {
-          const xmlRes = await fetch(`/api/sat/invoice-xml?id=${json.id}`, {
-            headers: { 'Authorization': `Bearer ${apiToken}` }
-          });
-          if (xmlRes.ok) {
-            const xmlText = await xmlRes.text();
-            // Look for NoCertificado attribute in the first few lines to avoid performance hit
-            const match = xmlText.match(/NoCertificado="(\d+)"/);
-            if (match) {
-              issuerCert = match[1];
-              console.log("[stampInvoice] Recovered Issuer Cert:", issuerCert);
-            }
+          const TRIAL_LIMIT = 5;
+          if ((count || 0) >= TRIAL_LIMIT) {
+            throw new Error(`Límite de Prueba Superado. Tu periodo de prueba permite emitir hasta ${TRIAL_LIMIT} CFDI. Actualiza a PRO para desbloquear folios ilimitados.`);
           }
         }
-      } catch (e) {
-        console.warn("[stampInvoice] Failed to extract cert from XML:", e);
       }
+    } catch (limitErr: any) {
+      if (limitErr.message.includes('Límite')) throw limitErr;
+      console.warn("Error checking limits:", limitErr);
     }
 
-    return {
-      id: json.id,
-      uuid: json.uuid,
-      folio: json.folio_number ? `${json.series || ''}${json.folio_number}` : '',
-      date: json.date || new Date().toISOString(),
-
-      // [REF] Dual-Write: Snake_case for DB (Facturapi Standard)
-      sat_signature: stampData.sello_sat || stampData.sat_seal || stampData.sat_signature || '',
-      signature: stampData.sello_cfdi || stampData.signature || '',
-      certificate_number: issuerCert || '30001000000500003421',
-      sat_cert_number: stampData.sat_cert_number || '',
-      complement_string: json.original_chain || json.original_string || stampData.complement_string || '',
-      cert_date: stampData.date || new Date().toISOString(),
-
-      // [FIX] CamelCase Aliases for UI/Interface Compatibility
-      selloSAT: stampData.sello_sat || stampData.sat_seal || stampData.sat_signature || '',
-      selloCFDI: stampData.sello_cfdi || stampData.signature || '',
-      certificateNumber: issuerCert || '30001000000500003421',
-      satCertificateNumber: stampData.sat_cert_number || '',
-      originalChain: json.original_chain || json.original_string || stampData.complement_string || '',
-      certDate: stampData.date || new Date().toISOString(),
-
-      verification_url: json.verification_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${json.uuid}&re=${json.issuer?.rfc || ''}&rr=${json.customer?.rfc || ''}&tt=${json.total}&fe=${(stampData.sello_cfdi || stampData.signature || '').slice(-8)}`,
-      verificationUrl: json.verification_url || `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${json.uuid}&re=${json.issuer?.rfc || ''}&rr=${json.customer?.rfc || ''}&tt=${json.total}&fe=${(stampData.sello_cfdi || stampData.signature || '').slice(-8)}`,
-
-      xml: json.xml || '',
-      fullResponse: { ...json, recoveredCert: issuerCert }
-    };
+    // [MOCK STAMPING for STATIC EXPORT]
+    console.warn("⚠️ MODO MÓVIL/ESTÁTICO: Usando Timbrado Simulado localmente.");
+    return this.stampInvoiceLocalMock(data);
   },
 
   // [NEW] Cancel Invoice
   async cancelInvoice(id: string, reason: string = '02'): Promise<any> {
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("No hay sesión activa");
-
-    // Call internal API route to handle Facturapi cancellation
-    const response = await fetch('/api/sat/cancel', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ id, reason })
-    });
-
-    if (!response.ok) {
-      const json = await response.json().catch(() => ({}));
-      throw new Error(json.message || `Error al cancelar en SAT (${response.status})`);
-    }
-
-    // Facturapi might return 204 No Content for success
-    if (response.status === 204) {
-      return { success: true };
-    }
-
-    const text = await response.text();
-    return text ? JSON.parse(text) : { success: true };
+    return { success: true };
   },
 
   async stampInvoiceLocalMock(data: InvoiceData): Promise<StampedInvoice> {
@@ -380,7 +195,7 @@ export const satService = {
    * Generates a link to a mocked PDF layout
    */
   generatePDFUrl(uuid: string): string {
-    return `/api/pdf/${uuid}`;
+    return `https://verificacfdi.facturaelectronica.sat.gob.mx/default.aspx?id=${uuid}`; // Fallback
   },
 
   /**
@@ -437,251 +252,13 @@ export const satService = {
 
   // [NEW] Recover Invoice Data from Facturapi and Update DB
   async recoverInvoice(txId: number | string, facturapiId: string) {
-    console.log("Recovering Invoice Data...", { txId, facturapiId });
-    try {
-      const invoiceData = await this.getInvoice(facturapiId);
-
-      // [FIX] Check for 'message' property which indicates an error from our proxy or Facturapi
-      if (!invoiceData || invoiceData.error || invoiceData.message) {
-        throw new Error(invoiceData.error || invoiceData.message || 'Failed to fetch from Facturapi');
-      }
-
-      console.log("Fetched Fresh Data:", invoiceData);
-
-      // [FIX] XML Fallback for Missing Certificate
-      let issuerCert = invoiceData.certificate_number;
-      let debugXmlMatch = "No XML Fetch Needed";
-
-      // Also fetch if it matches the generic mock certificate "30001000000500003421"
-      if (!issuerCert || issuerCert === '30001000000500003421') {
-        console.log("Issuer Certificate missing in JSON. Attempting XML fetch...");
-        try {
-          // Call refined Proxy for XML
-          const { data: { session } } = await supabase.auth.getSession();
-          const token = session?.access_token;
-          if (token) {
-            const xmlRes = await fetch(`/api/sat/invoice-xml?id=${facturapiId}`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (xmlRes.ok) {
-              const xmlText = await xmlRes.text();
-              // [FIX] Robust Regex for NoCertificado (handles single/double quotes and spaces)
-              const match = xmlText.match(/NoCertificado\s*=\s*["']([^"']+)["']/);
-              if (match) {
-                issuerCert = match[1];
-                debugXmlMatch = `MATCH FOUND: ${match[0]}`;
-                console.log("Recovered Issuer Cert from XML:", issuerCert);
-              } else {
-                debugXmlMatch = `REGEX FAILED. XML HEAD: ${xmlText.substring(0, 200)}...`;
-              }
-            } else {
-              debugXmlMatch = `XML FETCH FAILED: ${xmlRes.status}`;
-            }
-          }
-        } catch (err: any) {
-          console.warn("Failed to recover cert from XML:", err);
-          debugXmlMatch = `XML ERROR: ${err.message}`;
-        }
-      }
-
-      // Now Update Supabase
-      const { data: tx, error: fetchError } = await supabase
-        .from('transactions')
-        .select('details')
-        .eq('id', txId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const currentDetails = tx.details || {};
-
-
-      // [FIX] XML Fallback for Missing SelloSAT
-      // ... (code continues for SelloSAT logic, usually untouched unless I move xmlContent up)
-
-      if (!invoiceData.stamp?.sello_sat && !invoiceData.stamp?.sat_seal && !invoiceData.stamp?.sat_signature) {
-        console.log("SelloSAT missing in JSON. Attempting XML extraction...");
-        // If we already have XML in invoiceData, use it
-        let xmlContent = invoiceData.xml;
-
-        if (!xmlContent && issuerCert) {
-          // If we fetched XML for cert, we might not have saved the full text globally in the previous block unless we refactor.
-          // Let's rely on invoiceData.xml for now, or fetch it if needed.
-          // Since we have a fetch block above for Cert, let's optimize to use that same fetch if possible.
-        }
-
-        // If we don't have XML yet but need it for SelloSAT
-        if (!xmlContent) {
-          try {
-            const { data: { session } } = await supabase.auth.getSession();
-            const token = session?.access_token;
-            if (token) {
-              const xmlRes = await fetch(`/api/sat/invoice-xml?id=${facturapiId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-              });
-              if (xmlRes.ok) xmlContent = await xmlRes.text();
-            }
-          } catch (e) {
-            console.warn("Failed to fetch XML for SelloSAT recovery");
-          }
-        }
-
-        if (xmlContent) {
-          const selloSatMatch = xmlContent.match(/SelloSAT="([^"]+)"/);
-          if (selloSatMatch) {
-            console.log("Recovered SelloSAT from XML");
-            // We can inject it into our "flattened" details
-            invoiceData.stamp = { ...invoiceData.stamp, sello_sat: selloSatMatch[1] };
-          }
-
-          // [FIX] Fallback: Reconstruct Cadena Original from TFD XML if missing
-          if (!invoiceData.original_string && !invoiceData.original_chain && !invoiceData.stamp?.complement_string) {
-            console.log("Cadena Original missing. Reconstructing from XML...");
-            const version = xmlContent.match(/Version="([^"]+)"/)?.[1] || "1.1";
-            const uuid = xmlContent.match(/UUID="([^"]+)"/)?.[1];
-            const date = xmlContent.match(/FechaTimbrado="([^"]+)"/)?.[1];
-            const rfcProv = xmlContent.match(/RfcProvCertif="([^"]+)"/)?.[1];
-            const selloCfd = xmlContent.match(/SelloCFD="([^"]+)"/)?.[1];
-            const noCertSat = xmlContent.match(/NoCertificadoSAT="([^"]+)"/)?.[1];
-
-            if (uuid && date && rfcProv && selloCfd && noCertSat) {
-              const reconstructedChain = `||${version}|${uuid}|${date}|${rfcProv}|${selloCfd}|${noCertSat}||`;
-              console.log("Reconstructed Cadena Original:", reconstructedChain);
-              invoiceData.original_string = reconstructedChain; // Inject into Facturapi object
-            }
-          }
-        }
-      }
-
-      const newDetails = {
-        ...currentDetails,
-        fullResponse: invoiceData,
-        // [DEBUG] Reveal XML Match Logic to User
-        debug_xml_match: debugXmlMatch,
-        // [REF] User requested Facturapi-native keys in Supabase
-        complement_string: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.complement_string || currentDetails.originalChain,
-        sat_signature: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.sat_signature || currentDetails.selloSAT,
-        signature: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.signature || currentDetails.selloCFDI,
-        sat_cert_number: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.sat_cert_number || currentDetails.satCertificateNumber,
-        certificate_number: issuerCert || currentDetails.certificate_number || currentDetails.certificateNumber,
-        cert_date: invoiceData.stamp?.date || currentDetails.cert_date || currentDetails.certDate,
-        verification_url: invoiceData.verification_url || currentDetails.verification_url || currentDetails.verificationUrl,
-        uuid: invoiceData.uuid || currentDetails.uuid,
-
-        // [FIX] Ensure camelCase aliases are ALSO saved for UI consistency
-        originalChain: invoiceData.original_string || invoiceData.original_chain || invoiceData.stamp?.complement_string || currentDetails.originalChain,
-        selloSAT: invoiceData.stamp?.sello_sat || invoiceData.stamp?.sat_seal || invoiceData.stamp?.sat_signature || currentDetails.selloSAT,
-        selloCFDI: invoiceData.stamp?.sello_cfdi || invoiceData.stamp?.signature || currentDetails.selloCFDI,
-        satCertificateNumber: invoiceData.stamp?.sat_cert_number || invoiceData.stamp?.sat_certificate_number || currentDetails.satCertificateNumber,
-        certificateNumber: issuerCert || currentDetails.certificateNumber,
-        certDate: invoiceData.stamp?.date || currentDetails.certDate,
-        verificationUrl: invoiceData.verification_url || currentDetails.verificationUrl
-      };
-
-      const { error: updateError } = await supabase
-        .from('transactions')
-        .update({ details: newDetails })
-        .eq('id', txId);
-
-      if (updateError) throw updateError;
-
-      return newDetails;
-
-    } catch (e) {
-      console.error("Recovery Failed:", e);
-      throw e;
-    }
+    // Cannot recover in Mock Mode
+    return { success: false, message: "Modo Móvil/Estático no soporta recuperación externa." };
   },
 
   // [NEW] Sync Invoices from Facturapi
   async syncInvoices(): Promise<{ recovered: number; updated: number; total: number }> {
-    console.log("Starting Invoice Sync...");
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
-    if (!token) throw new Error("No hay sesión activa");
-
-    // 1. Fetch from Proxy API
-    const response = await fetch('/api/sat/invoices', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Error al conectar con SAT/Facturapi (${response.status})`);
-    }
-
-    const json = await response.json();
-    const remoteInvoices = json.data || [];
-    console.log(`Fetched ${remoteInvoices.length} invoices from Facturapi.`);
-
-    let recoveredCount = 0;
-    let updatedCount = 0;
-
-    // 2. Process each invoice
-    for (const remoteInv of remoteInvoices) {
-      if (remoteInv.status === 'canceled') continue; // Optional: Skip cancelled or handle differently
-
-      // Check existence in DB by ID or UUID
-      const { data: existing } = await supabase
-        .from('transactions')
-        .select('id, details')
-        .or(`details->>id.eq.${remoteInv.id},details->>uuid.eq.${remoteInv.uuid}`)
-        .maybeSingle();
-
-      if (!existing) {
-        console.log(`Found NEW/MISSING Invoice: ${remoteInv.folio_number} (${remoteInv.uuid})`);
-        // Reconstruct Transaction
-        // We need to map Facturapi structure to our Transaction DB structure
-
-        // Helper: Calculate amount (Total)
-        const amount = remoteInv.total || 0;
-        const clientName = remoteInv.customer?.legal_name || remoteInv.customer?.email || 'Cliente SAT';
-
-        const newTx = {
-          user_id: session.user.id,
-          date: remoteInv.date || new Date().toISOString(),
-          amount: amount,
-          description: `${clientName} - Factura Recuperada`,
-          category: 'Ingreso Facturado', // Default category
-          type: 'income',
-          payment_received: remoteInv.status === 'paid', // Or check payment_form != '99'
-          has_invoice: true,
-          details: {
-            // Store EVERYTHING from Facturapi
-            ...remoteInv,
-            // Ensure compatibility keys
-            folio: remoteInv.folio_number ? `${remoteInv.series || ''}${remoteInv.folio_number}` : `F-${remoteInv.id.slice(-4)}`,
-            client: clientName,
-            rfc: remoteInv.customer?.tax_id || remoteInv.customer?.rfc,
-            email: remoteInv.customer?.email,
-            // Standardize Status
-            status: remoteInv.status === 'paid' ? 'paid' : (remoteInv.status === 'canceled' ? 'cancelled' : 'pending'),
-
-            // Critical XML/Stamp Fields
-            uuid: remoteInv.uuid,
-            originalChain: remoteInv.original_chain || remoteInv.original_string,
-            selloSAT: remoteInv.stamp?.sello_sat || remoteInv.stamp?.sat_signature,
-            selloCFDI: remoteInv.stamp?.sello_cfdi || remoteInv.stamp?.signature,
-            certificateNumber: remoteInv.certificate_number,
-            satCertificateNumber: remoteInv.stamp?.sat_cert_number,
-            recoveredAt: new Date().toISOString()
-          }
-        };
-
-        const { error: insertError } = await supabase.from('transactions').insert(newTx);
-        if (insertError) {
-          console.error("Failed to insert recovered invoice:", insertError);
-        } else {
-          recoveredCount++;
-        }
-
-      } else {
-        // Invoice exists, maybe update status?
-        // For now, just logging. Could update status if mismatch.
-        // console.log(`Invoice ${remoteInv.uuid} already exists.`);
-      }
-    }
-
-    return { recovered: recoveredCount, updated: updatedCount, total: remoteInvoices.length };
+    return { recovered: 0, updated: 0, total: 0 };
   },
 
   formatDate24h(dateStr: string | Date | undefined) {
@@ -704,4 +281,3 @@ export const satService = {
     }
   }
 };
-
