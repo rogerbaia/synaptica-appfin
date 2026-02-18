@@ -161,6 +161,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
                             }}
                             type={transactionRequest.type}
                             initialData={{
+                                type: transactionRequest.type, // FIX: Pass type inside initialData
                                 amount: transactionRequest.amount,
                                 description: transactionRequest.description,
                                 category: transactionRequest.category,
