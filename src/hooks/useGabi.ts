@@ -890,8 +890,14 @@ export const useGabi = () => {
     }, [processCommand]);
 
     const startListening = async () => {
-        // Force stop first to clear any stuck native state
-        try { await SpeechRecognition.stop(); } catch (e) { /* ignore */ }
+        // Force stop first to clear any stuck native state (with timeout race)
+        try {
+            const stopPromise = SpeechRecognition.stop();
+            const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject("Stop timeout"), 500));
+            await Promise.race([stopPromise, timeoutPromise]);
+        } catch (e) {
+            console.warn("Mic Stop/Clear warning (continuing):", e);
+        }
 
         setTranscript('');
         transcriptRef.current = '';
