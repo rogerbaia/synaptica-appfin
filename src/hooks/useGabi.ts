@@ -394,13 +394,14 @@ export const useGabi = () => {
                 const amount = amountMatch ? parseFloat(amountMatch[0]) : 0;
 
                 // Extract Description (everything after amount or keywords)
-                // Simple heuristic cleaning
+                // Intelligent cleaning of conversational fillers
                 let description = lowerCmd
+                    .replace(/(quiero|necesito|deseo|voy|a|para|por|en|el|la|los|las|un|una|unos|unas)/gi, ' ') // Remove fillers globally first
                     .replace(/(registrar|registra|nuevo|agrega|anota)/gi, '')
                     .replace(/(gasto|ingreso|compra|pago|dep[oóò]sito|abono|cobro)/gi, '')
-                    .replace(/(de|por|en|para)/gi, '')
                     .replace(/\d+/, '') // Remove first number (amount)
                     .replace(/(pesos|dolares|mxn|usd)/gi, '')
+                    .replace(/\s+/g, ' ') // Collapse multiple spaces
                     .trim();
 
                 if (!description) description = type === 'expense' ? "Gasto por voz" : "Ingreso por voz";
