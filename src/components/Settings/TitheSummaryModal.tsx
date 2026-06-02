@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Church, TrendingUp, TrendingDown, DollarSign, Calculator, Calendar, ListChecks, Info } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import { useSettings } from '@/context/SettingsContext';
@@ -17,6 +18,11 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
     const [transactions, setTransactions] = useState<DBTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<PeriodFilter>('month');
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const prevMonthLabel = useMemo(() => {
         const today = new Date();
@@ -121,9 +127,9 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
         });
     };
 
-    if (!isOpen) return null;
+    if (!isOpen || !mounted) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
             <div className="bg-white dark:bg-[#1e293b] w-full max-w-2xl max-h-[90vh] rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
                 
@@ -305,6 +311,7 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
                 </div>
 
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
