@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import { FileEdit, Trash2, CheckCircle, Clock, X } from 'lucide-react';
+import { FileEdit, Trash2, CheckCircle, Clock, X, Church } from 'lucide-react';
 import { useLanguage } from '@/context/LanguageContext';
 import PaymentRegistrationModal from '@/components/Modals/PaymentRegistrationModal';
-import { DBTransaction } from '@/services/supabaseService';
+import { supabaseService, DBTransaction } from '@/services/supabaseService';
+import { useSettings } from '@/context/SettingsContext';
+import { toast } from 'sonner';
 
 // Use a loose type for data items to accommodate both DBTransaction and Mock Transaction
 // and to avoid "Property 'type' does not exist" errors if the interface is incomplete.
@@ -22,6 +24,25 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
     const { t } = useLanguage();
+    const { titheEnabled } = useSettings();
+
+    const handleToggleTithe = async (item: any) => {
+        const itemType = type || item.type || 'expense';
+        try {
+            const newIsTithe = !item.is_tithe;
+            await supabaseService.updateTransaction(item.id, { is_tithe: newIsTithe });
+            toast.success(newIsTithe 
+                ? (itemType === 'income' ? 'Ingreso registrado para diezmo' : 'Gasto deducido de diezmo')
+                : 'Diezmo desactivado para esta transacción'
+            );
+            if (onDataChange) {
+                onDataChange();
+            }
+        } catch (error) {
+            console.error("Error updating tithe status", error);
+            toast.error("Error al actualizar estado de diezmo");
+        }
+    };
 
     const openPaymentModal = (transaction: any) => {
         setSelectedTransaction(transaction);
@@ -116,6 +137,7 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
                             <th className="px-6 py-3 font-semibold">{t('lbl_amount')}</th>
                             {(type === 'income' || !type) && <th className="px-6 py-3 font-semibold">{t('lbl_status')}</th>}
                             <th className="px-6 py-3 font-semibold text-center">Recurrente</th>
+                            {titheEnabled && <th className="px-6 py-3 font-semibold text-center">Diezmo</th>}
                             <th className="px-6 py-3 font-semibold text-right">{t('lbl_actions')}</th>
                         </tr>
                     </thead>
@@ -178,6 +200,20 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
                                                 </div>
                                             )}
                                         </td>
+                                        {titheEnabled && (
+                                            <td className="px-6 py-4 text-center">
+                                                <div className="flex justify-center">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleToggleTithe(item)}
+                                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${item.is_tithe ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                                        title={isIncome ? "Incluir en diezmo" : "Deducir de diezmo"}
+                                                    >
+                                                        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition duration-200 ease-in-out ${item.is_tithe ? 'translate-x-6' : 'translate-x-1'}`} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 {item.paymentReceived === false && type === 'income' && item.type === 'income' && (
@@ -276,6 +312,21 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
                                         className="text-[10px] text-orange-500 font-semibold flex items-center gap-1 mt-1 cursor-pointer hover:text-orange-600 active:scale-95 transition-transform w-fit"
                                     >
                                         <Clock size={10} /> Pendiente de pago
+                                    </div>
+                                )}
+                                {titheEnabled && (
+                                    <div className="flex justify-between items-center border-t border-gray-100 dark:border-slate-800 pt-2 mt-2">
+                                        <span className="text-xs text-[var(--gray-color)] flex items-center gap-1.5 font-medium">
+                                            <Church size={14} className="text-purple-500" />
+                                            {isIncome ? 'Contar para diezmo' : 'Deducir de diezmo'}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleToggleTithe(item)}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${item.is_tithe ? 'bg-purple-600' : 'bg-gray-200 dark:bg-gray-700'}`}
+                                        >
+                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition duration-200 ease-in-out ${item.is_tithe ? 'translate-x-4' : 'translate-x-1'}`} />
+                                        </button>
                                     </div>
                                 )}
                             </div>

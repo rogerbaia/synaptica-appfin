@@ -21,7 +21,8 @@ const mapDBToUI = (txs: DBTransaction[]) => txs.map(t => ({
     recurring: t.recurring,
     hasInvoice: t.has_invoice,
     invoiceNumber: t.invoice_number,
-    details: t.details
+    details: t.details,
+    is_tithe: t.is_tithe
 }));
 
 export default function IncomePage() {

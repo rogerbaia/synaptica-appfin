@@ -15,7 +15,8 @@ const mapDBToUI = (txs: DBTransaction[]) => txs.map(t => ({
     description: t.description,
     category: t.category,
     paymentReceived: t.payment_received,
-    recurring: t.recurring
+    recurring: t.recurring,
+    is_tithe: t.is_tithe
 }));
 
 export default function ExpensesPage() {
@@ -96,6 +97,7 @@ export default function ExpensesPage() {
                     type="expense"
                     onEdit={handleEdit}
                     onDelete={handleDelete}
+                    onDataChange={loadData}
                 />
             )}
 
