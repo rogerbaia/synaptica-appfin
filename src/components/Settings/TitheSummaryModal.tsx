@@ -9,7 +9,7 @@ interface TitheSummaryModalProps {
     onClose: () => void;
 }
 
-type PeriodFilter = 'month' | 'year' | 'all';
+type PeriodFilter = 'month' | 'prev-month' | 'year' | 'all';
 
 export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModalProps) {
     const { t } = useLanguage();
@@ -17,6 +17,13 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
     const [transactions, setTransactions] = useState<DBTransaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [period, setPeriod] = useState<PeriodFilter>('month');
+
+    const prevMonthLabel = useMemo(() => {
+        const today = new Date();
+        const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const name = prev.toLocaleDateString('es-MX', { month: 'long' });
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }, []);
 
     const loadData = async () => {
         setLoading(true);
@@ -42,6 +49,10 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
 
+        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const prevMonth = prevMonthDate.getMonth();
+        const prevYear = prevMonthDate.getFullYear();
+
         // 1. Filter by period & is_tithe flag
         const filtered = transactions.filter(tx => {
             if (!tx.is_tithe) return false;
@@ -51,6 +62,9 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
 
             if (period === 'month') {
                 return txDate.getMonth() === currentMonth && txDate.getFullYear() === currentYear;
+            }
+            if (period === 'prev-month') {
+                return txDate.getMonth() === prevMonth && txDate.getFullYear() === prevYear;
             }
             if (period === 'year') {
                 return txDate.getFullYear() === currentYear;
@@ -131,7 +145,7 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
                     <div className="flex justify-between items-center bg-gray-50 dark:bg-slate-900/50 p-2 rounded-xl border border-gray-100 dark:border-gray-800">
                         <span className="text-sm font-semibold text-gray-500 dark:text-gray-400 pl-2">Periodo de cálculo:</span>
                         <div className="flex bg-gray-200 dark:bg-slate-800 p-1 rounded-lg">
-                            {(['month', 'year', 'all'] as const).map((p) => (
+                            {(['month', 'prev-month', 'year', 'all'] as const).map((p) => (
                                 <button
                                     key={p}
                                     onClick={() => setPeriod(p)}
@@ -140,7 +154,7 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
                                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                         }`}
                                 >
-                                    {p === 'month' ? 'Este Mes' : p === 'year' ? 'Este Año' : 'Todo'}
+                                    {p === 'month' ? 'Este Mes' : p === 'prev-month' ? prevMonthLabel : p === 'year' ? 'Este Año' : 'Todo'}
                                 </button>
                             ))}
                         </div>
