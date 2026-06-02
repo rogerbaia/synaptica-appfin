@@ -20,11 +20,18 @@ interface TransactionTableProps {
 }
 
 export default function TransactionTable({ data, type, onDelete, onEdit, onDataChange }: TransactionTableProps) {
-    const [filter, setFilter] = useState<'all' | 'month' | 'year' | 'pending' | 'recurring'>('all');
+    const [filter, setFilter] = useState<'all' | 'month' | 'prev-month' | 'year' | 'pending' | 'recurring'>('all');
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
     const { t } = useLanguage();
     const { titheEnabled } = useSettings();
+
+    const prevMonthLabel = useMemo(() => {
+        const today = new Date();
+        const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const name = prev.toLocaleDateString('es-MX', { month: 'long' });
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }, []);
 
     const handleToggleTithe = async (item: any) => {
         const itemType = type || item.type || 'expense';
@@ -55,6 +62,10 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
         const currentMonth = today.getMonth();
         const currentYear = today.getFullYear();
 
+        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const prevMonth = prevMonthDate.getMonth();
+        const prevYear = prevMonthDate.getFullYear();
+
         return data.filter(item => {
             // Fix Timezone: Same logic as formatDate to ensure consistency
             const safeDate = item.date.includes('T') ? item.date : `${item.date}T12:00:00`;
@@ -62,6 +73,9 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
 
             if (filter === 'month') {
                 return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+            }
+            if (filter === 'prev-month') {
+                return itemDate.getMonth() === prevMonth && itemDate.getFullYear() === prevYear;
             }
             if (filter === 'year') {
                 return itemDate.getFullYear() === currentYear;
@@ -108,6 +122,12 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
                         className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${filter === 'month' ? 'bg-[var(--info-color)] text-white' : 'bg-gray-100 dark:bg-gray-700 text-[var(--gray-color)]'}`}
                     >
                         {t('btn_this_month')}
+                    </button>
+                    <button
+                        onClick={() => setFilter('prev-month')}
+                        className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${filter === 'prev-month' ? 'bg-purple-600 text-white font-semibold shadow-sm' : 'bg-gray-100 dark:bg-gray-700 text-[var(--gray-color)]'}`}
+                    >
+                        {prevMonthLabel}
                     </button>
                     <button
                         onClick={() => setFilter('year')}
