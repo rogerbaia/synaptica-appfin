@@ -13,7 +13,7 @@ interface TitheSummaryModalProps {
 type PeriodFilter = 'month' | 'prev-month' | 'year' | 'all';
 
 export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModalProps) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { titheConfig } = useSettings();
     const [transactions, setTransactions] = useState<DBTransaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,9 +27,10 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
     const prevMonthLabel = useMemo(() => {
         const today = new Date();
         const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const name = prev.toLocaleDateString('es-MX', { month: 'long' });
+        const locale = language === 'es-419' ? 'es-MX' : language;
+        const name = prev.toLocaleDateString(locale, { month: 'long' });
         return name.charAt(0).toUpperCase() + name.slice(1);
-    }, []);
+    }, [language]);
 
     const loadData = async () => {
         setLoading(true);
@@ -160,7 +161,7 @@ export default function TitheSummaryModal({ isOpen, onClose }: TitheSummaryModal
                                         : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
                                         }`}
                                 >
-                                    {p === 'month' ? 'Este Mes' : p === 'prev-month' ? prevMonthLabel : p === 'year' ? 'Este Año' : 'Todo'}
+                                    {p === 'month' ? t('btn_this_month') : p === 'prev-month' ? prevMonthLabel : p === 'year' ? t('btn_this_year') : t('btn_all')}
                                 </button>
                             ))}
                         </div>

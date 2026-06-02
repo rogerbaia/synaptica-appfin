@@ -23,15 +23,16 @@ export default function TransactionTable({ data, type, onDelete, onEdit, onDataC
     const [filter, setFilter] = useState<'all' | 'month' | 'prev-month' | 'year' | 'pending' | 'recurring'>('all');
     const [paymentModalOpen, setPaymentModalOpen] = useState(false);
     const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const { titheEnabled } = useSettings();
 
     const prevMonthLabel = useMemo(() => {
         const today = new Date();
         const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-        const name = prev.toLocaleDateString('es-MX', { month: 'long' });
+        const locale = language === 'es-419' ? 'es-MX' : language;
+        const name = prev.toLocaleDateString(locale, { month: 'long' });
         return name.charAt(0).toUpperCase() + name.slice(1);
-    }, []);
+    }, [language]);
 
     const handleToggleTithe = async (item: any) => {
         const itemType = type || item.type || 'expense';
