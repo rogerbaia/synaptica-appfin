@@ -15,6 +15,7 @@ import { Language } from '@/lib/i18n/translations';
 import YearEndModal from '@/components/Modals/YearEndModal';
 import InviteMemberModal from '@/components/Family/InviteMemberModal';
 import TitheSettingsModal from '@/components/Settings/TitheSettingsModal';
+import TitheSummaryModal from '@/components/Settings/TitheSummaryModal';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { COLOR_THEMES } from '@/config/themes';
 import FiscalSettings from '@/components/Settings/FiscalSettings';
@@ -184,6 +185,7 @@ export default function SettingsPage() {
     const [showYearEnd, setShowYearEnd] = useState(false);
     const [showInvite, setShowInvite] = useState(false);
     const [showTitheModal, setShowTitheModal] = useState(false);
+    const [showTitheSummaryModal, setShowTitheSummaryModal] = useState(false);
 
     // State to track the confirmed theme for revert on hover leave
     const [persistedTheme, setPersistedTheme] = useState(colorTheme);
@@ -980,13 +982,20 @@ export default function SettingsPage() {
                             )}
                         </div>
                     </div>
-                    <div className="pt-4 border-t border-[var(--border-color)]">
+                    <div className="pt-4 border-t border-[var(--border-color)] flex flex-col md:flex-row gap-3">
                         <button
                             onClick={() => setShowTitheModal(true)}
                             disabled={!titheEnabled}
                             className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition w-full md:w-auto shadow-sm shadow-purple-200 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {t('settings_tithe_btn')}
+                        </button>
+                        <button
+                            onClick={() => setShowTitheSummaryModal(true)}
+                            disabled={!titheEnabled}
+                            className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition w-full md:w-auto shadow-sm disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                        >
+                            Ver Resumen de Diezmos
                         </button>
                     </div>
                 </div>
@@ -995,6 +1004,11 @@ export default function SettingsPage() {
             <TitheSettingsModal
                 isOpen={showTitheModal}
                 onClose={() => setShowTitheModal(false)}
+            />
+
+            <TitheSummaryModal
+                isOpen={showTitheSummaryModal}
+                onClose={() => setShowTitheSummaryModal(false)}
             />
 
             {/* 9. Year End Section */}
