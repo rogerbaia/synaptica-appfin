@@ -6,11 +6,12 @@ import { useLanguage } from '@/context/LanguageContext';
 import { useSubscription } from '@/context/SubscriptionContext';
 import { useConfirm } from '@/context/ConfirmContext';
 import { toast } from 'sonner';
-import { History as HistoryIcon, Download, Trash2, Edit, FileText, ChevronDown } from 'lucide-react';
+import { History as HistoryIcon, Download, Trash2, Edit, FileText, ChevronDown, BarChart3, List } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import TransactionTable from '@/components/Transactions/TransactionTable';
 import TransactionModal from '@/components/Transactions/TransactionModal';
+import ConceptAnalysis from '@/components/History/ConceptAnalysis';
 
 // Helper to map DBTransaction to UI format if needed, or just use DBTransaction directly
 // The Table expects DBTransaction now.
@@ -22,6 +23,7 @@ export default function HistoryPage() {
     const [loading, setLoading] = useState(true);
     const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
     const [searchTerm, setSearchTerm] = useState('');
+    const [activeTab, setActiveTab] = useState<'list' | 'analysis'>('list');
 
     // Modal State
     const [modalOpen, setModalOpen] = useState(false);
@@ -237,42 +239,74 @@ export default function HistoryPage() {
                 </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                <div className="flex bg-gray-100 dark:bg-slate-900 p-1 rounded-lg self-start">
-                    {(['all', 'income', 'expense'] as const).map((type) => (
-                        <button
-                            key={type}
-                            onClick={() => setFilterType(type)}
-                            className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${filterType === type
-                                ? 'bg-white dark:bg-slate-700 text-[var(--primary-color)] dark:text-blue-400 shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
-                                }`}
-                        >
-                            {type === 'all' ? t('btn_all') : type === 'income' ? t('menu_income') : t('menu_expenses')}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex-1">
-                    <input
-                        type="text"
-                        placeholder={t('ph_select')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
-                    />
-                </div>
+            {/* Tabs Selector */}
+            <div className="flex border-b border-gray-200 dark:border-gray-700/50">
+                <button
+                    onClick={() => setActiveTab('list')}
+                    className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm border-b-2 transition-all ${
+                        activeTab === 'list'
+                            ? 'border-[var(--primary-color)] text-[var(--primary-color)] dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                >
+                    <List size={16} />
+                    <span>{t('lbl_movements')}</span>
+                </button>
+                <button
+                    onClick={() => setActiveTab('analysis')}
+                    className={`flex items-center gap-2 px-6 py-3 font-semibold text-sm border-b-2 transition-all ${
+                        activeTab === 'analysis'
+                            ? 'border-[var(--primary-color)] text-[var(--primary-color)] dark:text-blue-400'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                >
+                    <BarChart3 size={16} />
+                    <span>{t('lbl_concept_analysis')}</span>
+                </button>
             </div>
 
-            {/* Table Component */}
-            <TransactionTable
-                data={filteredTransactions}
-                limit={100}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-                onDataChange={fetchTransactions}
-            />
+            {activeTab === 'list' ? (
+                <>
+                    {/* Filters */}
+                    <div className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <div className="flex bg-gray-100 dark:bg-slate-900 p-1 rounded-lg self-start">
+                            {(['all', 'income', 'expense'] as const).map((type) => (
+                                <button
+                                    key={type}
+                                    onClick={() => setFilterType(type)}
+                                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${filterType === type
+                                        ? 'bg-white dark:bg-slate-700 text-[var(--primary-color)] dark:text-blue-400 shadow-sm'
+                                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                                        }`}
+                                >
+                                    {type === 'all' ? t('btn_all') : type === 'income' ? t('menu_income') : t('menu_expenses')}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder={t('ph_select')}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full px-4 py-2 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none dark:text-white"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Table Component */}
+                    <TransactionTable
+                        data={filteredTransactions}
+                        limit={100}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onDataChange={fetchTransactions}
+                    />
+                </>
+            ) : (
+                <ConceptAnalysis transactions={transactions} />
+            )}
 
             {/* Edit Modal */}
             <TransactionModal

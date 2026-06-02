@@ -119,7 +119,19 @@ export const translations = {
 
         // Alerts (Duplicate keys removed)
         btn_this_month: "Este Mes",
-        btn_this_year: "Este Año"
+        btn_this_year: "Este Año",
+        lbl_concept_analysis: "Análisis de Conceptos",
+        lbl_frequency: "Frecuencia",
+        lbl_total_spent: "Total Gastado",
+        lbl_total_received: "Total Recibido",
+        lbl_average: "Promedio",
+        lbl_rank: "Rango",
+        lbl_concept: "Concepto",
+        lbl_sort_by: "Ordenar por",
+        lbl_by_frequency: "Más Frecuentes",
+        lbl_by_amount: "Mayor Monto",
+        lbl_repeating_info: "Encuentra gastos o ingresos repetidos para identificar dónde hay más movimiento.",
+        lbl_movements: "Movimientos"
     },
     'es-ES': {
         name: "Español (España)",
@@ -231,7 +243,19 @@ export const translations = {
         btn_send_invite: "Enviar Invitación",
         lbl_ai_advisor: "Synaptica AI",
         btn_this_month: "Este Mes",
-        btn_this_year: "Este Año"
+        btn_this_year: "Este Año",
+        lbl_concept_analysis: "Análisis de Conceptos",
+        lbl_frequency: "Frecuencia",
+        lbl_total_spent: "Total Gastado",
+        lbl_total_received: "Total Recibido",
+        lbl_average: "Promedio",
+        lbl_rank: "Rango",
+        lbl_concept: "Concepto",
+        lbl_sort_by: "Ordenar por",
+        lbl_by_frequency: "Más Frecuentes",
+        lbl_by_amount: "Mayor Monto",
+        lbl_repeating_info: "Encuentra gastos o ingresos repetidos para identificar dónde hay más movimiento.",
+        lbl_movements: "Movimientos"
     },
     'en': {
         name: "English",
@@ -343,7 +367,19 @@ export const translations = {
         btn_send_invite: "Send Invite",
         lbl_ai_advisor: "Synaptica AI",
         btn_this_month: "This Month",
-        btn_this_year: "This Year"
+        btn_this_year: "This Year",
+        lbl_concept_analysis: "Concept Analysis",
+        lbl_frequency: "Frequency",
+        lbl_total_spent: "Total Spent",
+        lbl_total_received: "Total Received",
+        lbl_average: "Average",
+        lbl_rank: "Rank",
+        lbl_concept: "Concept",
+        lbl_sort_by: "Sort by",
+        lbl_by_frequency: "Most Frequent",
+        lbl_by_amount: "Highest Amount",
+        lbl_repeating_info: "Find repeating expenses or incomes to identify where your money is moving.",
+        lbl_movements: "Transactions"
     },
     'pt': {
         name: "Português",
@@ -455,7 +491,19 @@ export const translations = {
         btn_send_invite: "Enviar Convite",
         lbl_ai_advisor: "Synaptica AI",
         btn_this_month: "Este Mês",
-        btn_this_year: "Este Ano"
+        btn_this_year: "Este Ano",
+        lbl_concept_analysis: "Análise de Conceitos",
+        lbl_frequency: "Frequência",
+        lbl_total_spent: "Total Gasto",
+        lbl_total_received: "Total Recebido",
+        lbl_average: "Média",
+        lbl_rank: "Rank",
+        lbl_concept: "Conceito",
+        lbl_sort_by: "Ordenar por",
+        lbl_by_frequency: "Mais Frequentes",
+        lbl_by_amount: "Maior Valor",
+        lbl_repeating_info: "Encontre despesas ou receitas repetidas para identificar onde há mais movimentação.",
+        lbl_movements: "Transações"
     }
 };
 
