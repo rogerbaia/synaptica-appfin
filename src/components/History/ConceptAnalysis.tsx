@@ -38,17 +38,33 @@ interface GroupedConcept {
 }
 
 export default function ConceptAnalysis({ transactions }: ConceptAnalysisProps) {
-    const { t } = useLanguage();
+    const { t, language } = useLanguage();
     const [analysisType, setAnalysisType] = useState<'income' | 'expense'>('expense');
     const [sortBy, setSortBy] = useState<'frequency' | 'amount'>('frequency');
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
+    const [period, setPeriod] = useState<'all' | 'month' | 'prev-month' | 'year'>('all');
+
+    const prevMonthLabel = useMemo(() => {
+        const today = new Date();
+        const prev = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const locale = language === 'es-419' ? 'es-MX' : language;
+        const name = prev.toLocaleDateString(locale, { month: 'long' });
+        return name.charAt(0).toUpperCase() + name.slice(1);
+    }, [language]);
 
     // 1. Process & group transactions dynamically
     const { groupedData, categories, totalTypeAmount, totalTypeCount } = useMemo(() => {
         if (!transactions) return { groupedData: [], categories: [], totalTypeAmount: 0, totalTypeCount: 0 };
 
-        // Pre-filter by type and remove cancelled/hidden CFDI tickets
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+        const prevMonthDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const prevMonth = prevMonthDate.getMonth();
+        const prevYear = prevMonthDate.getFullYear();
+
+        // Pre-filter by type, period and remove cancelled/hidden CFDI tickets
         const preFiltered = transactions.filter(t => {
             if (t.type !== analysisType) return false;
             
@@ -61,7 +77,18 @@ export default function ConceptAnalysis({ transactions }: ConceptAnalysisProps) 
                 desc.includes('[cancelado]') ||
                 desc.includes('(cancelado)');
                 
-            return !isCancelled;
+            if (isCancelled) return false;
+
+            const txDate = new Date(t.date.includes('T') ? t.date : `${t.date}T12:00:00`);
+            if (period === 'month') {
+                if (txDate.getMonth() !== currentMonth || txDate.getFullYear() !== currentYear) return false;
+            } else if (period === 'prev-month') {
+                if (txDate.getMonth() !== prevMonth || txDate.getFullYear() !== prevYear) return false;
+            } else if (period === 'year') {
+                if (txDate.getFullYear() !== currentYear) return false;
+            }
+
+            return true;
         });
 
         // Group by normalized description (trim & lowercase)
@@ -109,7 +136,7 @@ export default function ConceptAnalysis({ transactions }: ConceptAnalysisProps) 
             totalTypeAmount: sumAmount,
             totalTypeCount: preFiltered.length
         };
-    }, [transactions, analysisType]);
+    }, [transactions, analysisType, period]);
 
     // 2. Filter & Sort final list
     const processedList = useMemo(() => {
@@ -280,6 +307,46 @@ export default function ConceptAnalysis({ transactions }: ConceptAnalysisProps) 
                                     }`}
                             >
                                 {t('lbl_by_amount') || 'Mayor Monto'}
+                            </button>
+                        </div>
+
+                        {/* Period Filter Toggle */}
+                        <div className="flex bg-gray-100 dark:bg-slate-900 rounded-lg p-1 border border-gray-200/50 dark:border-slate-800">
+                            <button
+                                onClick={() => setPeriod('all')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === 'all'
+                                    ? 'bg-[var(--success-color)] text-white shadow-sm font-semibold'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                                    }`}
+                            >
+                                {t('btn_all')}
+                            </button>
+                            <button
+                                onClick={() => setPeriod('month')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === 'month'
+                                    ? 'bg-[var(--info-color)] text-white shadow-sm font-semibold'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                                    }`}
+                            >
+                                {t('btn_this_month')}
+                            </button>
+                            <button
+                                onClick={() => setPeriod('prev-month')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === 'prev-month'
+                                    ? 'bg-purple-600 text-white shadow-sm font-semibold'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                                    }`}
+                            >
+                                {prevMonthLabel}
+                            </button>
+                            <button
+                                onClick={() => setPeriod('year')}
+                                className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${period === 'year'
+                                    ? 'bg-[var(--warning-color)] text-white shadow-sm font-semibold'
+                                    : 'text-gray-500 hover:text-gray-700 dark:text-gray-400'
+                                    }`}
+                            >
+                                {t('btn_this_year')}
                             </button>
                         </div>
                     </div>
